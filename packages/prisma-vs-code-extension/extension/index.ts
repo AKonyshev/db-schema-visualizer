@@ -31,6 +31,7 @@ const lunchExtension = (context: ExtensionContext): void => {
     },
     parser: parsePrismaToJSON,
     fileExt: "prisma",
+    diagnosticSourceId: "prisma-erd-visualizer",
   });
 };
 

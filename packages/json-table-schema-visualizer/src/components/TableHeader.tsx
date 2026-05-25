@@ -11,12 +11,18 @@ import {
 import { useThemeColors } from "@/hooks/theme";
 import { useTableColor } from "@/hooks/tableColor";
 import { useTableWidth } from "@/hooks/table";
+import useLocalStorage from "@/hooks/localStorage";
 
 interface TableHeaderProps {
   title: string;
 }
 
 const TableHeader = ({ title }: TableHeaderProps) => {
+  const [isShortTableName] = useLocalStorage<boolean>(
+    "shortTableNameSetting",
+    false,
+  );
+  const titleDisplay = isShortTableName ? title.split(".")[1] ?? title : title;
   const themeColors = useThemeColors();
   const tableColors = useTableColor(title);
   const tablePreferredWidth = useTableWidth();
@@ -39,7 +45,7 @@ const TableHeader = ({ title }: TableHeaderProps) => {
       />
 
       <KonvaText
-        text={title}
+        text={titleDisplay}
         y={TABLE_COLOR_HEIGHT}
         fill={themeColors.tableHeader.fg}
         width={tablePreferredWidth}

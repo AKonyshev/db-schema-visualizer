@@ -26,13 +26,17 @@ import { WebviewHelper } from "./helper";
 
 export class MainPanel {
   public static currentPanel: MainPanel | undefined;
+  private static lastPublishedDocumentUri: Uri | undefined;
+  private static webviewReady = false;
+  private static outboundQueue: unknown[] = [];
   private readonly _panel: WebviewPanel;
   public static extensionConfig: ExtensionConfig;
   private readonly _disposables: Disposable[] = [];
-  // to add debouncing on diagram update after a file change
   private _lastTimeout: NodeJS.Timeout | null = null;
   public static parseCode: (code: string) => JSONTableSchema;
   public static fileExt: string;
+  public static supportsDbmlFileSync = false;
+  public static isApplyingMetaInfoEdit = false;
   public static diagnosticCollection =
     languages.createDiagnosticCollection("dbml");
 
@@ -40,8 +44,12 @@ export class MainPanel {
     panel: WebviewPanel,
     context: ExtensionContext,
     extensionConfigSession: string,
+    renderProps: ExtensionRenderProps,
   ) {
     this._panel = panel;
+    MainPanel.webviewReady = false;
+    MainPanel.outboundQueue = [];
+
     this._panel.onDidDispose(
       () => {
         this.dispose();
@@ -50,8 +58,23 @@ export class MainPanel {
       this._disposables,
     );
 
+    this._panel.onDidChangeViewState(
+      (event) => {
+        if (event.webviewPanel.visible) {
+          MainPanel.republishLastSchema();
+        }
+      },
+      null,
+      this._disposables,
+    );
+
     const extensionConfig = new ExtensionConfig(extensionConfigSession);
-    const defaultPageConfig = extensionConfig.getDefaultPageConfig();
+    MainPanel.extensionConfig = extensionConfig;
+
+    const defaultPageConfig = {
+      ...extensionConfig.getDefaultPageConfig(),
+      supportsDbmlFileSync: renderProps.supportsDbmlFileSync === true,
+    };
 
     const html = WebviewHelper.setupHtml(
       this._panel.webview,
@@ -65,44 +88,88 @@ export class MainPanel {
       this._panel.webview,
       extensionConfig,
       this._disposables,
+      {
+        fileExt: renderProps.fileExt,
+        supportsDbmlFileSync: renderProps.supportsDbmlFileSync === true,
+        onApplyingDbmlEdit: (applying) => {
+          MainPanel.isApplyingMetaInfoEdit = applying;
+        },
+        onWebviewReady: () => {
+          MainPanel.markWebviewReady();
+        },
+      },
     );
   }
 
-  /**
-   * listen for file changes and update the diagram
-   */
+  private static postToWebview(message: unknown): void {
+    if (MainPanel.currentPanel == null) {
+      return;
+    }
+
+    if (!MainPanel.webviewReady) {
+      MainPanel.outboundQueue.push(message);
+      return;
+    }
+
+    void MainPanel.currentPanel._panel.webview.postMessage(message);
+  }
+
+  private static markWebviewReady(): void {
+    MainPanel.webviewReady = true;
+
+    if (MainPanel.currentPanel == null) {
+      return;
+    }
+
+    for (const message of MainPanel.outboundQueue) {
+      void MainPanel.currentPanel._panel.webview.postMessage(message);
+    }
+    MainPanel.outboundQueue = [];
+
+    MainPanel.republishLastSchema();
+  }
+
+  public static republishLastSchema(): void {
+    const uri = MainPanel.lastPublishedDocumentUri;
+    if (uri == null) return;
+
+    void workspace.openTextDocument(uri).then((doc) => {
+      MainPanel.publishSchema(doc);
+    });
+  }
+
   public static registerDiagramUpdaterOnfFileChange(): void {
     const disposable = workspace.onDidChangeTextDocument(async (event) => {
-      if (event.document.languageId === MainPanel.fileExt) {
-        if (MainPanel.currentPanel?._lastTimeout !== null) {
-          clearTimeout(MainPanel.currentPanel?._lastTimeout);
-        }
+      if (event.document.languageId !== MainPanel.fileExt) return;
+      if (MainPanel.isApplyingMetaInfoEdit) return;
 
-        if (MainPanel.currentPanel !== undefined) {
-          MainPanel.currentPanel._lastTimeout = setTimeout(() => {
-            MainPanel.publishSchema(event.document);
-          }, DIAGRAM_UPDATER_DEBOUNCE_TIME);
-        }
+      if (MainPanel.currentPanel?._lastTimeout !== null) {
+        clearTimeout(MainPanel.currentPanel?._lastTimeout);
+      }
+
+      if (MainPanel.currentPanel !== undefined) {
+        MainPanel.currentPanel._lastTimeout = setTimeout(() => {
+          MainPanel.publishSchema(event.document);
+        }, DIAGRAM_UPDATER_DEBOUNCE_TIME);
       }
     });
 
     MainPanel.currentPanel?._disposables.push(disposable);
   }
 
-  public static render({
-    context,
-    extensionConfigSession,
-    webviewConfig,
-    parser,
-    fileExt,
-  }: ExtensionRenderProps): void {
-    MainPanel.parseCode = parser;
-    MainPanel.fileExt = fileExt;
+  public static render(props: ExtensionRenderProps): void {
+    MainPanel.parseCode = props.parser;
+    MainPanel.fileExt = props.fileExt;
+    MainPanel.supportsDbmlFileSync = props.supportsDbmlFileSync === true;
+
+    const diagnosticId = props.diagnosticSourceId ?? props.fileExt;
+    MainPanel.diagnosticCollection.dispose();
+    MainPanel.diagnosticCollection =
+      languages.createDiagnosticCollection(diagnosticId);
 
     const editor = window.activeTextEditor;
     if (editor == null) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      window.showErrorMessage("No active text editor found.");
+      void window.showErrorMessage("No active text editor found.");
       return;
     }
 
@@ -115,24 +182,27 @@ export class MainPanel {
       MainPanel.currentPanel._panel.reveal(previewColumn);
     } else {
       const panel = window.createWebviewPanel(
-        webviewConfig.name,
-        webviewConfig.title,
+        props.webviewConfig.name,
+        props.webviewConfig.title,
         previewColumn,
         {
           enableScripts: true,
           retainContextWhenHidden: true,
+          localResourceRoots: [
+            Uri.joinPath(props.context.extensionUri, "dist", "webview"),
+          ],
         },
       );
 
       panel.iconPath = {
         dark: Uri.joinPath(
-          context.extensionUri,
+          props.context.extensionUri,
           "assets",
           "icons",
           "preview-dark.svg",
         ),
         light: Uri.joinPath(
-          context.extensionUri,
+          props.context.extensionUri,
           "assets",
           "icons",
           "preview.svg",
@@ -141,8 +211,9 @@ export class MainPanel {
 
       MainPanel.currentPanel = new MainPanel(
         panel,
-        context,
-        extensionConfigSession,
+        props.context,
+        props.extensionConfigSession,
+        props,
       );
       MainPanel.registerDiagramUpdaterOnfFileChange();
     }
@@ -153,8 +224,7 @@ export class MainPanel {
   static getCurrentEditor(): TextEditor | undefined {
     const editor = window.activeTextEditor;
     if (editor == null) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      window.showErrorMessage("No active text editor found.");
+      void window.showErrorMessage("No active text editor found.");
       return;
     }
 
@@ -162,15 +232,16 @@ export class MainPanel {
   }
 
   static publishSchema = (document: TextDocument): void => {
+    MainPanel.lastPublishedDocumentUri = document.uri;
     const code = document.getText();
     try {
       const schema = MainPanel.parseCode(code);
 
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.currentPanel?._panel.webview.postMessage({
+      MainPanel.postToWebview({
         type: "setSchema",
         payload: schema,
         key: document.uri.toString(),
+        rawContent: code,
       });
 
       MainPanel.diagnosticCollection.clear();
@@ -178,8 +249,7 @@ export class MainPanel {
       console.error(JSON.stringify(error));
 
       if (error instanceof DiagnosticError) {
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        this.currentPanel?._panel.webview.postMessage({
+        MainPanel.postToWebview({
           type: "setSchemaErrorMessage",
           message: `${error.message}\n Line : ${error.location.start.line}:${error.location.start.column}`,
           key: document.uri.toString(),
@@ -199,22 +269,21 @@ export class MainPanel {
           ),
         ]);
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        window.showErrorMessage(`${error as any}`);
+        void window.showErrorMessage(`${error as any}`);
       }
     }
   };
 
-  /**
-   * Cleans up and disposes of webview resources when the webview panel is closed.
-   */
-  public dispose(): void {
-    MainPanel.currentPanel = undefined;
+  public static postMessageToWebview(message: unknown): void {
+    MainPanel.postToWebview(message);
+  }
 
-    // Dispose of the current webview panel
+  public dispose(): void {
+    MainPanel.webviewReady = false;
+    MainPanel.outboundQueue = [];
+    MainPanel.currentPanel = undefined;
     this._panel.dispose();
 
-    // Dispose of all disposables (i.e. commands) for the current webview panel
     while (this._disposables.length > 0) {
       const disposable = this._disposables.pop();
       if (disposable != null) {

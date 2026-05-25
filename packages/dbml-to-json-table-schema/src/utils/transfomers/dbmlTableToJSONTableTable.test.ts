@@ -38,10 +38,10 @@ const normalizeTable = (table: TableResult): unknown => {
 
   if (withNormalizedFieldsAndIndexes.headerColor === undefined) {
     const { headerColor: _removed, ...rest } = withNormalizedFieldsAndIndexes;
-    return rest;
+    return { x: 0, y: 0, ...rest };
   }
 
-  return withNormalizedFieldsAndIndexes;
+  return { x: 0, y: 0, ...withNormalizedFieldsAndIndexes };
 };
 
 describe("transform dbml table to json table table", () => {
@@ -55,8 +55,10 @@ describe("transform dbml table to json table table", () => {
       enumSet,
     );
 
-    expect(normalizeTable(result)).toEqual(
-      dbmlTestCodeInJSONTableFormat.tables[0],
-    );
+    expect(normalizeTable(result)).toEqual({
+      x: 0,
+      y: 0,
+      ...dbmlTestCodeInJSONTableFormat.tables[0],
+    });
   });
 });

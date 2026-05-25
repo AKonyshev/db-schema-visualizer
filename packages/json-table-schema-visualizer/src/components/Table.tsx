@@ -31,7 +31,7 @@ import computeFieldDisplayTypeName from "@/utils/getFieldType";
 
 interface TableProps extends JSONTableTable {}
 
-const Table = ({ fields, name }: TableProps) => {
+const Table = ({ fields, name, hasHiddenRefs }: TableProps) => {
   const themeColors = useThemeColors();
   const { detailLevel } = useTableDetailLevel();
   const tableRef = useRef<null | Konva.Group>(null);
@@ -96,9 +96,15 @@ const Table = ({ fields, name }: TableProps) => {
   }, [name, theme]);
 
   const propagateCoordinates = (node: Konva.Group) => {
-    const tableCoords = { x: node.x(), y: node.y() };
+    const existing = tableCoordsStore.getFullCoords(name);
+    const tableCoords = {
+      x: node.x(),
+      y: node.y(),
+      w: existing.w > 0 ? existing.w : tablePreferredWidth,
+      h: existing.h > 0 ? existing.h : tableHeight,
+    };
     eventEmitter.emit(tableDragEventName, tableCoords);
-    tableCoordsStore.setCoords(name, tableCoords);
+    tableCoordsStore.setFullCoords(name, tableCoords);
   };
 
   const handleOnDrag = (event: KonvaEventObject<DragEvent>) => {
@@ -141,6 +147,20 @@ const Table = ({ fields, name }: TableProps) => {
         fill={themeColors.table.bg}
         cornerRadius={PADDINGS.sm}
       />
+      {hasHiddenRefs === true && (
+        <Rect
+          x={-3}
+          y={-3}
+          width={tablePreferredWidth + 6}
+          height={tableHeight + 6}
+          stroke="yellow"
+          strokeWidth={1.5}
+          dash={[6, 4]}
+          fill="transparent"
+          cornerRadius={PADDINGS.sm + 1}
+          listening={false}
+        />
+      )}
 
       <TableHeader title={name} />
       {detailLevel !== TableDetailLevel.HeaderOnly ? (

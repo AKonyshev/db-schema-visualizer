@@ -1,16 +1,25 @@
 import { Parser, type CompilerDiagnostic } from "@dbml/core";
 import { DiagnosticError } from "shared/types/diagnostic";
 
+import { applyMetaInfoToSchema, extractMetaInfo } from "./utils/metainfo";
 import { dbmlSchemaToJSONTableSchema } from "./utils/transfomers/dbmlSchemaToJSONTableSchema";
 import { validateSchema } from "./validators";
 
 import type { JSONTableSchema } from "shared/types/tableSchema";
 
+export { toggleTableRefs, upsertMetaInfoInDbml } from "./utils/metainfo";
+export type { TableCoordEntry } from "./utils/metainfo";
+
 export const parseDBMLToJSON = (dbmlCode: string): JSONTableSchema => {
   try {
     const rawParsedSchema = Parser.parseDBMLToJSON(dbmlCode);
     validateSchema(rawParsedSchema);
-    return dbmlSchemaToJSONTableSchema(rawParsedSchema);
+    const schema = dbmlSchemaToJSONTableSchema(rawParsedSchema);
+    const metaInfo = extractMetaInfo(dbmlCode);
+    if (metaInfo != null) {
+      applyMetaInfoToSchema(schema, metaInfo);
+    }
+    return schema;
   } catch (error) {
     if ("location" in (error as any) && "message" in (error as any)) {
       const _error = error as CompilerDiagnostic;

@@ -10,6 +10,7 @@ An Vscode extension to visualize the database schema in ERD from dbml or prisma 
 
 - Create entity relations diagrams from your DBML/Prisma code
 - Available in light and dark modes
+- DBML extension: MetaInfo layout persistence, SVG/AsciiDoc export, per-table relation visibility, Alt+H ref toggling
 
 ## How to install and use it
 

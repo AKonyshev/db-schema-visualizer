@@ -16,6 +16,8 @@ export const dbmlTableToJSONTableTable = (
 
   return {
     name: getTableFullName(table),
+    x: 0,
+    y: 0,
     headerColor,
     // the note returned by the dbml parser is not string
     // but an object there is an typing error in their package

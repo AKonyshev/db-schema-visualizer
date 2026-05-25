@@ -4,6 +4,17 @@ All notable changes to the "dbml-erd-visualizer" extension will be documented in
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased]
+
+### Added
+
+- MetaInfo block sync: table positions are saved into `/*MetaInfo ... MetaInfo*/` in the DBML file
+- Export diagram to SVG and AsciiDoc
+- Toggle relation visibility per table on the canvas
+- Alt+H command to comment/uncomment refs in DBML for the hovered table
+- Toolbar options: short table names and always-on relation highlighting
+- Hidden refs indicator on tables when MetaInfo marks refs as hidden
+
 ## [0.8.0]
 
 ### Added

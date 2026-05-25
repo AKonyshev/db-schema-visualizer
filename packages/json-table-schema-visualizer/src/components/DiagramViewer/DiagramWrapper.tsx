@@ -1,5 +1,9 @@
 import { Group, Layer, Stage } from "react-konva";
 import { useEffect, useRef, type ReactNode } from "react";
+import {
+  type JSONTableRef,
+  type JSONTableTable,
+} from "shared/types/tableSchema";
 import { type KonvaEventObject } from "konva/lib/Node";
 
 import Toolbar from "../Toolbar/Toolbar";
@@ -17,12 +21,22 @@ import { ScrollDirection } from "@/types/scrollDirection";
 import eventEmitter from "@/events-emitter";
 import { tableCoordsStore } from "@/stores/tableCoords";
 import { useTablesInfo } from "@/hooks/table";
+import { exportStageSVG } from "@/export/svg/svg-exporter";
+import { generateAsciiDoc } from "@/utils/exportAsciiDoc";
 
 interface DiagramWrapperProps {
   children: ReactNode;
+  tables: JSONTableTable[];
+  refs: JSONTableRef[];
+  documentKey?: string | null;
 }
 
-const DiagramWrapper = ({ children }: DiagramWrapperProps) => {
+const DiagramWrapper = ({
+  children,
+  tables,
+  refs,
+  documentKey = null,
+}: DiagramWrapperProps) => {
   const scaleBy = 1.02;
   const { height: windowHeight, width: windowWidth } = useWindowSize();
   const { scrollDirection } = useScrollDirectionContext();
@@ -208,7 +222,15 @@ const DiagramWrapper = ({ children }: DiagramWrapperProps) => {
     };
   }, []);
 
-  const onDownload = () => {
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const onDownloadPng = () => {
     if (stageRef.current == null) return;
     const stage = stageRef.current;
 
@@ -247,6 +269,20 @@ const DiagramWrapper = ({ children }: DiagramWrapperProps) => {
     link.click();
   };
 
+  const onDownloadSvg = async () => {
+    if (stageRef.current == null) return;
+    const result = await exportStageSVG(stageRef.current, true);
+    if (result instanceof Blob) {
+      downloadBlob(result, `diagram-${Date.now()}.svg`);
+    }
+  };
+
+  const onDownloadAdoc = () => {
+    const asciiDoc = generateAsciiDoc(tables, refs);
+    const blob = new Blob([asciiDoc], { type: "text/plain" });
+    downloadBlob(blob, `diagram-${Date.now()}.adoc`);
+  };
+
   return (
     <>
       <Stage
@@ -268,7 +304,16 @@ const DiagramWrapper = ({ children }: DiagramWrapperProps) => {
         </Layer>
       </Stage>
 
-      <Toolbar onFitToView={fitToView} onDownload={onDownload} />
+      <Toolbar
+        onFitToView={fitToView}
+        onDownloadPng={onDownloadPng}
+        onDownloadSvg={() => {
+          void onDownloadSvg();
+        }}
+        onDownloadAdoc={onDownloadAdoc}
+        documentKey={documentKey}
+        singleTableName={tables.length === 1 ? tables[0].name : undefined}
+      />
     </>
   );
 };

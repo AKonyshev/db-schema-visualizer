@@ -1,5 +1,4 @@
 import { commands, type ExtensionContext } from "vscode";
-
 import { parseDBMLToJSON } from "dbml-to-json-table-schema";
 
 import { MainPanel } from "extension-shared/extension/views/panel";
@@ -10,7 +9,6 @@ import {
 } from "@/extension/constants";
 
 export function activate(context: ExtensionContext): void {
-  // Add command to the extension context
   context.subscriptions.push(
     commands.registerCommand(
       "dbml-erd-visualizer.previewDiagrams",
@@ -18,6 +16,9 @@ export function activate(context: ExtensionContext): void {
         lunchExtension(context);
       },
     ),
+    commands.registerCommand("dbml-erd-visualizer.toggleTableRefs", () => {
+      MainPanel.postMessageToWebview({ type: "toggleTableRefs" });
+    }),
   );
 }
 
@@ -31,8 +32,9 @@ const lunchExtension = (context: ExtensionContext): void => {
     },
     parser: parseDBMLToJSON,
     fileExt: "dbml",
+    supportsDbmlFileSync: true,
+    diagnosticSourceId: "dbml-erd-visualizer",
   });
 };
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export function deactivate() {}
+export function deactivate(): void {}

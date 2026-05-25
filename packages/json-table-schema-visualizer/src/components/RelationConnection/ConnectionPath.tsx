@@ -138,7 +138,12 @@ const ConnectionPath = ({
     return normalized < 0 ? normalized + 360 : normalized;
   };
 
+  const alwaysHover =
+    localStorage.getItem("enableAlwaysHover") === "true" ||
+    localStorage.getItem("enableAlwaysHover") === JSON.stringify(true);
+
   const highlight =
+    alwaysHover ||
     hoveredTableName === sourceTableName ||
     hoveredTableName === targetTableName ||
     isHovered;

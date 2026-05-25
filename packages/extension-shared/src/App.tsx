@@ -12,12 +12,16 @@ import {
 } from "../extension/types/webviewCommand";
 
 import { useSchema } from "./hooks/schema";
+import DbmlFileSyncEffects from "./components/DbmlFileSyncEffects";
+import { postToExtension } from "./vscodeApi";
 
 const App = () => {
   const { setTheme, theme, themeColors } = useCreateTheme(
     window.EXTENSION_DEFAULT_CONFIG?.theme,
   );
-  const { schema, key, schemaErrorMessage } = useSchema();
+  const { schema, key, schemaErrorMessage, rawContent } = useSchema();
+  const supportsDbmlFileSync =
+    window.EXTENSION_DEFAULT_CONFIG?.supportsDbmlFileSync === true;
 
   if (schemaErrorMessage !== null && schema === null) {
     return <ErrorMessage message={schemaErrorMessage} />;
@@ -35,13 +39,7 @@ const App = () => {
       message: theme,
     };
 
-    if (window.vsCodeWebviewAPI === undefined) {
-      console.error(
-        "can't send message to extension due vsCodeWebviewAPI global variable is not defined",
-      );
-    } else {
-      window.vsCodeWebviewAPI?.postMessage(updateThemeMessage);
-    }
+    postToExtension(updateThemeMessage);
   };
 
   return (
@@ -53,7 +51,22 @@ const App = () => {
       <ScrollDirectionProvider
         scrollDirection={window.EXTENSION_DEFAULT_CONFIG?.scrollDirection}
       >
-        <DiagramViewer key={key} {...schema} />
+        <DiagramViewer
+          key={key}
+          documentKey={key}
+          {...schema}
+          syncEffects={
+            supportsDbmlFileSync ? (
+              <DbmlFileSyncEffects
+                rawContent={rawContent}
+                documentKey={key}
+                singleTableName={
+                  schema.tables.length === 1 ? schema.tables[0].name : undefined
+                }
+              />
+            ) : null
+          }
+        />
       </ScrollDirectionProvider>
     </ThemeProvider>
   );

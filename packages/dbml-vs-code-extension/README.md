@@ -7,9 +7,11 @@ Allow to visualize the database schema in ERD ( Entity Relationship Diagram ) fr
 ![Demo](https://github.com/BOCOVO/db-schema-visualizer/assets/51182814/a59fd0c0-246d-4f00-be39-9885d88b8b85)
 
 - Create Entity Relationship Diagram from your dbml file
-- Allow you to drag diagrams
+- Allow you to drag diagrams; positions can be stored in a `MetaInfo` block inside the DBML file
 - Support both light and dark themes
 - Multiple display mode. Display all columns, relational columns only or table headers only
+- Export diagram as PNG, SVG, or AsciiDoc
+- Hide/show relations per table on the diagram; use **Alt+H** to comment refs in DBML for the table under the cursor
 
 ## Extension Settings
 

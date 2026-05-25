@@ -12,4 +12,6 @@ export interface ExtensionRenderProps {
   webviewConfig: WebviewConfig;
   parser: (code: string) => JSONTableSchema;
   fileExt: string;
+  supportsDbmlFileSync?: boolean;
+  diagnosticSourceId?: string;
 }

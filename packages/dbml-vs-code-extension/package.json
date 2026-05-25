@@ -39,6 +39,17 @@
           "light": "./assets/icons/open-preview.svg",
           "dark": "./assets/icons/open-preview-dark.svg"
         }
+      },
+      {
+        "command": "dbml-erd-visualizer.toggleTableRefs",
+        "title": "Toggle table references visibility in DBML"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "dbml-erd-visualizer.toggleTableRefs",
+        "key": "alt+h",
+        "when": "resourceLangId == dbml && activeWebviewPanelName == 'dblm-preview-webview'"
       }
     ],
     "menus": {
@@ -88,6 +99,7 @@
     "lint": "eslint src --ext ts",
     "test": "vscode-test",
     "build": "npx vite build && yarn run generate:css",
+    "dev": "npx vite build --watch",
     "package": "yarn run build",
     "preview": "npx vite preview",
     "create:package": "vsce package",
@@ -113,6 +125,7 @@
   },
   "dependencies": {
     "dbml-to-json-table-schema": "0.0.0",
+    "extension-shared": "1.0.0",
     "json-table-schema-visualizer": "1.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

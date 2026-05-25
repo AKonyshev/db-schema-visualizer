@@ -1,3 +1,4 @@
 .eslintrc.js
 .lintstagedrc.js
 *.config.js
+**/export/svg/svgcanvas.esm.js

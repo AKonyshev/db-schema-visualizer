@@ -3,6 +3,7 @@ import {
   type JSONTableRef,
   type JSONTableTable,
 } from "shared/types/tableSchema";
+import { type ReactNode } from "react";
 
 import EmptyTableMessage from "../Messages/EmptyTableMessage";
 import Search from "../Search/Search";
@@ -16,13 +17,22 @@ import MainProviders from "@/providers/MainProviders";
 import TableLevelDetailProvider from "@/providers/TableDetailLevelProvider";
 import { useThemeContext } from "@/hooks/theme";
 import { Theme } from "@/types/theme";
+
 interface DiagramViewerProps {
   tables: JSONTableTable[];
   refs: JSONTableRef[];
   enums: JSONTableEnum[];
+  documentKey?: string | null;
+  syncEffects?: ReactNode;
 }
 
-const DiagramViewer = ({ refs, tables, enums }: DiagramViewerProps) => {
+const DiagramViewer = ({
+  refs,
+  tables,
+  enums,
+  documentKey = null,
+  syncEffects = null,
+}: DiagramViewerProps) => {
   const { theme } = useThemeContext();
 
   if (tables.length === 0) {
@@ -36,10 +46,18 @@ const DiagramViewer = ({ refs, tables, enums }: DiagramViewerProps) => {
           <main
             className={`relative flex flex-col items-center ${theme === Theme.dark ? "dark" : ""}`}
           >
+            {syncEffects}
             <Search tables={tables} />
 
-            <DiagramWrapper>
-              <RelationsConnections refs={refs} />
+            <DiagramWrapper
+              tables={tables}
+              refs={refs}
+              documentKey={documentKey}
+            >
+              <RelationsConnections
+                refs={refs}
+                documentKey={documentKey ?? undefined}
+              />
               <Tables tables={tables} />
             </DiagramWrapper>
           </main>

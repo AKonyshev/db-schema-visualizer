@@ -1,4 +1,5 @@
 import { type DefaultPageConfig } from "@/extension/types/defaultPageConfig";
+import { type SetSchemaCommandPayload } from "@/extension/types/webviewCommand";
 
 export interface WebviewApi<StateType> {
   postMessage: (message: unknown) => void;
@@ -6,10 +7,14 @@ export interface WebviewApi<StateType> {
   setState: <T extends StateType | undefined>(newState: T) => T;
 }
 
+declare function acquireVsCodeApi<StateType>(): WebviewApi<StateType>;
+
 declare global {
   interface Window {
     EXTENSION_DEFAULT_CONFIG?: DefaultPageConfig;
-    vsCodeWebviewAPI: WebviewApi;
+    vsCodeWebviewAPI?: WebviewApi;
+    __SCHEMA_BOOTSTRAP__?: SetSchemaCommandPayload | null;
+    __SCHEMA_ERROR_BOOTSTRAP__?: SetSchemaCommandPayload | null;
   }
 }
 
