@@ -117,13 +117,13 @@ export async function importFromDatabase(
 
     let schemaName = schemas[0];
     if (schemas.length > 1) {
-      const picked = await window.showQuickPick(schemas, {
+      const pickedSchema = await window.showQuickPick(schemas, {
         placeHolder: "Select the schema to import",
       });
-      if (picked === undefined) {
+      if (pickedSchema === undefined) {
         return;
       }
-      schemaName = picked;
+      schemaName = pickedSchema;
     }
 
     const { dbml, droppedCrossSchemaRefs } = schemaToDbml(db, schemaName);

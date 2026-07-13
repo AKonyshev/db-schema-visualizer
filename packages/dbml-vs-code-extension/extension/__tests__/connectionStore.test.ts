@@ -33,4 +33,16 @@ describe("connectionStore", () => {
   test("empty store lists nothing", async () => {
     expect(await listConnections(fakeSecrets())).toEqual([]);
   });
+
+  test("stored JSON `null` does not throw and lists nothing", async () => {
+    const s = fakeSecrets();
+    await s.store("dbml.connections", "null");
+    await expect(listConnections(s)).resolves.toEqual([]);
+  });
+
+  test("stored JSON array does not throw and lists nothing", async () => {
+    const s = fakeSecrets();
+    await s.store("dbml.connections", "[]");
+    await expect(listConnections(s)).resolves.toEqual([]);
+  });
 });

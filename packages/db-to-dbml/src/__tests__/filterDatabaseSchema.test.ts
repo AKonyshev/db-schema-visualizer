@@ -38,4 +38,22 @@ describe("filterDatabaseSchema", () => {
     // audit's cross ref is the same public->audit ref (touches audit) => counted once
     expect(droppedCrossSchemaRefs).toBe(1);
   });
+
+  test("a schema name that is a prefix of another schema does not leak its data", () => {
+    // "pub" is a string-prefix of "public" but not a real schema in the fixture.
+    // Guards against a naive `key.startsWith(schemaName)` (without the trailing
+    // dot) matching "public.*" entries when filtering by "pub".
+    const { schema, droppedCrossSchemaRefs } = filterDatabaseSchema(
+      twoSchemaFixture(),
+      "pub",
+    );
+    expect(schema.tables).toEqual([]);
+    expect(schema.enums).toEqual([]);
+    expect(schema.refs).toEqual([]);
+    expect(droppedCrossSchemaRefs).toBe(0);
+    expect(Object.keys(schema.fields)).toEqual([]);
+    expect(Object.keys(schema.tableConstraints)).toEqual([]);
+    expect(Object.keys(schema.indexes)).toEqual([]);
+    expect(Object.keys(schema.checks)).toEqual([]);
+  });
 });

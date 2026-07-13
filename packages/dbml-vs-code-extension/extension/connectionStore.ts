@@ -10,11 +10,15 @@ async function readAll(secrets: SecretStore): Promise<Record<string, string>> {
   if (raw == null || raw === "") {
     return {};
   }
+  let parsed: unknown;
   try {
-    return JSON.parse(raw) as Record<string, string>;
+    parsed = JSON.parse(raw);
   } catch {
     return {};
   }
+  const isPlainObject =
+    typeof parsed === "object" && parsed !== null && !Array.isArray(parsed);
+  return isPlainObject ? (parsed as Record<string, string>) : {};
 }
 
 async function writeAll(
