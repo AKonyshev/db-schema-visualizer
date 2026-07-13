@@ -24,3 +24,13 @@
 
 1. Open a `.prisma` file and launch diagram preview.
 2. Confirm diagram renders; new toolbar items work; no MetaInfo writes to the schema file.
+
+## Import from database (PostgreSQL)
+
+1. Command palette → **DBML: Import from database**.
+2. Choose **New connection**, enter a `postgres://` connection string.
+3. When multiple schemas exist, pick one from the list.
+4. Choose a save location; confirm the `.dbml` file is written and the diagram opens.
+5. If cross-schema foreign keys exist, confirm the "N cross-schema references were omitted" notice.
+6. Re-run the command; confirm the saved connection appears in the list and works.
+7. Error cases: wrong password, unreachable host, and a non-`postgres://` string each show a clear message with no password leaked.

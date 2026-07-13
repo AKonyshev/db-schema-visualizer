@@ -7,6 +7,7 @@ import {
   WEB_VIEW_NAME,
   WEB_VIEW_TITLE,
 } from "@/extension/constants";
+import { importFromDatabase } from "./importFromDatabase";
 
 export function activate(context: ExtensionContext): void {
   context.subscriptions.push(
@@ -18,6 +19,9 @@ export function activate(context: ExtensionContext): void {
     ),
     commands.registerCommand("dbml-erd-visualizer.toggleTableRefs", () => {
       MainPanel.postMessageToWebview({ type: "toggleTableRefs" });
+    }),
+    commands.registerCommand("dbml-erd-visualizer.importFromDatabase", () => {
+      void importFromDatabase(context);
     }),
   );
 }

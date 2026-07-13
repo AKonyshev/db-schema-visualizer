@@ -43,6 +43,10 @@
       {
         "command": "dbml-erd-visualizer.toggleTableRefs",
         "title": "Toggle table references visibility in DBML"
+      },
+      {
+        "command": "dbml-erd-visualizer.importFromDatabase",
+        "title": "DBML: Import from database"
       }
     ],
     "keybindings": [
@@ -124,6 +128,7 @@
     "vite-tsconfig-paths": "^4.3.2"
   },
   "dependencies": {
+    "db-to-dbml": "0.0.0",
     "dbml-to-json-table-schema": "0.0.0",
     "extension-shared": "1.0.0",
     "json-table-schema-visualizer": "1.0.0",
