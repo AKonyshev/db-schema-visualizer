@@ -1,7 +1,7 @@
 import { type DefaultPageConfig } from "@/extension/types/defaultPageConfig";
 import { type SetSchemaCommandPayload } from "@/extension/types/webviewCommand";
 
-export interface WebviewApi<StateType> {
+export interface WebviewApi<StateType = unknown> {
   postMessage: (message: unknown) => void;
   getState: () => StateType | undefined;
   setState: <T extends StateType | undefined>(newState: T) => T;
