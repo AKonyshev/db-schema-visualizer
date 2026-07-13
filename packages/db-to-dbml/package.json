@@ -1,0 +1,15 @@
+{
+  "name": "db-to-dbml",
+  "version": "0.0.0",
+  "main": "src/index.js",
+  "types": "src/index.js",
+  "license": "MIT",
+  "scripts": {
+    "test": "jest --collectCoverage"
+  },
+  "dependencies": {
+    "@dbml/connector": "^3.14.1",
+    "@dbml/core": "^3.14.1"
+  },
+  "devDependencies": {}
+}
