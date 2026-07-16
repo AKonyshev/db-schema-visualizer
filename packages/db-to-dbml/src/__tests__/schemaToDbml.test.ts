@@ -20,6 +20,9 @@ describe("schemaToDbml", () => {
     expect(result.droppedCrossSchemaRefs).toBe(1);
 
     const passed = generateDbml.mock.calls[0][0];
-    expect(passed.tables.map((t) => t.name)).toEqual(["users", "orders"]);
+    expect((passed.tables ?? []).map((t) => t.name)).toEqual([
+      "users",
+      "orders",
+    ]);
   });
 });

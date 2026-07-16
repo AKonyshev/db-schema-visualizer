@@ -2,6 +2,8 @@ import { filterDatabaseSchema } from "../filterDatabaseSchema";
 
 import { twoSchemaFixture } from "./fixtures";
 
+import type { DatabaseSchema } from "../types";
+
 describe("filterDatabaseSchema", () => {
   test("keeps only tables/enums of the target schema", () => {
     const { schema } = filterDatabaseSchema(twoSchemaFixture(), "public");
@@ -37,6 +39,33 @@ describe("filterDatabaseSchema", () => {
     );
     // audit's cross ref is the same public->audit ref (touches audit) => counted once
     expect(droppedCrossSchemaRefs).toBe(1);
+  });
+
+  test("tolerates sections the connector omits (e.g. missing `checks`) without throwing", () => {
+    // The real @dbml/connector output omits `checks` entirely when a database
+    // has no check constraints (observed against a live TimescaleDB), and may
+    // omit arrays too. filterDatabaseSchema must treat any nullish section as
+    // empty rather than throwing on Object.entries(undefined).
+    const partial = {
+      tables: [{ name: "users", schemaName: "public" }],
+      enums: [{ name: "role", schemaName: "public" }],
+      // refs, tableConstraints, indexes, checks intentionally absent
+      fields: { "public.users": [] },
+    } as unknown as DatabaseSchema;
+
+    const { schema, droppedCrossSchemaRefs } = filterDatabaseSchema(
+      partial,
+      "public",
+    );
+
+    expect(schema.tables.map((t) => t.name)).toEqual(["users"]);
+    expect(schema.enums.map((e) => e.name)).toEqual(["role"]);
+    expect(schema.refs).toEqual([]);
+    expect(Object.keys(schema.fields)).toEqual(["public.users"]);
+    expect(schema.tableConstraints).toEqual({});
+    expect(schema.indexes).toEqual({});
+    expect(schema.checks).toEqual({});
+    expect(droppedCrossSchemaRefs).toBe(0);
   });
 
   test("a schema name that is a prefix of another schema does not leak its data", () => {
