@@ -19,9 +19,7 @@ import {
   renderDiffMarkdown,
 } from "schema-diff";
 
-import { getConnection, listConnections } from "./connectionStore";
-
-const NEW_CONNECTION_LABEL = "$(add) New connection";
+import { pickDatabaseConnection } from "./pickDatabaseConnection";
 
 function connectionErrorMessage(error: DbImportError): string {
   switch (error.code) {
@@ -38,32 +36,9 @@ function connectionErrorMessage(error: DbImportError): string {
   }
 }
 
-async function pickConnectionString(
-  context: ExtensionContext,
-): Promise<string | undefined> {
-  const saved = await listConnections(context.secrets);
-  const choice = await window.showQuickPick([...saved, NEW_CONNECTION_LABEL], {
-    placeHolder: "Select a saved connection or create a new one",
-  });
-  if (choice === undefined) {
-    return undefined;
-  }
-
-  if (choice !== NEW_CONNECTION_LABEL) {
-    return getConnection(context.secrets, choice);
-  }
-
-  const entered = await window.showInputBox({
-    prompt: "PostgreSQL connection string",
-    placeHolder: "postgres://user:password@host:5432/database",
-    password: true,
-    ignoreFocusOut: true,
-  });
-  return entered === "" ? undefined : entered;
-}
-
 export async function compareWithDatabase(
   context: ExtensionContext,
+  preselected?: string,
 ): Promise<void> {
   const editor = window.activeTextEditor;
   if (editor == null || editor.document.languageId !== "dbml") {
@@ -74,9 +49,15 @@ export async function compareWithDatabase(
   }
   const dbmlText = editor.document.getText();
 
-  const connectionString = await pickConnectionString(context);
-  if (connectionString == null || connectionString === "") {
-    return;
+  let connectionString: string;
+  if (preselected != null && preselected !== "") {
+    connectionString = preselected;
+  } else {
+    const picked = await pickDatabaseConnection(context);
+    if (picked === undefined) {
+      return;
+    }
+    connectionString = picked.connectionString;
   }
 
   try {

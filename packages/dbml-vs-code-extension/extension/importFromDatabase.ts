@@ -14,13 +14,8 @@ import {
   schemaToDbml,
 } from "db-to-dbml";
 
-import {
-  getConnection,
-  listConnections,
-  saveConnection,
-} from "./connectionStore";
-
-const NEW_CONNECTION_LABEL = "$(add) New connection";
+import { saveConnection } from "./connectionStore";
+import { pickDatabaseConnection } from "./pickDatabaseConnection";
 
 function messageForError(error: DbImportError): string {
   switch (error.code) {
@@ -35,40 +30,6 @@ function messageForError(error: DbImportError): string {
     default:
       return "Failed to import the schema from the database.";
   }
-}
-
-interface PickedConnection {
-  connectionString: string;
-  isNew: boolean;
-}
-
-async function pickConnectionString(
-  context: ExtensionContext,
-): Promise<PickedConnection | undefined> {
-  const saved = await listConnections(context.secrets);
-  const choice = await window.showQuickPick([...saved, NEW_CONNECTION_LABEL], {
-    placeHolder: "Select a saved connection or create a new one",
-  });
-  if (choice === undefined) {
-    return undefined;
-  }
-
-  if (choice !== NEW_CONNECTION_LABEL) {
-    const existing = await getConnection(context.secrets, choice);
-    return existing == null
-      ? undefined
-      : { connectionString: existing, isNew: false };
-  }
-
-  const entered = await window.showInputBox({
-    prompt: "PostgreSQL connection string",
-    placeHolder: "postgres://user:password@host:5432/database",
-    password: true,
-    ignoreFocusOut: true,
-  });
-  return entered == null || entered === ""
-    ? undefined
-    : { connectionString: entered, isNew: true };
 }
 
 async function maybeSaveConnection(
@@ -93,12 +54,20 @@ async function maybeSaveConnection(
 
 export async function importFromDatabase(
   context: ExtensionContext,
+  preselected?: string,
 ): Promise<void> {
-  const picked = await pickConnectionString(context);
-  if (picked === undefined) {
-    return;
+  let connectionString: string;
+  let isNew = false;
+  if (preselected != null && preselected !== "") {
+    connectionString = preselected;
+  } else {
+    const picked = await pickDatabaseConnection(context);
+    if (picked === undefined) {
+      return;
+    }
+    connectionString = picked.connectionString;
+    isNew = picked.isNew;
   }
-  const { connectionString, isNew } = picked;
 
   try {
     const db = await window.withProgress(
