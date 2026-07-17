@@ -3,3 +3,6 @@ dist/
 *storybook.log
 .DS_Store
 coverage/
+# design/plan artifacts — never committed in this repo
+docs/superpowers/
+.superpowers/
