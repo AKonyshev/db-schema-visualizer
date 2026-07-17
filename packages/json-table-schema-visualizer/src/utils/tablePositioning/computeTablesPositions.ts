@@ -21,13 +21,19 @@ const computeTablesPositions = (
     return {};
   });
 
+  const nodeNames = new Set<string>();
   tables.forEach((table) => {
     const { height, width } = computeTableDimension(table);
     graph.setNode(table.name, { width, height });
+    nodeNames.add(table.name);
   });
 
   refs.forEach((ref) => {
-    graph.setEdge(ref.endpoints[0].tableName, ref.endpoints[1].tableName);
+    const source = ref.endpoints[0].tableName;
+    const target = ref.endpoints[1].tableName;
+    if (source !== target && nodeNames.has(source) && nodeNames.has(target)) {
+      graph.setEdge(source, target);
+    }
   });
 
   dagre.layout(graph);
