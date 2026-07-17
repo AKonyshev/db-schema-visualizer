@@ -192,7 +192,7 @@
     "pretest": "yarn run lint",
     "lint": "eslint extension --ext ts",
     "test": "jest",
-    "build": "npx vite build && yarn run generate:css",
+    "build": "npx vite build",
     "dev": "npx vite build --watch",
     "package": "yarn run build",
     "preview": "npx vite preview",
