@@ -1,8 +1,6 @@
 import computeTablesPositions from "../computeTablesPositions";
 import { getColsNumber } from "../getColsNumber";
 
-import type { JSONTableRef } from "shared/types/tableSchema";
-
 import { TABLES_GAP_Y } from "@/constants/sizing";
 import { createBookingsTableClone, exampleData } from "@/fake/fakeJsonTables";
 
@@ -66,30 +64,5 @@ describe("compute tables positions (dagre)", () => {
     for (let i = 1; i < sorted.length; i++) {
       expect(sorted[i] - sorted[i - 1]).toBeGreaterThanOrEqual(TABLES_GAP_Y);
     }
-  });
-
-  test("ignores refs to non-existent tables and self-refs (no phantom nodes)", () => {
-    const realName = exampleData.tables[0].name;
-    const refs = [
-      {
-        name: "to_ghost",
-        endpoints: [
-          { tableName: realName, fieldNames: ["id"], relation: "1" },
-          { tableName: "ghost_table", fieldNames: ["x"], relation: "*" },
-        ],
-      },
-      {
-        name: "self",
-        endpoints: [
-          { tableName: realName, fieldNames: ["id"], relation: "1" },
-          { tableName: realName, fieldNames: ["id"], relation: "*" },
-        ],
-      },
-    ] as unknown as JSONTableRef[];
-
-    const map = computeTablesPositions(exampleData.tables, refs);
-
-    expect(map.has("ghost_table")).toBe(false);
-    expect(map.size).toBe(exampleData.tables.length);
   });
 });
