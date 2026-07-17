@@ -81,8 +81,15 @@ describe("diffSchemas", () => {
     expect(d.enumValueDiffs).toEqual([
       { enumName: "e", onlyInDbml: ["y"], onlyInDatabase: ["z"] },
     ]);
-    expect(d.refsOnlyInDbml).toHaveLength(1);
-    expect(d.refsOnlyInDatabase).toHaveLength(0);
+    expect(d.refsOnlyInDbml).toEqual([
+      {
+        fromTable: "a",
+        fromColumns: ["id"],
+        toTable: "b",
+        toColumns: ["a_id"],
+      },
+    ]);
+    expect(d.refsOnlyInDatabase).toEqual([]);
     expect(d.indexDiffs).toEqual([
       {
         table: "a",
@@ -90,6 +97,22 @@ describe("diffSchemas", () => {
         onlyInDatabase: [{ columns: ["id"], unique: false }],
       },
     ]);
+    expect(d.identical).toBe(false);
+  });
+
+  test("reports enums entirely absent in one schema", () => {
+    const model = schema(
+      [{ name: "a", cols: [col({ name: "id" })] }],
+      [{ name: "only_model", values: ["x"] }],
+    );
+    const db = schema(
+      [{ name: "a", cols: [col({ name: "id" })] }],
+      [{ name: "only_db", values: ["y"] }],
+    );
+    const d = diffSchemas(model, db);
+    expect(d.enumsOnlyInDbml).toEqual(["only_model"]);
+    expect(d.enumsOnlyInDatabase).toEqual(["only_db"]);
+    expect(d.enumValueDiffs).toEqual([]);
     expect(d.identical).toBe(false);
   });
 

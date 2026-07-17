@@ -15,6 +15,12 @@ const onlyIn = (a: Iterable<string>, b: Set<string>): string[] =>
 const commonSorted = (a: Set<string>, b: Set<string>): string[] =>
   [...a].filter((x) => b.has(x)).sort();
 
+function mustGet<K, V>(map: Map<K, V>, key: K): V {
+  const v = map.get(key);
+  if (v === undefined) throw new Error(`missing key: ${String(key)}`);
+  return v;
+}
+
 export function diffSchemas(
   model: CanonSchema,
   database: CanonSchema,
@@ -28,19 +34,15 @@ export function diffSchemas(
   const columnDiffs: TableColumnDiff[] = [];
   const indexDiffs: IndexDiff[] = [];
   for (const table of commonSorted(mTables, dTables)) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const mCols = model.tables.get(table)!.columns;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const dCols = database.tables.get(table)!.columns;
+    const mCols = mustGet(model.tables, table).columns;
+    const dCols = mustGet(database.tables, table).columns;
     const mColNames = new Set(mCols.keys());
     const dColNames = new Set(dCols.keys());
 
     const changed: ColumnChange[] = [];
     for (const name of commonSorted(mColNames, dColNames)) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const m = mCols.get(name)!;
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const d = dCols.get(name)!;
+      const m = mustGet(mCols, name);
+      const d = mustGet(dCols, name);
       const differs: Array<"type" | "nullable" | "pk"> = [];
       if (m.type !== d.type) differs.push("type");
       if (m.nullable !== d.nullable) differs.push("nullable");
@@ -59,13 +61,11 @@ export function diffSchemas(
       columnDiffs.push({ table, onlyInDbml, onlyInDatabase, changed });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const mIx = new Map(
-      model.tables.get(table)!.indexes.map((i) => [indexKey(i), i]),
+      mustGet(model.tables, table).indexes.map((i) => [indexKey(i), i]),
     );
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const dIx = new Map(
-      database.tables.get(table)!.indexes.map((i) => [indexKey(i), i]),
+      mustGet(database.tables, table).indexes.map((i) => [indexKey(i), i]),
     );
     const ixOnlyDbml = [...mIx].filter(([k]) => !dIx.has(k)).map(([, i]) => i);
     const ixOnlyDb = [...dIx].filter(([k]) => !mIx.has(k)).map(([, i]) => i);
@@ -84,10 +84,8 @@ export function diffSchemas(
   const enumsOnlyInDatabase = onlyIn(dEnums, mEnums);
   const enumValueDiffs: EnumValueDiff[] = [];
   for (const enumName of commonSorted(mEnums, dEnums)) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const mv = new Set(model.enums.get(enumName)!.values);
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const dv = new Set(database.enums.get(enumName)!.values);
+    const mv = new Set(mustGet(model.enums, enumName).values);
+    const dv = new Set(mustGet(database.enums, enumName).values);
     const onlyInDbml = onlyIn(mv, dv);
     const onlyInDatabase = onlyIn(dv, mv);
     if (onlyInDbml.length > 0 || onlyInDatabase.length > 0) {
