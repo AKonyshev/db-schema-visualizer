@@ -21,6 +21,12 @@ interface TableHeaderProps {
   title: string;
 }
 
+const RELATIONS_ICON_GUTTER = 22;
+const RELATIONS_ICON_HIT = 18;
+const RELATIONS_GLYPH_DX = 5;
+const RELATIONS_GLYPH_R = 2.4;
+const RELATIONS_GLYPH_STRIKE = 7;
+
 const setCursor = (
   event: KonvaEventObject<MouseEvent>,
   cursor: string,
@@ -49,7 +55,7 @@ const TableHeader = ({ title }: TableHeaderProps) => {
 
   // icon geometry: a small relation glyph on the right of the header row
   const headerCenterY = TABLE_COLOR_HEIGHT + COLUMN_HEIGHT / 2;
-  const iconCenterX = tablePreferredWidth - PADDINGS.md;
+  const iconCenterX = tablePreferredWidth - RELATIONS_ICON_GUTTER / 2;
   const glyphColor = themeColors.tableHeader.fg;
 
   const handleIconClick = (
@@ -79,7 +85,7 @@ const TableHeader = ({ title }: TableHeaderProps) => {
         text={titleDisplay}
         y={TABLE_COLOR_HEIGHT}
         fill={themeColors.tableHeader.fg}
-        width={tablePreferredWidth}
+        width={tablePreferredWidth - RELATIONS_ICON_GUTTER}
         height={COLUMN_HEIGHT}
         align="center"
         strokeWidth={PADDINGS.xs}
@@ -91,6 +97,9 @@ const TableHeader = ({ title }: TableHeaderProps) => {
         <Group
           onClick={handleIconClick}
           onTap={handleIconClick}
+          onMouseDown={(e) => {
+            e.cancelBubble = true;
+          }}
           onMouseEnter={(e) => {
             setCursor(e, "pointer");
           }}
@@ -102,43 +111,43 @@ const TableHeader = ({ title }: TableHeaderProps) => {
           {/* transparent hit area (Konva hit-tests a set fill regardless of
               alpha, so `fill="transparent"` makes this Rect clickable) */}
           <Rect
-            x={iconCenterX - 9}
-            y={headerCenterY - 9}
-            width={18}
-            height={18}
+            x={iconCenterX - RELATIONS_ICON_HIT / 2}
+            y={headerCenterY - RELATIONS_ICON_HIT / 2}
+            width={RELATIONS_ICON_HIT}
+            height={RELATIONS_ICON_HIT}
             fill="transparent"
           />
           {/* relation glyph: two nodes joined by a line */}
           <Line
             points={[
-              iconCenterX - 5,
+              iconCenterX - RELATIONS_GLYPH_DX,
               headerCenterY,
-              iconCenterX + 5,
+              iconCenterX + RELATIONS_GLYPH_DX,
               headerCenterY,
             ]}
             stroke={glyphColor}
             strokeWidth={1.5}
           />
           <Circle
-            x={iconCenterX - 5}
+            x={iconCenterX - RELATIONS_GLYPH_DX}
             y={headerCenterY}
-            radius={2.4}
+            radius={RELATIONS_GLYPH_R}
             fill={glyphColor}
           />
           <Circle
-            x={iconCenterX + 5}
+            x={iconCenterX + RELATIONS_GLYPH_DX}
             y={headerCenterY}
-            radius={2.4}
+            radius={RELATIONS_GLYPH_R}
             fill={glyphColor}
           />
           {/* strike-through when hidden */}
           {isHidden && (
             <Line
               points={[
-                iconCenterX - 7,
-                headerCenterY - 7,
-                iconCenterX + 7,
-                headerCenterY + 7,
+                iconCenterX - RELATIONS_GLYPH_STRIKE,
+                headerCenterY - RELATIONS_GLYPH_STRIKE,
+                iconCenterX + RELATIONS_GLYPH_STRIKE,
+                headerCenterY + RELATIONS_GLYPH_STRIKE,
               ]}
               stroke={glyphColor}
               strokeWidth={1.5}
