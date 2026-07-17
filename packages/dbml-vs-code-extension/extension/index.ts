@@ -23,6 +23,9 @@ export function activate(context: ExtensionContext): void {
 
   context.subscriptions.push(
     window.registerTreeDataProvider("dbml-erd-visualizer.panel", treeProvider),
+    context.secrets.onDidChange(() => {
+      treeProvider.refresh();
+    }),
     commands.registerCommand(
       "dbml-erd-visualizer.previewDiagrams",
       async () => {

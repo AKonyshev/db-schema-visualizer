@@ -104,6 +104,20 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "dbml-erd-visualizer.importFromConnection",
+          "when": "false"
+        },
+        {
+          "command": "dbml-erd-visualizer.compareWithConnection",
+          "when": "false"
+        },
+        {
+          "command": "dbml-erd-visualizer.deleteConnection",
+          "when": "false"
+        }
+      ],
       "editor/title": [
         {
           "when": "resourceLangId == dbml",
