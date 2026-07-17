@@ -19,7 +19,7 @@ A VS Code extension to visualize database schemas as ERD diagrams from DBML or P
 
 ### Marketplace (this fork)
 
-- [DBML extension](https://marketplace.visualstudio.com/items?itemName=konyshevav.dbml-erd-visualizer)
+- [DBML extension](https://marketplace.visualstudio.com/items?itemName=konyshevav.dbml-schema-visualizer)
 - [Prisma extension](https://marketplace.visualstudio.com/items?itemName=konyshevav.prisma-erd-visualizer)
 
 ### Upstream (original author)

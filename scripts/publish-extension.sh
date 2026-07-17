@@ -8,12 +8,16 @@
 #   ./scripts/publish-extension.sh dbml --package    # build .vsix only (no upload)
 #   ./scripts/publish-extension.sh dbml --skip-tests # publish without running tests
 #
-# Requires VSCE_PAT (Marketplace → Manage) or run: npx @vscode/vsce login konyshevav
+# Auth (pick one):
+#   npx @vscode/vsce login konyshevav   # stores PAT in macOS Keychain
+#   export VSCE_PAT="..."               # or pass token via env
+#
+# Publisher is read from each extension's package.json — do not pass -p to publish
+# unless you mean a Personal Access Token.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PUBLISHER="${VSCE_PUBLISHER:-konyshevav}"
 VSCE=(npx --yes @vscode/vsce)
 
 PACKAGE_ONLY=false
@@ -86,14 +90,16 @@ publish_one() {
     "${VSCE[@]}" package --out "$ROOT/dist"
     echo "    wrote $ROOT/dist/${name}-*.vsix (see dist/)"
   else
-    if [[ -z "${VSCE_PAT:-}" ]]; then
-      echo "VSCE_PAT is not set. Create a PAT with Marketplace → Manage scope," >&2
-      echo "or run: npx @vscode/vsce login $PUBLISHER" >&2
-      exit 1
+    local pkg_publisher
+    pkg_publisher="$(node -p "require('./package.json').publisher")"
+    echo "    publishing as $pkg_publisher..."
+    if [[ -n "${VSCE_PAT:-}" ]]; then
+      "${VSCE[@]}" publish -p "$VSCE_PAT"
+    else
+      # Uses PAT from `vsce login` (Keychain) via package.json publisher field
+      "${VSCE[@]}" publish
     fi
-    echo "    publishing to $PUBLISHER..."
-    "${VSCE[@]}" publish -p "$PUBLISHER"
-    echo "    published $PUBLISHER.$(node -p "require('./package.json').name")@$version"
+    echo "    published $pkg_publisher.$(node -p "require('./package.json').name")@$version"
   fi
 
   popd >/dev/null

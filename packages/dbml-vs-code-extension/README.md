@@ -2,7 +2,7 @@
 
 Visualize a database schema as an entity-relationship diagram from a `.dbml` file in VS Code.
 
-> **Fork.** Published as [konyshevav.dbml-erd-visualizer](https://marketplace.visualstudio.com/items?itemName=konyshevav.dbml-erd-visualizer). Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) ([MIT License](./LICENCE)).
+> **Fork.** Published as [konyshevav.dbml-schema-visualizer](https://marketplace.visualstudio.com/items?itemName=konyshevav.dbml-schema-visualizer). Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) ([MIT License](./LICENCE)).
 
 ## Features
 
