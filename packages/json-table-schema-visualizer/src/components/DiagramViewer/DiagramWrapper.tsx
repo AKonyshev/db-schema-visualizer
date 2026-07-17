@@ -28,15 +28,9 @@ interface DiagramWrapperProps {
   children: ReactNode;
   tables: JSONTableTable[];
   refs: JSONTableRef[];
-  documentKey?: string | null;
 }
 
-const DiagramWrapper = ({
-  children,
-  tables,
-  refs,
-  documentKey = null,
-}: DiagramWrapperProps) => {
+const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   const scaleBy = 1.02;
   const { height: windowHeight, width: windowWidth } = useWindowSize();
   const { scrollDirection } = useScrollDirectionContext();
@@ -311,8 +305,6 @@ const DiagramWrapper = ({
           void onDownloadSvg();
         }}
         onDownloadAdoc={onDownloadAdoc}
-        documentKey={documentKey}
-        singleTableName={tables.length === 1 ? tables[0].name : undefined}
       />
     </>
   );

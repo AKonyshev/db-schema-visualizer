@@ -49,11 +49,7 @@ const DiagramViewer = ({
             {syncEffects}
             <Search tables={tables} />
 
-            <DiagramWrapper
-              tables={tables}
-              refs={refs}
-              documentKey={documentKey}
-            >
+            <DiagramWrapper tables={tables} refs={refs}>
               <RelationsConnections
                 refs={refs}
                 documentKey={documentKey ?? undefined}

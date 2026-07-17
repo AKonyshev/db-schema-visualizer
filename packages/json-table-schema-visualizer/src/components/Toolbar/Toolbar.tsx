@@ -8,7 +8,6 @@ import FitToViewButton from "./FitToView/FitToView";
 import ExportButton from "./Export/Export";
 import ExportSvgBtn from "./ExportSvg/ExportSvgBtn";
 import ExportAdocBtn from "./ExportAdoc/ExportAdocBtn";
-import ToggleRelations from "./ToggleRelations/ToggleRelations";
 import ShortTableNameSetting from "./ShortTableNameSetting/ShortTableNameSetting";
 import EnableAlwaysHover from "./EnableAlwaysHover/EnableAlwaysHover";
 
@@ -17,15 +16,11 @@ const Toolbar = ({
   onDownloadPng,
   onDownloadSvg,
   onDownloadAdoc,
-  documentKey,
-  singleTableName,
 }: {
   onFitToView: () => void;
   onDownloadPng: () => void;
   onDownloadSvg: () => void;
   onDownloadAdoc: () => void;
-  documentKey: string | null;
-  singleTableName?: string;
 }) => {
   const [, setRefresh] = useState(0);
   const refresh = () => {
@@ -37,10 +32,6 @@ const Toolbar = ({
       <AutoArrangeTableButton />
       <DetailLevelToggle />
       <FitToViewButton onClick={onFitToView} />
-      <ToggleRelations
-        documentKey={documentKey}
-        singleTableName={singleTableName}
-      />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
       <ExportButton onDownload={onDownloadPng} />
       <ExportSvgBtn onClick={onDownloadSvg} />
