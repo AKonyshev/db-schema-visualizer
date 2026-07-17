@@ -1,4 +1,4 @@
-import { commands, type ExtensionContext } from "vscode";
+import { commands, window, type ExtensionContext } from "vscode";
 import { parseDBMLToJSON } from "dbml-to-json-table-schema";
 
 import { MainPanel } from "extension-shared/extension/views/panel";
@@ -9,9 +9,13 @@ import {
 } from "@/extension/constants";
 import { importFromDatabase } from "./importFromDatabase";
 import { compareWithDatabase } from "./compareWithDatabase";
+import { ConnectionsTreeProvider } from "./connectionsTreeProvider";
 
 export function activate(context: ExtensionContext): void {
+  const treeProvider = new ConnectionsTreeProvider(context.secrets);
+
   context.subscriptions.push(
+    window.registerTreeDataProvider("dbml-erd-visualizer.panel", treeProvider),
     commands.registerCommand(
       "dbml-erd-visualizer.previewDiagrams",
       async () => {

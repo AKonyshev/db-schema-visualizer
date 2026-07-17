@@ -15,6 +15,23 @@
   "activationEvents": [],
   "main": "./dist/extension/index.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "dbmlSchemaVisualizer",
+          "title": "DBML Schema Visualizer",
+          "icon": "assets/icons/panel.svg"
+        }
+      ]
+    },
+    "views": {
+      "dbmlSchemaVisualizer": [
+        {
+          "id": "dbml-erd-visualizer.panel",
+          "name": "DBML"
+        }
+      ]
+    },
     "languages": [
       {
         "id": "dbml",
