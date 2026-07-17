@@ -4,7 +4,8 @@
   "description": "A VsCode extension that lets you visualize the ERD (Entity Relationship Diagram) of your prisma database structure.",
   "version": "0.6.0",
   "icon": "assets/logo.png",
-  "publisher": "bocovo",
+  "publisher": "konyshevav",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.87.0"
   },
@@ -103,6 +104,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/BOCOVO/db-schema-visualizer"
+    "url": "https://github.com/AKonyshev/db-schema-visualizer.git"
+  },
+  "homepage": "https://github.com/AKonyshev/db-schema-visualizer#readme",
+  "bugs": {
+    "url": "https://github.com/AKonyshev/db-schema-visualizer/issues"
   }
 }

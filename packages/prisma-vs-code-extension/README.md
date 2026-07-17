@@ -1,30 +1,35 @@
 # Prisma ERD Visualizer
 
-Allow to visualize the database schema in ERD ( Entity Relationship Diagram ) from .prisma file in your vscode.
+Visualize a database schema as an entity-relationship diagram from a `.prisma` file in VS Code.
+
+> **Fork.** Published as [konyshevav.prisma-erd-visualizer](https://marketplace.visualstudio.com/items?itemName=konyshevav.prisma-erd-visualizer). Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) ([MIT License](./LICENCE)).
 
 ## Features
 
 ![Demo](https://github.com/user-attachments/assets/12fbebff-afc7-4ef3-97b8-5ee844c93d3c)
 
-- Create Entity Relationship Diagram from your prisma file
-- Allow you to drag diagrams
-- Support both light and dark themes
+- Entity-relationship diagram from your Prisma schema
+- Drag tables on the canvas
+- Light and dark themes
 
 ## Tutorial
 
-This [tutorial](https://juste.bocovo.me/visualize-the-entity-relationship-diagram-from-prisma-code-in-the-vscode-editor) shows how to use it.
+The upstream [Prisma ERD tutorial](https://juste.bocovo.me/visualize-the-entity-relationship-diagram-from-prisma-code-in-the-vscode-editor) covers the core diagram workflow.
 
-## Extension Settings
+## Extension settings
 
-The following Visual Studio Code settings are available for the extension.
+- `prismaERDPreviewer.preferredTheme` — `light` or `dark` (default: `dark`)
+- `prismaERDPreviewer.scrollDirection` — `up-out` or `up-in` (default: `up-out`)
 
-- `prismaERDPreviewer.preferredTheme`: This configuration define the theme to use. There are two different theme the `light` and `dark`. The default theme is `dark`.
-- `prismaERDPreviewer.scrollDirection`: This configuration define the scroll direction. There are two different scroll direction the `up-out` and `up-in`. The default scroll direction is `up-out`.
+## Release notes
 
-## Release Notes
+[CHANGELOG.md](./CHANGELOG.md)
 
-Release notes are [here](./CHANGELOG.md)
+## Attribution
 
-## Author
+|               |                                                                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Upstream**  | [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) by [@BOCOVO](https://github.com/BOCOVO)             |
+| **This fork** | [AKonyshev/db-schema-visualizer](https://github.com/AKonyshev/db-schema-visualizer) by [@AKonyshev](https://github.com/AKonyshev) |
 
-[@BOCOVO](https://github.com/BOCOVO)
+Licensed under the [MIT License](./LICENCE).
