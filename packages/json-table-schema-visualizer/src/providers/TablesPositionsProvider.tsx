@@ -19,7 +19,7 @@ const TablesPositionsProvider = ({
   children,
 }: TablesPositionsProviderProps) => {
   const resetPositions = () => {
-    tableCoordsStore.resetPositions(tables, refs);
+    tableCoordsStore.resetPositions(tables, refs, { force: true });
   };
 
   const contextValue = useMemo(() => ({ resetPositions }), [resetPositions]);

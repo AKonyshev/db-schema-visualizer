@@ -31,43 +31,45 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     };
   }
 
-  public resetPositions(tables: JSONTableTable[], refs: JSONTableRef[]): void {
-    const recoveredStore = this.retrieve(this.currentStoreKey) as Array<
-      [string, XYWHPosition]
-    > | null;
-
+  public resetPositions(
+    tables: JSONTableTable[],
+    refs: JSONTableRef[],
+    options?: { force?: boolean },
+  ): void {
     const tablesPos = computeTablesPositions(tables, refs);
 
-    if (recoveredStore !== null && Array.isArray(recoveredStore)) {
-      const recoveredMap = new Map(recoveredStore);
-      for (const [tableName] of tablesPos) {
-        if (recoveredMap.has(tableName)) {
-          const rc = recoveredMap.get(tableName);
-          const computed = tablesPos.get(tableName);
-          if (rc != null && computed != null) {
-            tablesPos.set(tableName, {
-              ...rc,
-              w: computed.w,
-              h: computed.h,
-            });
+    if (options?.force !== true) {
+      const recoveredStore = this.retrieve(this.currentStoreKey) as Array<
+        [string, XYWHPosition]
+      > | null;
+
+      if (recoveredStore !== null && Array.isArray(recoveredStore)) {
+        const recoveredMap = new Map(recoveredStore);
+        for (const [tableName] of tablesPos) {
+          if (recoveredMap.has(tableName)) {
+            const rc = recoveredMap.get(tableName);
+            const computed = tablesPos.get(tableName);
+            if (rc != null && computed != null) {
+              tablesPos.set(tableName, { ...rc, w: computed.w, h: computed.h });
+            }
           }
         }
-      }
-    } else {
-      const hasMetaInfo = tables.some((t) => t.fromMetaInfo === true);
-      if (hasMetaInfo) {
-        tables.forEach((table) => {
-          if (table.fromMetaInfo === true && tablesPos.has(table.name)) {
-            const existing = tablesPos.get(table.name);
-            if (existing == null) return;
-            tablesPos.set(table.name, {
-              x: table.x,
-              y: table.y,
-              w: existing.w,
-              h: existing.h,
-            });
-          }
-        });
+      } else {
+        const hasMetaInfo = tables.some((t) => t.fromMetaInfo === true);
+        if (hasMetaInfo) {
+          tables.forEach((table) => {
+            if (table.fromMetaInfo === true && tablesPos.has(table.name)) {
+              const existing = tablesPos.get(table.name);
+              if (existing == null) return;
+              tablesPos.set(table.name, {
+                x: table.x,
+                y: table.y,
+                w: existing.w,
+                h: existing.h,
+              });
+            }
+          });
+        }
       }
     }
 
