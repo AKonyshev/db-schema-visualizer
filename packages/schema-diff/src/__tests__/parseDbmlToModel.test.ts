@@ -59,9 +59,15 @@ describe("parseDbmlToModel", () => {
   });
 
   test("throws DbmlParseError with line/column on invalid DBML", () => {
-    // `[delete: on delete set null]` is invalid (should be `set null`)
-    const bad = `Table "s.a" { "id" uuid }
-Table "s.b" { "a_id" uuid }
+    // Valid table bodies, but the FK action `[delete: on delete set null]`
+    // is malformed (DBML expects `set null`, not `on delete set null`).
+    // This is the real-world failure seen in production .dbml files.
+    const bad = `Table "s.a" {
+  "id" uuid
+}
+Table "s.b" {
+  "a_id" uuid
+}
 Ref: "s.a"."id" < "s.b"."a_id" [delete: on delete set null]`;
     try {
       parseDbmlToModel(bad);
