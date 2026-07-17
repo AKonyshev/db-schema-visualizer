@@ -47,6 +47,10 @@
       {
         "command": "dbml-erd-visualizer.importFromDatabase",
         "title": "DBML: Import from database"
+      },
+      {
+        "command": "dbml-erd-visualizer.compareWithDatabase",
+        "title": "DBML: Compare with database"
       }
     ],
     "keybindings": [
@@ -134,6 +138,7 @@
     "json-table-schema-visualizer": "1.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "schema-diff": "0.0.0",
     "shared": "0.0.0"
   },
   "repository": {

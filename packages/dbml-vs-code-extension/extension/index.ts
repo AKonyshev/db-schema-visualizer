@@ -8,6 +8,7 @@ import {
   WEB_VIEW_TITLE,
 } from "@/extension/constants";
 import { importFromDatabase } from "./importFromDatabase";
+import { compareWithDatabase } from "./compareWithDatabase";
 
 export function activate(context: ExtensionContext): void {
   context.subscriptions.push(
@@ -22,6 +23,9 @@ export function activate(context: ExtensionContext): void {
     }),
     commands.registerCommand("dbml-erd-visualizer.importFromDatabase", () => {
       void importFromDatabase(context);
+    }),
+    commands.registerCommand("dbml-erd-visualizer.compareWithDatabase", () => {
+      void compareWithDatabase(context);
     }),
   );
 }

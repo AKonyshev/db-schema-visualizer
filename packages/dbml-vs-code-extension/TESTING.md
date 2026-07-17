@@ -34,3 +34,11 @@
 5. If cross-schema foreign keys exist, confirm the "N cross-schema references were omitted" notice.
 6. Re-run the command; confirm the saved connection appears in the list and works.
 7. Error cases: wrong password, unreachable host, and a non-`postgres://` string each show a clear message with no password leaked.
+
+## Compare with database (PostgreSQL)
+
+1. Open a `.dbml` file; command palette → **DBML: Compare with database**.
+2. Choose a connection; when multiple schemas exist, pick one.
+3. Confirm a Markdown report opens beside the editor with tables/columns/enums/FK/index differences (or "Schemas are identical").
+4. On a `.dbml` file with a syntax error, confirm a clear "DBML parse error at line N:M" message and no crash.
+5. Wrong password / unreachable host each show a clear message with no password leaked.
