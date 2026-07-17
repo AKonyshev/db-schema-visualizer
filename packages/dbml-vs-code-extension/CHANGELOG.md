@@ -6,6 +6,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-17
+
+### Added
+
+- Add an Activity Bar sidebar panel with quick actions (Show diagram, Import from database, Compare with database) and a saved-connections list with per-connection import, compare, and delete.
+
 ## [0.9.0] - 2026-07-17
 
 Fork release published under publisher `konyshevav`. Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) (MIT).

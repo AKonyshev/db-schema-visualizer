@@ -42,3 +42,11 @@
 3. Confirm a Markdown report opens beside the editor with tables/columns/enums/FK/index differences (or "Schemas are identical").
 4. On a `.dbml` file with a syntax error, confirm a clear "DBML parse error at line N:M" message and no crash.
 5. Wrong password / unreachable host each show a clear message with no password leaked.
+
+## Sidebar panel (Activity Bar)
+
+1. Click the DBML icon in the Activity Bar — the panel opens with **Actions** and **Connections** groups.
+2. Under Actions, click **Show diagram** / **Import from database** / **Compare with database** — each runs the same command as the palette.
+3. Click **＋** in the panel title, enter a name + `postgres://` string — the connection appears under Connections (name only; no password shown).
+4. On a connection, use the inline **Import** / **Compare** icons — the flow runs against that connection without asking to pick one.
+5. Use the inline **Delete** icon — confirm the modal; the connection disappears. Click **⟳** to refresh.

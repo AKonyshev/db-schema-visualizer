@@ -2,7 +2,7 @@
   "name": "dbml-schema-visualizer",
   "displayName": "DBML Schema Visualizer",
   "description": "Visualize DBML schemas as ERD diagrams, import from PostgreSQL, and compare with a live database.",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "icon": "assets/logo.png",
   "publisher": "konyshevav",
   "license": "MIT",
@@ -69,6 +69,31 @@
       {
         "command": "dbml-erd-visualizer.compareWithDatabase",
         "title": "DBML: Compare with database"
+      },
+      {
+        "command": "dbml-erd-visualizer.addConnection",
+        "title": "DBML: Add database connection",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dbml-erd-visualizer.refreshConnections",
+        "title": "DBML: Refresh connections",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dbml-erd-visualizer.deleteConnection",
+        "title": "DBML: Delete connection",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dbml-erd-visualizer.importFromConnection",
+        "title": "DBML: Import from this connection",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "dbml-erd-visualizer.compareWithConnection",
+        "title": "DBML: Compare with this connection",
+        "icon": "$(diff)"
       }
     ],
     "keybindings": [
@@ -84,6 +109,35 @@
           "when": "resourceLangId == dbml",
           "command": "dbml-erd-visualizer.previewDiagrams",
           "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "dbml-erd-visualizer.addConnection",
+          "when": "view == dbml-erd-visualizer.panel",
+          "group": "navigation"
+        },
+        {
+          "command": "dbml-erd-visualizer.refreshConnections",
+          "when": "view == dbml-erd-visualizer.panel",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "dbml-erd-visualizer.importFromConnection",
+          "when": "view == dbml-erd-visualizer.panel && viewItem == dbmlConnection",
+          "group": "inline"
+        },
+        {
+          "command": "dbml-erd-visualizer.compareWithConnection",
+          "when": "view == dbml-erd-visualizer.panel && viewItem == dbmlConnection",
+          "group": "inline"
+        },
+        {
+          "command": "dbml-erd-visualizer.deleteConnection",
+          "when": "view == dbml-erd-visualizer.panel && viewItem == dbmlConnection",
+          "group": "inline"
         }
       ]
     },

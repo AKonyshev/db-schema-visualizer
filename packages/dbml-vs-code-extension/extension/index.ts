@@ -10,6 +10,13 @@ import {
 import { importFromDatabase } from "./importFromDatabase";
 import { compareWithDatabase } from "./compareWithDatabase";
 import { ConnectionsTreeProvider } from "./connectionsTreeProvider";
+import {
+  addConnection,
+  compareWithConnection,
+  deleteConnectionCommand,
+  importFromConnection,
+} from "./panelCommands";
+import type { PanelNode } from "./panelNodes";
 
 export function activate(context: ExtensionContext): void {
   const treeProvider = new ConnectionsTreeProvider(context.secrets);
@@ -31,6 +38,30 @@ export function activate(context: ExtensionContext): void {
     commands.registerCommand("dbml-erd-visualizer.compareWithDatabase", () => {
       void compareWithDatabase(context);
     }),
+    commands.registerCommand("dbml-erd-visualizer.addConnection", () => {
+      void addConnection(context, treeProvider);
+    }),
+    commands.registerCommand("dbml-erd-visualizer.refreshConnections", () => {
+      treeProvider.refresh();
+    }),
+    commands.registerCommand(
+      "dbml-erd-visualizer.deleteConnection",
+      (node?: PanelNode) => {
+        void deleteConnectionCommand(context, treeProvider, node);
+      },
+    ),
+    commands.registerCommand(
+      "dbml-erd-visualizer.importFromConnection",
+      (node?: PanelNode) => {
+        void importFromConnection(context, node);
+      },
+    ),
+    commands.registerCommand(
+      "dbml-erd-visualizer.compareWithConnection",
+      (node?: PanelNode) => {
+        void compareWithConnection(context, node);
+      },
+    ),
   );
 }
 
