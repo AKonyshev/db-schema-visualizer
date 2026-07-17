@@ -10,6 +10,7 @@ import {
   COLUMN_HEIGHT,
   TABLE_HEADER_HEIGHT,
 } from "@/constants/sizing";
+import useLocalStorage from "@/hooks/localStorage";
 import { useThemeColors } from "@/hooks/theme";
 import { useTablesInfo } from "@/hooks/table";
 import { useTableColor } from "@/hooks/tableColor";
@@ -51,6 +52,7 @@ const ConnectionPath = ({
   const sourceTableColors = useTableColor(relationOwner);
   const srcWidth = useTableWidthStoredValue(sourceTableName);
   const tgtWidth = useTableWidthStoredValue(targetTableName);
+  const [alwaysHover] = useLocalStorage<boolean>("enableAlwaysHover", false);
   const [isHovered, setIsHovered] = useState(false);
   const [btnVisible, setBtnVisible] = useState(false);
   const [btnPos, setBtnPos] = useState<XYPosition>({ x: 0, y: 0 });
@@ -137,10 +139,6 @@ const ConnectionPath = ({
     const normalized = angle % 360;
     return normalized < 0 ? normalized + 360 : normalized;
   };
-
-  const alwaysHover =
-    localStorage.getItem("enableAlwaysHover") === "true" ||
-    localStorage.getItem("enableAlwaysHover") === JSON.stringify(true);
 
   const highlight =
     alwaysHover ||

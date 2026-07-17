@@ -1,28 +1,28 @@
+import { TypeIcon } from "lucide-react";
+
+import ToolbarButton from "../Button";
+
 import useLocalStorage from "@/hooks/localStorage";
 
-interface ShortTableNameSettingProps {
-  refresh: () => void;
-}
-
-const ShortTableNameSetting = ({ refresh }: ShortTableNameSettingProps) => {
+const ShortTableNameSetting = () => {
   const [isEnable, setIsEnable] = useLocalStorage<boolean>(
     "shortTableNameSetting",
     false,
   );
 
   return (
-    <label className="flex items-center gap-2 text-xs cursor-pointer">
-      <input
-        type="checkbox"
-        checked={isEnable}
-        className="accent-white"
-        onChange={(event) => {
-          setIsEnable(event.target.checked);
-          refresh();
-        }}
-      />
-      Короткое имя таблицы
-    </label>
+    <ToolbarButton
+      title="Короткое имя таблицы"
+      aria-pressed={isEnable}
+      onClick={() => {
+        setIsEnable((prev) => !prev);
+      }}
+      className={isEnable ? "!text-blue-500 dark:!text-blue-400" : ""}
+    >
+      <TypeIcon />
+
+      <span className="ml-2">Короткое имя</span>
+    </ToolbarButton>
   );
 };
 

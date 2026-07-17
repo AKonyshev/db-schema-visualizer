@@ -1,28 +1,28 @@
+import { HighlighterIcon } from "lucide-react";
+
+import ToolbarButton from "../Button";
+
 import useLocalStorage from "@/hooks/localStorage";
 
-interface EnableAlwaysHoverProps {
-  refresh: () => void;
-}
-
-const EnableAlwaysHover = ({ refresh }: EnableAlwaysHoverProps) => {
+const EnableAlwaysHover = () => {
   const [isEnable, setIsEnable] = useLocalStorage<boolean>(
     "enableAlwaysHover",
     false,
   );
 
   return (
-    <label className="flex items-center gap-2 text-xs cursor-pointer">
-      <input
-        type="checkbox"
-        checked={isEnable}
-        className="accent-white"
-        onChange={(event) => {
-          setIsEnable(event.target.checked);
-          refresh();
-        }}
-      />
-      Подсветка связей
-    </label>
+    <ToolbarButton
+      title="Подсветка связей"
+      aria-pressed={isEnable}
+      onClick={() => {
+        setIsEnable((prev) => !prev);
+      }}
+      className={isEnable ? "!text-blue-500 dark:!text-blue-400" : ""}
+    >
+      <HighlighterIcon />
+
+      <span className="ml-2">Подсветка связей</span>
+    </ToolbarButton>
   );
 };
 

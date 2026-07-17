@@ -1,4 +1,3 @@
-import { useState } from "react";
 import PropTypes from "prop-types";
 
 import AutoArrangeTableButton from "./AutoArrage/AutoArrangeTables";
@@ -22,11 +21,6 @@ const Toolbar = ({
   onDownloadSvg: () => void;
   onDownloadAdoc: () => void;
 }) => {
-  const [, setRefresh] = useState(0);
-  const refresh = () => {
-    setRefresh((n) => n + 1);
-  };
-
   return (
     <div className="flex flex-wrap items-center gap-2 absolute [&_svg]:w-5 [&_svg]:h-5 px-6 py-1 bottom-14 text-sm bg-gray-100 dark:bg-gray-700 shadow-lg rounded-2xl max-w-[95vw]">
       <AutoArrangeTableButton />
@@ -37,8 +31,8 @@ const Toolbar = ({
       <ExportSvgBtn onClick={onDownloadSvg} />
       <ExportAdocBtn onClick={onDownloadAdoc} />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
-      <ShortTableNameSetting refresh={refresh} />
-      <EnableAlwaysHover refresh={refresh} />
+      <ShortTableNameSetting />
+      <EnableAlwaysHover />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
       <ThemeToggler />
     </div>
