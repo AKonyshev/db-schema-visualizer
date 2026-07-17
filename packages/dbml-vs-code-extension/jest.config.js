@@ -5,9 +5,11 @@ const { compilerOptions } = require("./tsconfig.json");
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
-  roots: ["./"],
-  testMatch: ["**/*.test.ts"],
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
-    prefix: "<rootDir>/src",
-  }),
+  roots: ["<rootDir>/extension"],
+  testMatch: ["**/__tests__/**/*.test.ts"],
+  moduleNameMapper: {
+    ...pathsToModuleNameMapper(compilerOptions.paths, {
+      prefix: "<rootDir>/",
+    }),
+  },
 };

@@ -6,14 +6,25 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-17
+
+Fork release published under publisher `konyshevav`. Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) (MIT).
+
 ### Added
 
+- **DBML: Import from database** — generate a `.dbml` file from a PostgreSQL schema
+- **DBML: Compare with database** — diff the active `.dbml` file against a live PostgreSQL schema (Markdown report)
+- Saved PostgreSQL connection strings in VS Code SecretStorage
 - MetaInfo block sync: table positions are saved into `/*MetaInfo ... MetaInfo*/` in the DBML file
 - Export diagram to SVG and AsciiDoc
 - Toggle relation visibility per table on the canvas
 - Alt+H command to comment/uncomment refs in DBML for the hovered table
 - Toolbar options: short table names and always-on relation highlighting
 - Hidden refs indicator on tables when MetaInfo marks refs as hidden
+
+### Changed
+
+- Independent fork maintenance; see repository README for upstream attribution and license
 
 ## [0.8.0]
 
