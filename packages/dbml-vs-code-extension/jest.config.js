@@ -8,6 +8,8 @@ module.exports = {
   roots: ["<rootDir>/extension"],
   testMatch: ["**/__tests__/**/*.test.ts"],
   moduleNameMapper: {
+    // db-to-dbml `main` points at src/index.js (only .ts exists); map to TS entry.
+    "^db-to-dbml$": "<rootDir>/../db-to-dbml/src/index.ts",
     ...pathsToModuleNameMapper(compilerOptions.paths, {
       prefix: "<rootDir>/",
     }),

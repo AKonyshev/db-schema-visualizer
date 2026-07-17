@@ -19,22 +19,8 @@ import {
   renderDiffMarkdown,
 } from "schema-diff";
 
+import { dbImportErrorMessage } from "./dbImportErrorMessage";
 import { pickDatabaseConnection } from "./pickDatabaseConnection";
-
-function connectionErrorMessage(error: DbImportError): string {
-  switch (error.code) {
-    case DbImportErrorCode.INVALID_CONNECTION_STRING:
-      return "Invalid PostgreSQL connection string.";
-    case DbImportErrorCode.AUTH_FAILED:
-      return "Authentication failed. Check the username and password.";
-    case DbImportErrorCode.UNREACHABLE:
-      return "Could not reach the database host.";
-    case DbImportErrorCode.DATABASE_NOT_FOUND:
-      return "The specified database does not exist.";
-    default:
-      return "Failed to read the database schema.";
-  }
-}
 
 export async function compareWithDatabase(
   context: ExtensionContext,
@@ -106,6 +92,8 @@ export async function compareWithDatabase(
       error instanceof DbImportError
         ? error
         : new DbImportError(DbImportErrorCode.UNKNOWN, "Unknown error");
-    void window.showErrorMessage(connectionErrorMessage(dbError));
+    void window.showErrorMessage(
+      dbImportErrorMessage(dbError, "Failed to read the database schema."),
+    );
   }
 }

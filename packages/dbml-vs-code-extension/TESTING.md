@@ -10,7 +10,7 @@
 
 ## Relation visibility
 
-1. Hover a table and click **🔗** in the toolbar; relations for that table should hide on the canvas.
+1. Hover a table that has relations; click the link icon in the **table header**; relations for that table should hide on the canvas.
 2. Click again; relations should reappear.
 3. Press **Alt+H** with the webview focused and a table hovered; related `Ref` lines in DBML should be commented/uncommented.
 
