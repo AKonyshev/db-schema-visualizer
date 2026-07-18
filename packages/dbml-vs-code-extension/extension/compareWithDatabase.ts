@@ -6,6 +6,7 @@ import {
   workspace,
 } from "vscode";
 import {
+  type DatabaseSchema,
   DbImportError,
   DbImportErrorCode,
   fetchPostgresSchema,
@@ -46,7 +47,7 @@ export async function compareWithDatabase(
     connectionString = picked.connectionString;
   }
 
-  let db;
+  let db: DatabaseSchema;
   try {
     db = await window.withProgress(
       {
@@ -56,6 +57,7 @@ export async function compareWithDatabase(
       async () => fetchPostgresSchema(connectionString),
     );
   } catch (error) {
+    console.error("[dbml] reading the database schema failed", error);
     const dbError =
       error instanceof DbImportError
         ? error
@@ -100,6 +102,9 @@ export async function compareWithDatabase(
       );
       return;
     }
+    // The UI string stays generic, but keep the cause in the Extension Host
+    // log — otherwise a diff failure is undiagnosable from a bug report.
+    console.error("[dbml] compare with database failed", error);
     void window.showErrorMessage(
       "Failed to compare the DBML file with the database.",
     );

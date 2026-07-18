@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# tsc output of the `compile-tests` script
+out/
 *storybook.log
 .DS_Store
 coverage/

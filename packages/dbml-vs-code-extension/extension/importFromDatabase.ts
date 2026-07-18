@@ -7,6 +7,7 @@ import {
   workspace,
 } from "vscode";
 import {
+  type DatabaseSchema,
   DbImportError,
   DbImportErrorCode,
   fetchPostgresSchema,
@@ -19,6 +20,7 @@ import { dbImportErrorMessage } from "./dbImportErrorMessage";
 import { pickDatabaseConnection } from "./pickDatabaseConnection";
 
 function showImportDbError(error: unknown): void {
+  console.error("[dbml] database import failed", error);
   const dbError =
     error instanceof DbImportError
       ? error
@@ -68,7 +70,7 @@ export async function importFromDatabase(
     isNew = picked.isNew;
   }
 
-  let db;
+  let db: DatabaseSchema;
   try {
     db = await window.withProgress(
       {
@@ -101,10 +103,17 @@ export async function importFromDatabase(
 
   let dbml: string;
   let droppedCrossSchemaRefs: number;
-  let target: Uri;
   try {
     ({ dbml, droppedCrossSchemaRefs } = schemaToDbml(db, schemaName));
+  } catch (error) {
+    showImportDbError(error);
+    return;
+  }
 
+  // Saving is a separate failure domain from the database: a read-only path or
+  // a full disk must not be reported as an import error.
+  let target: Uri;
+  try {
     const folder = workspace.workspaceFolders?.[0]?.uri;
     const defaultUri =
       folder != null ? Uri.joinPath(folder, `${schemaName}.dbml`) : undefined;
@@ -120,7 +129,10 @@ export async function importFromDatabase(
 
     await workspace.fs.writeFile(target, Buffer.from(dbml, "utf-8"));
   } catch (error) {
-    showImportDbError(error);
+    console.error("[dbml] failed to save the imported DBML file", error);
+    void window.showErrorMessage(
+      "The schema was imported, but saving the DBML file failed.",
+    );
     return;
   }
 
@@ -129,7 +141,8 @@ export async function importFromDatabase(
   try {
     await window.showTextDocument(target);
     await commands.executeCommand("dbml-erd-visualizer.previewDiagrams");
-  } catch {
+  } catch (error) {
+    console.error("[dbml] failed to open the imported DBML file", error);
     void window.showErrorMessage(
       "The DBML file was saved, but opening it or the diagram failed.",
     );
@@ -144,7 +157,8 @@ export async function importFromDatabase(
   if (isNew) {
     try {
       await maybeSaveConnection(context, connectionString);
-    } catch {
+    } catch (error) {
+      console.error("[dbml] failed to save the connection", error);
       void window.showErrorMessage("The connection could not be saved.");
     }
   }

@@ -6,9 +6,5 @@
     "rootDir": "."
   },
   "include": ["extension/**/*.ts"],
-  "exclude": [
-    "extension/index.ts",
-    "extension/importFromDatabase.ts",
-    "extension/compareWithDatabase.ts"
-  ]
+  "exclude": ["extension/index.ts"]
 }
