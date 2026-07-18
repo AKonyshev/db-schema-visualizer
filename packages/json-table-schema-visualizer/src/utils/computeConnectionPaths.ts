@@ -40,3 +40,25 @@ export const computeConnectionPathWithSymbols = ({
 
   return `${linePath} ${sourceSymbolPath} ${targetSymbolPath}`;
 };
+
+interface LineProps {
+  sourceXY: XYPosition;
+  sourcePosition: Position;
+  targetXY: XYPosition;
+  targetPosition: Position;
+}
+
+// Линия без символов кардинальности: нужна для анимированного оверлея, где
+// пунктир не должен разрывать символы связи.
+export const computeConnectionLinePath = ({
+  sourceXY,
+  sourcePosition,
+  targetXY,
+  targetPosition,
+}: LineProps): string =>
+  getBezierPath({
+    sourcePosition,
+    targetPosition,
+    source: sourceXY,
+    target: targetXY,
+  });
