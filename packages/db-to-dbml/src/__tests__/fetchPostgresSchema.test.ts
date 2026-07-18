@@ -23,6 +23,12 @@ describe("fetchPostgresSchema", () => {
     expect(result).toEqual({ tables: [] });
   });
 
+  test("trims whitespace before validating and connecting", async () => {
+    fetchSchemaJson.mockResolvedValue({ tables: [] });
+    await fetchPostgresSchema("  postgres://u:p@h:5432/db  ");
+    expect(fetchSchemaJson).toHaveBeenCalledWith("postgres://u:p@h:5432/db");
+  });
+
   test("maps driver errors to DbImportError", async () => {
     fetchSchemaJson.mockRejectedValue({ code: "28P01" });
     await expect(

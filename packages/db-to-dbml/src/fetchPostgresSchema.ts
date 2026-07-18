@@ -7,7 +7,8 @@ import type { DatabaseSchema } from "./types";
 export async function fetchPostgresSchema(
   connectionString: string,
 ): Promise<DatabaseSchema> {
-  if (!/^postgres(ql)?:\/\//i.test(connectionString.trim())) {
+  const trimmed = connectionString.trim();
+  if (!/^postgres(ql)?:\/\//i.test(trimmed)) {
     throw new DbImportError(
       DbImportErrorCode.INVALID_CONNECTION_STRING,
       "Connection string must start with postgres:// or postgresql://",
@@ -15,9 +16,7 @@ export async function fetchPostgresSchema(
   }
 
   try {
-    return (await fetchSchemaJson(
-      connectionString,
-    )) as unknown as DatabaseSchema;
+    return (await fetchSchemaJson(trimmed)) as unknown as DatabaseSchema;
   } catch (err) {
     throw toDbImportError(err);
   }
