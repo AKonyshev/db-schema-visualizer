@@ -9,6 +9,7 @@ import ExportSvgBtn from "./ExportSvg/ExportSvgBtn";
 import ExportAdocBtn from "./ExportAdoc/ExportAdocBtn";
 import ShortTableNameSetting from "./ShortTableNameSetting/ShortTableNameSetting";
 import EnableAlwaysHover from "./EnableAlwaysHover/EnableAlwaysHover";
+import AnimateRelations from "./AnimateRelations/AnimateRelations";
 
 const Toolbar = ({
   onFitToView,
@@ -33,6 +34,7 @@ const Toolbar = ({
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
       <ShortTableNameSetting />
       <EnableAlwaysHover />
+      <AnimateRelations />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
       <ThemeToggler />
     </div>

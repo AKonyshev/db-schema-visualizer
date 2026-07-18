@@ -5,7 +5,10 @@ import ConnectionPath from "./ConnectionPath";
 import type { RelationItem } from "@/types/relation";
 
 import { useRelationsCoords } from "@/hooks/relationConnection";
-import { computeConnectionPathWithSymbols } from "@/utils/computeConnectionPaths";
+import {
+  computeConnectionLinePath,
+  computeConnectionPathWithSymbols,
+} from "@/utils/computeConnectionPaths";
 
 interface RelationConnectionProps {
   source: RelationItem;
@@ -30,6 +33,15 @@ const RelationConnection = ({ source, target }: RelationConnectionProps) => {
     });
   }, [sourcePosition, targetPosition, sourceX, targetX, sourceY, targetY]);
 
+  const animationLinePath = useMemo(() => {
+    return computeConnectionLinePath({
+      targetXY,
+      sourceXY,
+      sourcePosition,
+      targetPosition,
+    });
+  }, [sourcePosition, targetPosition, sourceX, targetX, sourceY, targetY]);
+
   const relationOwner =
     source.relation === "1" ? source.tableName : target.tableName;
 
@@ -37,6 +49,7 @@ const RelationConnection = ({ source, target }: RelationConnectionProps) => {
     <>
       <ConnectionPath
         path={linePath}
+        linePath={animationLinePath}
         sourceTableName={source.tableName}
         targetTableName={target.tableName}
         relationOwner={relationOwner}

@@ -1,5 +1,6 @@
 import { Path, Group, Circle, RegularPolygon } from "react-konva";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
+import Konva from "konva";
 
 import type { XYPosition } from "@/types/positions";
 
@@ -25,6 +26,7 @@ import {
 
 interface ConnectionPathProps {
   path: string;
+  linePath: string;
   sourceTableName: string;
   targetTableName: string;
   relationOwner: string;
@@ -39,6 +41,7 @@ const ARROW_BUTTON_DISAPPEARANCE_DELAY = 50;
 
 const ConnectionPath = ({
   path,
+  linePath,
   sourceTableName,
   targetTableName,
   relationOwner,
@@ -53,6 +56,11 @@ const ConnectionPath = ({
   const srcWidth = useTableWidthStoredValue(sourceTableName);
   const tgtWidth = useTableWidthStoredValue(targetTableName);
   const [alwaysHover] = useLocalStorage<boolean>("enableAlwaysHover", false);
+  const [animateRelations] = useLocalStorage<boolean>(
+    "animateRelations",
+    false,
+  );
+  const dashRef = useRef<Konva.Path>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [btnVisible, setBtnVisible] = useState(false);
   const [btnPos, setBtnPos] = useState<XYPosition>({ x: 0, y: 0 });
@@ -149,6 +157,32 @@ const ConnectionPath = ({
   const strokeColor = highlight
     ? sourceTableColors?.regular ?? themeColors.connection.active
     : themeColors.connection.default;
+
+  const isAnimated =
+    animateRelations &&
+    (hoveredTableName === sourceTableName ||
+      hoveredTableName === targetTableName);
+
+  useEffect(() => {
+    const node = dashRef.current;
+    if (node == null || !isAnimated) {
+      return;
+    }
+    const layer = node.getLayer();
+    if (layer == null) {
+      return;
+    }
+    // Konva.Animation мутирует узел напрямую — без React-ререндера на кадр.
+    // Убывающий dashOffset гонит штрихи от источника к цели.
+    const animation = new Konva.Animation(() => {
+      node.dashOffset(node.dashOffset() - 0.5);
+    }, layer);
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [isAnimated]);
 
   const handleOnHover = () => {
     setIsHovered(true);
@@ -327,6 +361,17 @@ const ConnectionPath = ({
         strokeWidth={2}
         stroke={strokeColor}
       />
+
+      {isAnimated && (
+        <Path
+          ref={dashRef}
+          data={linePath}
+          listening={false}
+          strokeWidth={2}
+          stroke={strokeColor}
+          dash={[8, 8]}
+        />
+      )}
 
       {btnVisible && (
         <Group x={btnPos.x} y={btnPos.y} listening={true} ref={arrowGroupRef}>
