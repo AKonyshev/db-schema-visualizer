@@ -46,31 +46,43 @@ export async function compareWithDatabase(
     connectionString = picked.connectionString;
   }
 
+  let db;
   try {
-    const db = await window.withProgress(
+    db = await window.withProgress(
       {
         location: ProgressLocation.Notification,
         title: "Reading database schema…",
       },
       async () => fetchPostgresSchema(connectionString),
     );
+  } catch (error) {
+    const dbError =
+      error instanceof DbImportError
+        ? error
+        : new DbImportError(DbImportErrorCode.UNKNOWN, "Unknown error");
+    void window.showErrorMessage(
+      dbImportErrorMessage(dbError, "Failed to read the database schema."),
+    );
+    return;
+  }
 
-    const schemas = listSchemaNames(db);
-    if (schemas.length === 0) {
-      void window.showWarningMessage("No user schemas found in this database.");
+  const schemas = listSchemaNames(db);
+  if (schemas.length === 0) {
+    void window.showWarningMessage("No user schemas found in this database.");
+    return;
+  }
+  let schemaName = schemas[0];
+  if (schemas.length > 1) {
+    const picked = await window.showQuickPick(schemas, {
+      placeHolder: "Select the database schema to compare against",
+    });
+    if (picked === undefined) {
       return;
     }
-    let schemaName = schemas[0];
-    if (schemas.length > 1) {
-      const picked = await window.showQuickPick(schemas, {
-        placeHolder: "Select the database schema to compare against",
-      });
-      if (picked === undefined) {
-        return;
-      }
-      schemaName = picked;
-    }
+    schemaName = picked;
+  }
 
+  try {
     const model = parseDbmlToModel(dbmlText);
     const database = databaseSchemaToModel(db, schemaName);
     const diff = diffSchemas(model, database);
@@ -88,12 +100,8 @@ export async function compareWithDatabase(
       );
       return;
     }
-    const dbError =
-      error instanceof DbImportError
-        ? error
-        : new DbImportError(DbImportErrorCode.UNKNOWN, "Unknown error");
     void window.showErrorMessage(
-      dbImportErrorMessage(dbError, "Failed to read the database schema."),
+      "Failed to compare the DBML file with the database.",
     );
   }
 }

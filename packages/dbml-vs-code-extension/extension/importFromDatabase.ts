@@ -18,6 +18,19 @@ import { saveConnection } from "./connectionStore";
 import { dbImportErrorMessage } from "./dbImportErrorMessage";
 import { pickDatabaseConnection } from "./pickDatabaseConnection";
 
+function showImportDbError(error: unknown): void {
+  const dbError =
+    error instanceof DbImportError
+      ? error
+      : new DbImportError(DbImportErrorCode.UNKNOWN, "Unknown error");
+  void window.showErrorMessage(
+    dbImportErrorMessage(
+      dbError,
+      "Failed to import the schema from the database.",
+    ),
+  );
+}
+
 async function maybeSaveConnection(
   context: ExtensionContext,
   connectionString: string,
@@ -55,69 +68,84 @@ export async function importFromDatabase(
     isNew = picked.isNew;
   }
 
+  let db;
   try {
-    const db = await window.withProgress(
+    db = await window.withProgress(
       {
         location: ProgressLocation.Notification,
         title: "Importing database schema…",
       },
       async () => fetchPostgresSchema(connectionString),
     );
+  } catch (error) {
+    showImportDbError(error);
+    return;
+  }
 
-    const schemas = listSchemaNames(db);
-    if (schemas.length === 0) {
-      void window.showWarningMessage("No user schemas found in this database.");
+  const schemas = listSchemaNames(db);
+  if (schemas.length === 0) {
+    void window.showWarningMessage("No user schemas found in this database.");
+    return;
+  }
+
+  let schemaName = schemas[0];
+  if (schemas.length > 1) {
+    const pickedSchema = await window.showQuickPick(schemas, {
+      placeHolder: "Select the schema to import",
+    });
+    if (pickedSchema === undefined) {
       return;
     }
+    schemaName = pickedSchema;
+  }
 
-    let schemaName = schemas[0];
-    if (schemas.length > 1) {
-      const pickedSchema = await window.showQuickPick(schemas, {
-        placeHolder: "Select the schema to import",
-      });
-      if (pickedSchema === undefined) {
-        return;
-      }
-      schemaName = pickedSchema;
-    }
-
-    const { dbml, droppedCrossSchemaRefs } = schemaToDbml(db, schemaName);
+  let dbml: string;
+  let droppedCrossSchemaRefs: number;
+  let target: Uri;
+  try {
+    ({ dbml, droppedCrossSchemaRefs } = schemaToDbml(db, schemaName));
 
     const folder = workspace.workspaceFolders?.[0]?.uri;
     const defaultUri =
       folder != null ? Uri.joinPath(folder, `${schemaName}.dbml`) : undefined;
-    const target = await window.showSaveDialog({
+    const saveTarget = await window.showSaveDialog({
       defaultUri,
       filters: { DBML: ["dbml"] },
       saveLabel: "Save DBML",
     });
-    if (target === undefined) {
+    if (saveTarget === undefined) {
       return;
     }
+    target = saveTarget;
 
     await workspace.fs.writeFile(target, Buffer.from(dbml, "utf-8"));
+  } catch (error) {
+    showImportDbError(error);
+    return;
+  }
+
+  // The file is already on disk, so a failure to open it must not skip the
+  // notices and the save prompt below — each step reports its own failure.
+  try {
     await window.showTextDocument(target);
     await commands.executeCommand("dbml-erd-visualizer.previewDiagrams");
-
-    if (droppedCrossSchemaRefs > 0) {
-      void window.showInformationMessage(
-        `${droppedCrossSchemaRefs} cross-schema reference(s) were omitted.`,
-      );
-    }
-
-    if (isNew) {
-      await maybeSaveConnection(context, connectionString);
-    }
-  } catch (error) {
-    const dbError =
-      error instanceof DbImportError
-        ? error
-        : new DbImportError(DbImportErrorCode.UNKNOWN, "Unknown error");
+  } catch {
     void window.showErrorMessage(
-      dbImportErrorMessage(
-        dbError,
-        "Failed to import the schema from the database.",
-      ),
+      "The DBML file was saved, but opening it or the diagram failed.",
     );
+  }
+
+  if (droppedCrossSchemaRefs > 0) {
+    void window.showInformationMessage(
+      `${droppedCrossSchemaRefs} cross-schema reference(s) were omitted.`,
+    );
+  }
+
+  if (isNew) {
+    try {
+      await maybeSaveConnection(context, connectionString);
+    } catch {
+      void window.showErrorMessage("The connection could not be saved.");
+    }
   }
 }

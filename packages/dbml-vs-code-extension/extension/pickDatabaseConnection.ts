@@ -1,30 +1,50 @@
-import { ExtensionContext, window } from "vscode";
+import { ExtensionContext, QuickPickItem, window } from "vscode";
 
 import { getConnection, listConnections } from "./connectionStore";
 
-const NEW_CONNECTION_LABEL = "$(add) New connection";
+export const NEW_CONNECTION_LABEL = "$(add) New connection";
 
 export interface PickedConnection {
   connectionString: string;
   isNew: boolean;
 }
 
+type ConnectionPickItem = QuickPickItem &
+  ({ pickKind: "saved"; connectionName: string } | { pickKind: "new" });
+
 export async function pickDatabaseConnection(
   context: ExtensionContext,
 ): Promise<PickedConnection | undefined> {
   const saved = await listConnections(context.secrets);
-  const choice = await window.showQuickPick([...saved, NEW_CONNECTION_LABEL], {
+  const items: ConnectionPickItem[] = [
+    ...saved.map(
+      (name): ConnectionPickItem => ({
+        label: name,
+        pickKind: "saved",
+        connectionName: name,
+      }),
+    ),
+    { label: NEW_CONNECTION_LABEL, pickKind: "new" },
+  ];
+  const choice = await window.showQuickPick(items, {
     placeHolder: "Select a saved connection or create a new one",
   });
   if (choice === undefined) {
     return undefined;
   }
 
-  if (choice !== NEW_CONNECTION_LABEL) {
-    const existing = await getConnection(context.secrets, choice);
-    return existing == null
-      ? undefined
-      : { connectionString: existing, isNew: false };
+  if (choice.pickKind === "saved") {
+    const existing = await getConnection(
+      context.secrets,
+      choice.connectionName,
+    );
+    if (existing == null) {
+      void window.showErrorMessage(
+        `Saved connection "${choice.connectionName}" is no longer available.`,
+      );
+      return undefined;
+    }
+    return { connectionString: existing, isNew: false };
   }
 
   const entered = await window.showInputBox({
