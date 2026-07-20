@@ -3,6 +3,7 @@ import { useMemo } from "react";
 
 import ToolbarButton from "../Button";
 
+import { shortcutKeyFor } from "@/constants/shortcuts";
 import { t } from "@/i18n/t";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 import { TableDetailLevel } from "@/types/tableDetailLevel";
@@ -13,7 +14,11 @@ interface DetailLevelToggleProps {
 
 const FullDetailLevel = ({ onClick }: DetailLevelToggleProps) => {
   return (
-    <ToolbarButton title={t("action.detailLevel.full")} onClick={onClick}>
+    <ToolbarButton
+      label={t("action.detailLevel.full")}
+      shortcutKey={shortcutKeyFor("detailLevel")}
+      onClick={onClick}
+    >
       <PanelsTopLeftIcon />
 
       <span className="ml-2">{t("action.detailLevel.full")}</span>
@@ -22,7 +27,11 @@ const FullDetailLevel = ({ onClick }: DetailLevelToggleProps) => {
 };
 const HeaderOnlyLevel = ({ onClick }: DetailLevelToggleProps) => {
   return (
-    <ToolbarButton title={t("action.detailLevel.header")} onClick={onClick}>
+    <ToolbarButton
+      label={t("action.detailLevel.header")}
+      shortcutKey={shortcutKeyFor("detailLevel")}
+      onClick={onClick}
+    >
       <PanelTopIcon />
 
       <span className="ml-2">{t("action.detailLevel.header")}</span>
@@ -31,7 +40,11 @@ const HeaderOnlyLevel = ({ onClick }: DetailLevelToggleProps) => {
 };
 const KeyOnlyLevel = ({ onClick }: DetailLevelToggleProps) => {
   return (
-    <ToolbarButton title={t("action.detailLevel.key")} onClick={onClick}>
+    <ToolbarButton
+      label={t("action.detailLevel.key")}
+      shortcutKey={shortcutKeyFor("detailLevel")}
+      onClick={onClick}
+    >
       <KeyRoundIcon />
 
       <span className="ml-2">{t("action.detailLevel.key")}</span>

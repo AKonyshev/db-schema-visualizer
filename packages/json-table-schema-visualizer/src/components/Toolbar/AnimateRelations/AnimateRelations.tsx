@@ -2,6 +2,7 @@ import { WavesIcon } from "lucide-react";
 
 import ToolbarButton from "../Button";
 
+import { shortcutKeyFor } from "@/constants/shortcuts";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { t } from "@/i18n/t";
 import useLocalStorage from "@/hooks/localStorage";
@@ -14,7 +15,8 @@ const AnimateRelations = () => {
 
   return (
     <ToolbarButton
-      title={t("action.animateRelations")}
+      label={t("action.animateRelations")}
+      shortcutKey={shortcutKeyFor("animateRelations")}
       aria-pressed={isEnable}
       onClick={() => {
         setIsEnable((prev) => !prev);

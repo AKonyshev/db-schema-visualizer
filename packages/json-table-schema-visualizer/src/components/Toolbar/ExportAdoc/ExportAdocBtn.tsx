@@ -10,7 +10,7 @@ interface ExportAdocBtnProps {
 
 const ExportAdocBtn = ({ onClick }: ExportAdocBtnProps) => {
   return (
-    <ToolbarButton onClick={onClick} title={t("action.exportAdoc")}>
+    <ToolbarButton onClick={onClick} label={t("action.exportAdoc")}>
       <LayoutPanelLeftIcon />
     </ToolbarButton>
   );

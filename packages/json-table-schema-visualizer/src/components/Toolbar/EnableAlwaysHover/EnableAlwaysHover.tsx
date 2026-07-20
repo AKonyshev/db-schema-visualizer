@@ -2,6 +2,7 @@ import { PaletteIcon } from "lucide-react";
 
 import ToolbarButton from "../Button";
 
+import { shortcutKeyFor } from "@/constants/shortcuts";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { t } from "@/i18n/t";
 import useLocalStorage from "@/hooks/localStorage";
@@ -16,7 +17,8 @@ const EnableAlwaysHover = () => {
 
   return (
     <ToolbarButton
-      title={t("action.colorRelations")}
+      label={t("action.colorRelations")}
+      shortcutKey={shortcutKeyFor("colorRelations")}
       aria-pressed={isEnable}
       onClick={() => {
         setIsEnable((prev) => !prev);

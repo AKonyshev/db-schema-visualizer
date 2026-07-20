@@ -13,6 +13,7 @@ import EnableAlwaysHover from "./EnableAlwaysHover/EnableAlwaysHover";
 import AnimateRelations from "./AnimateRelations/AnimateRelations";
 import ToolbarButton from "./Button";
 
+import { shortcutKeyFor } from "@/constants/shortcuts";
 import { t } from "@/i18n/t";
 
 const Toolbar = ({
@@ -42,7 +43,11 @@ const Toolbar = ({
       <EnableAlwaysHover />
       <AnimateRelations />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
-      <ToolbarButton title={t("legend.title")} onClick={onShowLegend}>
+      <ToolbarButton
+        label={t("legend.title")}
+        shortcutKey={shortcutKeyFor("legend")}
+        onClick={onShowLegend}
+      >
         <KeyboardIcon />
       </ToolbarButton>
       <ThemeToggler />

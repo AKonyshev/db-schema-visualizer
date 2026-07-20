@@ -2,6 +2,7 @@ import { ExpandIcon } from "lucide-react";
 
 import ToolbarButton from "../Button";
 
+import { shortcutKeyFor } from "@/constants/shortcuts";
 import { t } from "@/i18n/t";
 
 interface FitToViewButtonProps {
@@ -10,7 +11,11 @@ interface FitToViewButtonProps {
 
 const FitToViewButton = ({ onClick }: FitToViewButtonProps) => {
   return (
-    <ToolbarButton onClick={onClick} title={t("action.fitToView")}>
+    <ToolbarButton
+      onClick={onClick}
+      label={t("action.fitToView")}
+      shortcutKey={shortcutKeyFor("fitToView")}
+    >
       <ExpandIcon />
       <span className="ml-2">{t("action.fitToView")}</span>
     </ToolbarButton>

@@ -10,7 +10,7 @@ interface ExportSvgBtnProps {
 
 const ExportSvgBtn = ({ onClick }: ExportSvgBtnProps) => {
   return (
-    <ToolbarButton onClick={onClick} title={t("action.exportSvg")}>
+    <ToolbarButton onClick={onClick} label={t("action.exportSvg")}>
       <ImageIcon />
     </ToolbarButton>
   );

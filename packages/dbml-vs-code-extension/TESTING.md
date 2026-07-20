@@ -34,6 +34,14 @@
 3. Press `?` — the legend opens and lists every shortcut. Close it with `Esc`, then reopen it with the keyboard button in the toolbar and close it by clicking the dimmed backdrop.
 4. While the legend is open, press `L` and `D` — nothing behind the overlay may change.
 
+## Toolbar tooltips
+
+1. Hover any toolbar button — a dark tooltip appears above it immediately, styled like the rest of the interface.
+2. Keep hovering for a few seconds — no second, system-styled tooltip appears on top of it.
+3. Auto-arrange shows `(L)`, Fit to view `(F)`, the keyboard button `(?)`.
+4. Export and the theme toggle have no shortcut — their tooltips show the label alone, with no empty brackets and no `undefined`.
+5. The tooltip does not block the pointer: moving across a button and onto its neighbour switches tooltips cleanly, without flicker.
+
 ## Export
 
 1. Export PNG from toolbar (download).

@@ -2,6 +2,7 @@ import { TypeIcon } from "lucide-react";
 
 import ToolbarButton from "../Button";
 
+import { shortcutKeyFor } from "@/constants/shortcuts";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { t } from "@/i18n/t";
 import useLocalStorage from "@/hooks/localStorage";
@@ -14,7 +15,8 @@ const ShortTableNameSetting = () => {
 
   return (
     <ToolbarButton
-      title={t("action.shortTableName")}
+      label={t("action.shortTableName")}
+      shortcutKey={shortcutKeyFor("shortTableName")}
       aria-pressed={isEnable}
       onClick={() => {
         setIsEnable((prev) => !prev);

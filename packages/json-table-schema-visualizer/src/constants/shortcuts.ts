@@ -78,3 +78,11 @@ export type ExecutableShortcutId = Extract<
   (typeof SHORTCUTS)[number],
   { executable: true }
 >["id"];
+
+// Lets a button ask for its shortcut without reaching into the registry itself:
+// the registry stays the single source of truth, and a tooltip built from it
+// cannot claim a binding that does not fire.
+export const shortcutKeyFor = (id: ExecutableShortcutId): string => {
+  const entry = SHORTCUTS.find((shortcut) => shortcut.id === id);
+  return entry?.key ?? "";
+};

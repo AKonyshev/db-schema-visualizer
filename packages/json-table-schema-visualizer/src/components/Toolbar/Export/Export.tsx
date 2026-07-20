@@ -10,7 +10,7 @@ interface ExportButtonProps {
 
 const ExportButton = ({ onDownload }: ExportButtonProps) => {
   return (
-    <ToolbarButton onClick={onDownload} title={t("action.exportPng")}>
+    <ToolbarButton onClick={onDownload} label={t("action.exportPng")}>
       <DownloadIcon />
     </ToolbarButton>
   );
