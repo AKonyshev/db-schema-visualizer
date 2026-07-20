@@ -20,9 +20,12 @@ import { useScrollDirectionContext } from "@/hooks/scrollDirection";
 import { ScrollDirection } from "@/types/scrollDirection";
 import eventEmitter from "@/events-emitter";
 import { tableCoordsStore } from "@/stores/tableCoords";
-import { useTablesInfo } from "@/hooks/table";
+import { useTablesInfo, useTablePositionContext } from "@/hooks/table";
 import { exportStageSVG } from "@/export/svg/svg-exporter";
 import { generateAsciiDoc } from "@/utils/exportAsciiDoc";
+import useLocalStorage from "@/hooks/localStorage";
+import { useKeyboardShortcuts } from "@/hooks/keyboardShortcuts";
+import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 
 interface DiagramWrapperProps {
   children: ReactNode;
@@ -155,6 +158,36 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
       stageStateStore.set({ scale, position: stage.position() });
     }
   };
+
+  const [, setColorRelations] = useLocalStorage<boolean>(
+    "enableAlwaysHover",
+    false,
+  );
+  const [, setAnimateRelations] = useLocalStorage<boolean>(
+    "animateRelations",
+    false,
+  );
+  const [, setShortTableName] = useLocalStorage<boolean>(
+    "shortTableNameSetting",
+    false,
+  );
+  const { next: nextDetailLevel } = useTableDetailLevel();
+  const { resetPositions } = useTablePositionContext();
+
+  useKeyboardShortcuts({
+    colorRelations: () => {
+      setColorRelations((prev) => !prev);
+    },
+    animateRelations: () => {
+      setAnimateRelations((prev) => !prev);
+    },
+    shortTableName: () => {
+      setShortTableName((prev) => !prev);
+    },
+    detailLevel: nextDetailLevel,
+    autoArrange: resetPositions,
+    fitToView,
+  });
 
   /**
    * Center handler: listen for requests to center the stage on a given table
