@@ -14,6 +14,26 @@
 2. Click again; relations should reappear.
 3. Press **Alt+H** with the webview focused and a table hovered; related `Ref` lines in DBML should be commented/uncommented.
 
+## Colored relations
+
+1. With **Цветные связи** off, relations are grey; hovering a table colours only its own relations.
+2. Turn it on — every relation is permanently painted in its source table's colour.
+3. Reload the webview; the setting survives.
+
+## Relation animation
+
+1. Turn on **Анимация** and hover a table with relations — its relations show travelling dashes; all other relations stay static.
+2. **Check the direction:** the dashes must travel from the source table towards the target. If they run backwards, flip the sign of the `dashOffset` step in `ConnectionPath.tsx`. A confidently wrong direction is worse than no animation, since reading direction is the whole point of the feature.
+3. Confirm the cardinality symbols (crow's foot) at both ends stay intact while the dashes move.
+4. Turn the setting off — the dashes disappear, and hovering/clicking relations behaves as before.
+
+## Keyboard shortcuts and legend
+
+1. Press `C`, `A`, `S`, `D`, `L`, `F` with the webview focused — each produces the same result as its toolbar button.
+2. Open the search with `Ctrl/Cmd+F` and type text containing `c`, `a`, `s` — the view modes must **not** toggle and the text must type normally.
+3. Press `?` — the legend opens and lists every shortcut. Close it with `Esc`, then reopen it with the keyboard button in the toolbar and close it by clicking the dimmed backdrop.
+4. While the legend is open, press `L` and `D` — nothing behind the overlay may change.
+
 ## Export
 
 1. Export PNG from toolbar (download).

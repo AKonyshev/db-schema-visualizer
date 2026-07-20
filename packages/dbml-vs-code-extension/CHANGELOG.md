@@ -6,6 +6,29 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+### Added
+
+- Keyboard shortcuts for the view actions, with an on-screen legend: `C` colored relations, `A` relation animation, `S` short table names, `D` detail level, `L` auto-arrange, `F` fit to view, `?` legend. The legend is generated from the same registry the shortcuts fire from, so it cannot drift from the actual bindings.
+- **Анимация** — when enabled, the relations of the table under the cursor animate as travelling dashes, showing the direction of each relation.
+
+### Changed
+
+- The **Подсветка связей** toolbar option is now **Цветные связи** with a palette icon. Behaviour is unchanged (off: relations are grey and colour on hover; on: every relation is permanently coloured by its source table), and the stored setting is preserved.
+- Relation visibility is now toggled by an icon in the table header instead of a toolbar button.
+- **Auto-arrange** now always recomputes a fresh layout instead of restoring previously saved positions, and persists the result.
+
+### Fixed
+
+- Toolbar settings (colored relations, short table names) now take effect immediately instead of waiting for an unrelated re-render.
+- Webview styles were missing when the extension ran under the debugger (F5); the CSS is now generated on every build, including watch rebuilds.
+- Auto-layout was skewed by refs pointing at tables outside the schema and by self-references, which created phantom nodes.
+- A connection string with surrounding whitespace passed validation but failed at connect time.
+- Import: a file-write failure (read-only path, full disk) was reported as a database error.
+- Import: a failure to open the saved file no longer swallows the "save this connection" prompt or the "N cross-schema references were omitted" notice.
+- A saved connection whose name matched the "New connection" entry was indistinguishable from it in the picker; a vanished connection now reports itself instead of failing silently.
+- Underlying causes of import/compare failures are now logged to the Extension Host log instead of being discarded.
+- Panel: per-connection commands are hidden from the command palette, and the connections tree refreshes automatically.
+
 ## [0.10.0] - 2026-07-17
 
 ### Added
