@@ -1,0 +1,13 @@
+{
+  "viewsContainer.title": "DBML Schema Visualizer",
+  "command.previewDiagrams": "Показать диаграмму",
+  "command.toggleTableRefs": "Переключить видимость связей таблицы в DBML",
+  "command.importFromDatabase": "DBML: Импорт из базы данных",
+  "command.compareWithDatabase": "DBML: Сравнить с базой данных",
+  "command.addConnection": "DBML: Добавить подключение к базе данных",
+  "command.refreshConnections": "DBML: Обновить список подключений",
+  "command.deleteConnection": "DBML: Удалить подключение",
+  "command.importFromConnection": "DBML: Импорт из этого подключения",
+  "command.compareWithConnection": "DBML: Сравнить с этим подключением",
+  "configuration.title": "Диаграмма связей DBML"
+}

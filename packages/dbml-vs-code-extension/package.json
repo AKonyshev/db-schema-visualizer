@@ -14,12 +14,13 @@
   ],
   "activationEvents": [],
   "main": "./dist/extension/index.js",
+  "l10n": "./l10n",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
           "id": "dbmlSchemaVisualizer",
-          "title": "DBML Schema Visualizer",
+          "title": "%viewsContainer.title%",
           "icon": "assets/icons/panel.svg"
         }
       ]
@@ -52,7 +53,7 @@
     "commands": [
       {
         "command": "dbml-erd-visualizer.previewDiagrams",
-        "title": "Show diagram",
+        "title": "%command.previewDiagrams%",
         "icon": {
           "light": "./assets/icons/open-preview.svg",
           "dark": "./assets/icons/open-preview-dark.svg"
@@ -60,39 +61,39 @@
       },
       {
         "command": "dbml-erd-visualizer.toggleTableRefs",
-        "title": "Toggle table references visibility in DBML"
+        "title": "%command.toggleTableRefs%"
       },
       {
         "command": "dbml-erd-visualizer.importFromDatabase",
-        "title": "DBML: Import from database"
+        "title": "%command.importFromDatabase%"
       },
       {
         "command": "dbml-erd-visualizer.compareWithDatabase",
-        "title": "DBML: Compare with database"
+        "title": "%command.compareWithDatabase%"
       },
       {
         "command": "dbml-erd-visualizer.addConnection",
-        "title": "DBML: Add database connection",
+        "title": "%command.addConnection%",
         "icon": "$(add)"
       },
       {
         "command": "dbml-erd-visualizer.refreshConnections",
-        "title": "DBML: Refresh connections",
+        "title": "%command.refreshConnections%",
         "icon": "$(refresh)"
       },
       {
         "command": "dbml-erd-visualizer.deleteConnection",
-        "title": "DBML: Delete connection",
+        "title": "%command.deleteConnection%",
         "icon": "$(trash)"
       },
       {
         "command": "dbml-erd-visualizer.importFromConnection",
-        "title": "DBML: Import from this connection",
+        "title": "%command.importFromConnection%",
         "icon": "$(cloud-download)"
       },
       {
         "command": "dbml-erd-visualizer.compareWithConnection",
-        "title": "DBML: Compare with this connection",
+        "title": "%command.compareWithConnection%",
         "icon": "$(diff)"
       }
     ],
@@ -156,7 +157,7 @@
       ]
     },
     "configuration": {
-      "title": "DBML Entity Relationship Diagram",
+      "title": "%configuration.title%",
       "properties": {
         "dbmlERDPreviewer.preferredTheme": {
           "type": "string",

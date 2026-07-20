@@ -1,4 +1,4 @@
-import { ExtensionContext, QuickPickItem, window } from "vscode";
+import { ExtensionContext, QuickPickItem, l10n, window } from "vscode";
 
 import { getConnection, listConnections } from "./connectionStore";
 
@@ -27,7 +27,7 @@ export async function pickDatabaseConnection(
     { label: NEW_CONNECTION_LABEL, pickKind: "new" },
   ];
   const choice = await window.showQuickPick(items, {
-    placeHolder: "Select a saved connection or create a new one",
+    placeHolder: l10n.t("Select a saved connection or create a new one"),
   });
   if (choice === undefined) {
     return undefined;
@@ -40,7 +40,10 @@ export async function pickDatabaseConnection(
     );
     if (existing == null) {
       void window.showErrorMessage(
-        `Saved connection "${choice.connectionName}" is no longer available.`,
+        l10n.t(
+          'Saved connection "{0}" is no longer available.',
+          choice.connectionName,
+        ),
       );
       return undefined;
     }
@@ -48,7 +51,7 @@ export async function pickDatabaseConnection(
   }
 
   const entered = await window.showInputBox({
-    prompt: "PostgreSQL connection string",
+    prompt: l10n.t("PostgreSQL connection string"),
     placeHolder: "postgres://user:password@host:5432/database",
     password: true,
     ignoreFocusOut: true,

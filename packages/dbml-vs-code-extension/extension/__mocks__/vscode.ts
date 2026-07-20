@@ -29,6 +29,16 @@ export const commands = {
   executeCommand: jest.fn(),
 };
 
+export const l10n = {
+  // Returns the source string with {N} placeholders substituted, so existing
+  // assertions on English text keep working unchanged.
+  t: (message: string, ...args: unknown[]): string =>
+    args.reduce<string>(
+      (acc, arg, index) => acc.replace(`{${index}}`, String(arg)),
+      message,
+    ),
+};
+
 export const Uri = {
   joinPath: jest.fn((...parts: unknown[]) => parts.join("/")),
 };

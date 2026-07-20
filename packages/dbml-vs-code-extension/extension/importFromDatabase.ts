@@ -3,6 +3,7 @@ import {
   ProgressLocation,
   Uri,
   commands,
+  l10n,
   window,
   workspace,
 } from "vscode";
@@ -28,7 +29,7 @@ function showImportDbError(error: unknown): void {
   void window.showErrorMessage(
     dbImportErrorMessage(
       dbError,
-      "Failed to import the schema from the database.",
+      l10n.t("Failed to import the schema from the database."),
     ),
   );
 }
@@ -38,14 +39,14 @@ async function maybeSaveConnection(
   connectionString: string,
 ): Promise<void> {
   const save = await window.showQuickPick(["No", "Yes"], {
-    placeHolder: "Save this connection for next time?",
+    placeHolder: l10n.t("Save this connection for next time?"),
   });
   if (save !== "Yes") {
     return;
   }
 
   const name = await window.showInputBox({
-    prompt: "Name for this connection",
+    prompt: l10n.t("Name for this connection"),
     ignoreFocusOut: true,
   });
   if (name != null && name !== "") {
@@ -75,7 +76,7 @@ export async function importFromDatabase(
     db = await window.withProgress(
       {
         location: ProgressLocation.Notification,
-        title: "Importing database schema…",
+        title: l10n.t("Importing database schema…"),
       },
       async () => fetchPostgresSchema(connectionString),
     );
@@ -86,14 +87,16 @@ export async function importFromDatabase(
 
   const schemas = listSchemaNames(db);
   if (schemas.length === 0) {
-    void window.showWarningMessage("No user schemas found in this database.");
+    void window.showWarningMessage(
+      l10n.t("No user schemas found in this database."),
+    );
     return;
   }
 
   let schemaName = schemas[0];
   if (schemas.length > 1) {
     const pickedSchema = await window.showQuickPick(schemas, {
-      placeHolder: "Select the schema to import",
+      placeHolder: l10n.t("Select the schema to import"),
     });
     if (pickedSchema === undefined) {
       return;
@@ -120,7 +123,7 @@ export async function importFromDatabase(
     const saveTarget = await window.showSaveDialog({
       defaultUri,
       filters: { DBML: ["dbml"] },
-      saveLabel: "Save DBML",
+      saveLabel: l10n.t("Save DBML"),
     });
     if (saveTarget === undefined) {
       return;
@@ -131,7 +134,7 @@ export async function importFromDatabase(
   } catch (error) {
     console.error("[dbml] failed to save the imported DBML file", error);
     void window.showErrorMessage(
-      "The schema was imported, but saving the DBML file failed.",
+      l10n.t("The schema was imported, but saving the DBML file failed."),
     );
     return;
   }
@@ -144,13 +147,16 @@ export async function importFromDatabase(
   } catch (error) {
     console.error("[dbml] failed to open the imported DBML file", error);
     void window.showErrorMessage(
-      "The DBML file was saved, but opening it or the diagram failed.",
+      l10n.t("The DBML file was saved, but opening it or the diagram failed."),
     );
   }
 
   if (droppedCrossSchemaRefs > 0) {
     void window.showInformationMessage(
-      `${droppedCrossSchemaRefs} cross-schema reference(s) were omitted.`,
+      l10n.t(
+        "{0} cross-schema reference(s) were omitted.",
+        droppedCrossSchemaRefs,
+      ),
     );
   }
 
@@ -159,7 +165,9 @@ export async function importFromDatabase(
       await maybeSaveConnection(context, connectionString);
     } catch (error) {
       console.error("[dbml] failed to save the connection", error);
-      void window.showErrorMessage("The connection could not be saved.");
+      void window.showErrorMessage(
+        l10n.t("The connection could not be saved."),
+      );
     }
   }
 }

@@ -1,24 +1,30 @@
+import { l10n } from "vscode";
 import { DbImportError, DbImportErrorCode } from "db-to-dbml";
 
-// Record over the enum, so adding a DbImportErrorCode without deciding on its
-// UI string is a compile error rather than a silent fall-through to the
-// caller's generic fallback. `null` means "no specific string, use the
-// fallback". Never include error.message here — it may carry connection
-// details (see toDbImportError in db-to-dbml).
-const UI_MESSAGES: Record<DbImportErrorCode, string | null> = {
-  [DbImportErrorCode.AUTH_FAILED]:
-    "Authentication failed. Check the username and password.",
-  [DbImportErrorCode.INVALID_CONNECTION_STRING]:
-    "Invalid PostgreSQL connection string.",
-  [DbImportErrorCode.UNREACHABLE]: "Could not reach the database host.",
-  [DbImportErrorCode.DATABASE_NOT_FOUND]:
-    "The specified database does not exist.",
-  [DbImportErrorCode.UNKNOWN]: null,
+// A switch over the enum rather than a Record: l10n.t must not run at module
+// load, before the bundle is available. Exhaustiveness is preserved — the
+// `string | null` return type over every enum member makes a newly added code a
+// compile error rather than a silent fall-through to the caller's fallback.
+// Never include error.message here — it may carry connection details (see
+// toDbImportError in db-to-dbml).
+const uiMessage = (code: DbImportErrorCode): string | null => {
+  switch (code) {
+    case DbImportErrorCode.AUTH_FAILED:
+      return l10n.t("Authentication failed. Check the username and password.");
+    case DbImportErrorCode.INVALID_CONNECTION_STRING:
+      return l10n.t("Invalid PostgreSQL connection string.");
+    case DbImportErrorCode.UNREACHABLE:
+      return l10n.t("Could not reach the database host.");
+    case DbImportErrorCode.DATABASE_NOT_FOUND:
+      return l10n.t("The specified database does not exist.");
+    case DbImportErrorCode.UNKNOWN:
+      return null;
+  }
 };
 
 export function dbImportErrorMessage(
   error: DbImportError,
   unknownFallback: string,
 ): string {
-  return UI_MESSAGES[error.code] ?? unknownFallback;
+  return uiMessage(error.code) ?? unknownFallback;
 }
