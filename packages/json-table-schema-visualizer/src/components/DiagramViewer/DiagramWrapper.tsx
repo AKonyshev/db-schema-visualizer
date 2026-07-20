@@ -1,5 +1,5 @@
 import { Group, Layer, Stage } from "react-konva";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   type JSONTableRef,
   type JSONTableTable,
@@ -7,6 +7,7 @@ import {
 import { type KonvaEventObject } from "konva/lib/Node";
 
 import Toolbar from "../Toolbar/Toolbar";
+import ShortcutsLegend from "../ShortcutsLegend/ShortcutsLegend";
 
 import type { Stage as CoreStage } from "konva/lib/Stage";
 
@@ -173,6 +174,7 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   );
   const { next: nextDetailLevel } = useTableDetailLevel();
   const { resetPositions } = useTablePositionContext();
+  const [isLegendOpen, setIsLegendOpen] = useState(false);
 
   useKeyboardShortcuts({
     colorRelations: () => {
@@ -187,6 +189,9 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
     detailLevel: nextDetailLevel,
     autoArrange: resetPositions,
     fitToView,
+    legend: () => {
+      setIsLegendOpen(true);
+    },
   });
 
   /**
@@ -338,7 +343,18 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
           void onDownloadSvg();
         }}
         onDownloadAdoc={onDownloadAdoc}
+        onShowLegend={() => {
+          setIsLegendOpen(true);
+        }}
       />
+
+      {isLegendOpen && (
+        <ShortcutsLegend
+          onClose={() => {
+            setIsLegendOpen(false);
+          }}
+        />
+      )}
     </>
   );
 };
