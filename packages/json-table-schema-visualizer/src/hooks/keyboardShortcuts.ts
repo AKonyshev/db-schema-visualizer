@@ -8,8 +8,8 @@ export const useKeyboardShortcuts = (
   handlers: Record<ExecutableShortcutId, () => void>,
   enabled: boolean,
 ): void => {
-  // Через ref, иначе новая идентичность объекта handlers на каждом рендере
-  // переподписывала бы слушатель.
+  // Through a ref, otherwise the new identity of the handlers object on every
+  // render would re-subscribe the listener.
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;
 

@@ -4,14 +4,14 @@ export const generateAsciiDoc = (
   tables: JSONTableTable[],
   refs: JSONTableRef[],
 ): string => {
-  let asciiDoc = "== Описание таблиц\n";
+  let asciiDoc = "== Table reference\n";
 
   tables.forEach((table) => {
     asciiDoc += `=== ${table.name}\n`;
     asciiDoc += '[cols="1,1,1", options="header"]\n';
-    asciiDoc += `.${table.note ?? "Нет описания"}\n`;
+    asciiDoc += `.${table.note ?? "No description"}\n`;
     asciiDoc += "|===\n";
-    asciiDoc += "| Наименование | Тип | Описание\n";
+    asciiDoc += "| Name | Type | Description\n";
 
     table.fields.forEach((field) => {
       asciiDoc += `| ${field.name} | ${field.type.type_name} | ${field.note ?? ""}\n`;
@@ -26,7 +26,7 @@ export const generateAsciiDoc = (
     );
 
     if (tableRefs.length > 0) {
-      asciiDoc += "==== Связи:\n";
+      asciiDoc += "==== Relations:\n";
       tableRefs.forEach((relation) => {
         asciiDoc += `- ${relation.endpoints[0].fieldNames.join(", ")} -> ${relation.endpoints[1].tableName}.${relation.endpoints[1].fieldNames.join(", ")}\n`;
       });

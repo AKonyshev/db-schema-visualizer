@@ -1,53 +1,58 @@
 export interface ShortcutEntry {
   id: string;
-  /** Значение `event.key` для исполняемых записей; для справочных — текст для легенды. */
+  /** `event.key` value for executable entries; display text for reference rows. */
   key: string;
   label: string;
-  /** false — запись только для легенды, логика живёт в другом месте. */
+  /** false — a legend-only row; its logic lives elsewhere. */
   executable: boolean;
 }
 
-// Единственный источник правды: из него растут обработчик клавиш и легенда,
-// поэтому легенда не может разойтись с тем, что реально нажимается.
+// The single source of truth: both the key handler and the legend are derived
+// from it, so the legend cannot drift from what actually fires.
 export const SHORTCUTS = [
-  { id: "colorRelations", key: "c", label: "Цветные связи", executable: true },
+  {
+    id: "colorRelations",
+    key: "c",
+    label: "Colored relations",
+    executable: true,
+  },
   {
     id: "animateRelations",
     key: "a",
-    label: "Анимация связей",
+    label: "Relation animation",
     executable: true,
   },
   {
     id: "shortTableName",
     key: "s",
-    label: "Короткое имя таблицы",
+    label: "Short table names",
     executable: true,
   },
   {
     id: "detailLevel",
     key: "d",
-    label: "Уровень детализации",
+    label: "Detail level",
     executable: true,
   },
-  { id: "autoArrange", key: "l", label: "Авто-раскладка", executable: true },
-  { id: "fitToView", key: "f", label: "Вписать в экран", executable: true },
-  { id: "legend", key: "?", label: "Показать эту легенду", executable: true },
+  { id: "autoArrange", key: "l", label: "Auto-arrange", executable: true },
+  { id: "fitToView", key: "f", label: "Fit to view", executable: true },
+  { id: "legend", key: "?", label: "Show this legend", executable: true },
   {
     id: "closeLegend",
     key: "Esc",
-    label: "Закрыть легенду",
+    label: "Close the legend",
     executable: false,
   },
   {
     id: "search",
     key: "Ctrl/Cmd+F",
-    label: "Поиск по таблицам",
+    label: "Search tables",
     executable: false,
   },
   {
     id: "toggleRefs",
     key: "Alt+H",
-    label: "Переключить Ref в DBML",
+    label: "Toggle refs in DBML",
     executable: false,
   },
 ] as const satisfies readonly ShortcutEntry[];

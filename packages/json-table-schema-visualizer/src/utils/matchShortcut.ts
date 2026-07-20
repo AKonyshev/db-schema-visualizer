@@ -21,7 +21,7 @@ const isTypingTarget = (target: ShortcutEventLike["target"]): boolean => {
 export const matchShortcut = (
   event: ShortcutEventLike,
 ): ExecutableShortcutId | null => {
-  // shift намеренно не блокируется: '?' набирается как Shift+/.
+  // shift is deliberately not blocked: '?' is typed as Shift+/.
   if (event.ctrlKey || event.metaKey || event.altKey) {
     return null;
   }
@@ -38,8 +38,8 @@ export const matchShortcut = (
     return null;
   }
 
-  // Предикат выше уже гарантирует entry.executable === true, поэтому entry.id
-  // принадлежит объединению ExecutableShortcutId — TypeScript просто не умеет
-  // сузить это через .find().
+  // The predicate above already guarantees entry.executable === true, so
+  // entry.id belongs to the ExecutableShortcutId union — TypeScript simply
+  // cannot narrow that through .find().
   return entry.id as ExecutableShortcutId;
 };

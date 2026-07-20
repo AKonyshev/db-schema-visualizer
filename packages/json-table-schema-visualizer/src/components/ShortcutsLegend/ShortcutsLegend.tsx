@@ -31,7 +31,7 @@ const ShortcutsLegend = ({ onClose }: ShortcutsLegendProps) => {
         }}
       >
         <h2 className="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">
-          Горячие клавиши
+          Keyboard shortcuts
         </h2>
 
         <ul className="flex flex-col gap-2">

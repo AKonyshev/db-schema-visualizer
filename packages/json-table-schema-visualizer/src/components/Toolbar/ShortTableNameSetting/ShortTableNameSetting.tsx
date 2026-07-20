@@ -12,7 +12,7 @@ const ShortTableNameSetting = () => {
 
   return (
     <ToolbarButton
-      title="Короткое имя таблицы"
+      title="Short table names"
       aria-pressed={isEnable}
       onClick={() => {
         setIsEnable((prev) => !prev);
@@ -21,7 +21,7 @@ const ShortTableNameSetting = () => {
     >
       <TypeIcon />
 
-      <span className="ml-2">Короткое имя</span>
+      <span className="ml-2">Short names</span>
     </ToolbarButton>
   );
 };

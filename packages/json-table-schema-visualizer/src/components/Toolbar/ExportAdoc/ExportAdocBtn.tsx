@@ -8,7 +8,7 @@ interface ExportAdocBtnProps {
 
 const ExportAdocBtn = ({ onClick }: ExportAdocBtnProps) => {
   return (
-    <ToolbarButton onClick={onClick} title="Экспорт в Adoc">
+    <ToolbarButton onClick={onClick} title="Export AsciiDoc">
       <LayoutPanelLeftIcon />
     </ToolbarButton>
   );

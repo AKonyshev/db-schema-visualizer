@@ -28,9 +28,9 @@ describe("generateAsciiDoc", () => {
       ],
     );
 
-    expect(result).toContain("== Описание таблиц");
+    expect(result).toContain("== Table reference");
     expect(result).toContain("=== users");
     expect(result).toContain("| id | int |");
-    expect(result).toContain("==== Связи:");
+    expect(result).toContain("==== Relations:");
   });
 });

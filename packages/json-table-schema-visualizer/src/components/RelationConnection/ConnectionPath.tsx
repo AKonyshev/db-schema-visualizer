@@ -172,8 +172,8 @@ const ConnectionPath = ({
     if (layer == null) {
       return;
     }
-    // Konva.Animation мутирует узел напрямую — без React-ререндера на кадр.
-    // Убывающий dashOffset гонит штрихи от источника к цели.
+    // Konva.Animation mutates the node directly — no React re-render per frame.
+    // A decreasing dashOffset drives the dashes from source towards target.
     const animation = new Konva.Animation(() => {
       node.dashOffset(node.dashOffset() - 0.5);
     }, layer);

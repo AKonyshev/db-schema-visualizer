@@ -10,8 +10,8 @@ interface LineProps {
   targetPosition: Position;
 }
 
-// Линия без символов кардинальности: нужна для анимированного оверлея, где
-// пунктир не должен разрывать символы связи.
+// The line without cardinality symbols: needed for the animated overlay, where
+// the dashes must not tear the relation symbols apart.
 export const computeConnectionLinePath = ({
   sourceXY,
   sourcePosition,

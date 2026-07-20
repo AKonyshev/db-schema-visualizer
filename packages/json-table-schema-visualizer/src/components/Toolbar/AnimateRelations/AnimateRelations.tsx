@@ -12,7 +12,7 @@ const AnimateRelations = () => {
 
   return (
     <ToolbarButton
-      title="Анимация связей"
+      title="Relation animation"
       aria-pressed={isEnable}
       onClick={() => {
         setIsEnable((prev) => !prev);
@@ -21,7 +21,7 @@ const AnimateRelations = () => {
     >
       <WavesIcon />
 
-      <span className="ml-2">Анимация</span>
+      <span className="ml-2">Animation</span>
     </ToolbarButton>
   );
 };

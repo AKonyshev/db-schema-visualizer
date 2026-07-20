@@ -40,7 +40,7 @@ const Toolbar = ({
       <EnableAlwaysHover />
       <AnimateRelations />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
-      <ToolbarButton title="Горячие клавиши" onClick={onShowLegend}>
+      <ToolbarButton title="Keyboard shortcuts" onClick={onShowLegend}>
         <KeyboardIcon />
       </ToolbarButton>
       <ThemeToggler />
