@@ -1,5 +1,7 @@
-import { type DefaultPageConfig } from "@/extension/types/defaultPageConfig";
-import { type SetSchemaCommandPayload } from "@/extension/types/webviewCommand";
+// Relative, not the `@/` alias: this package defines no `paths` mapping, so the
+// alias silently resolved to `any` and degraded every global declared below.
+import { type DefaultPageConfig } from "./extension/types/defaultPageConfig";
+import { type SetSchemaCommandPayload } from "./extension/types/webviewCommand";
 
 export interface WebviewApi<StateType = unknown> {
   postMessage: (message: unknown) => void;

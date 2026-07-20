@@ -5,4 +5,6 @@ export interface DefaultPageConfig {
   theme: Theme;
   scrollDirection: ScrollDirection;
   supportsDbmlFileSync?: boolean;
+  /** Raw `vscode.env.language`; the webview resolves it to a supported locale. */
+  locale?: string;
 }

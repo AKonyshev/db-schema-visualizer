@@ -1,6 +1,6 @@
 import { Theme } from "json-table-schema-visualizer/src/types/theme";
 import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDirection";
-import { workspace, type WorkspaceConfiguration } from "vscode";
+import { env, workspace, type WorkspaceConfiguration } from "vscode";
 
 import { ConfigKeys } from "../types/configKeys";
 import { type DefaultPageConfig } from "../types/defaultPageConfig";
@@ -43,6 +43,9 @@ export class ExtensionConfig {
     const theme = this.getPreferredTheme();
     const scrollDirection = this.getScrollDirection();
 
-    return { theme, scrollDirection };
+    // The display language is the only source: package.nls is resolved by VS
+    // Code before our code runs, so a per-extension language setting could only
+    // ever disagree with the command palette.
+    return { theme, scrollDirection, locale: env.language };
   }
 }

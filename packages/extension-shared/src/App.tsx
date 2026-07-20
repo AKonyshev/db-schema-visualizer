@@ -5,6 +5,12 @@ import NoSchemaMessage from "json-table-schema-visualizer/src/components/Message
 import ErrorMessage from "json-table-schema-visualizer/src/components/Messages/ErrorMessage";
 import { type Theme } from "json-table-schema-visualizer/src/types/theme";
 import ScrollDirectionProvider from "json-table-schema-visualizer/src/providers/ScrollDirectionProvider";
+import { MESSAGES_RU } from "json-table-schema-visualizer/src/i18n/locales/ru";
+import { resolveLocale } from "json-table-schema-visualizer/src/i18n/resolveLocale";
+import {
+  registerCatalog,
+  setLocale,
+} from "json-table-schema-visualizer/src/i18n/t";
 
 import {
   WebviewCommand,
@@ -14,6 +20,11 @@ import {
 import { useSchema } from "./hooks/schema";
 import DbmlFileSyncEffects from "./components/DbmlFileSyncEffects";
 import { postToExtension } from "./vscodeApi";
+
+// Resolved once at module load: the locale cannot change without a window
+// reload, which recreates the webview.
+registerCatalog("ru", MESSAGES_RU);
+setLocale(resolveLocale(window.EXTENSION_DEFAULT_CONFIG?.locale));
 
 const App = () => {
   const { setTheme, theme, themeColors } = useCreateTheme(

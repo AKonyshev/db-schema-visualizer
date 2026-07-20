@@ -1,0 +1,34 @@
+import { type MessageKey } from "../messages";
+
+// Typed as a total Record: a key added to messages.ts is a compile error here
+// until it is translated.
+export const MESSAGES_RU: Record<MessageKey, string> = {
+  "action.autoArrange": "Авто-раскладка",
+  "action.detailLevel": "Уровень детализации",
+  "action.detailLevel.full": "Все колонки",
+  "action.detailLevel.header": "Только заголовок",
+  "action.detailLevel.key": "Только ключи",
+  "action.fitToView": "Вписать в экран",
+  "action.exportPng": "Экспорт",
+  "action.exportSvg": "Экспорт в SVG",
+  "action.exportAdoc": "Экспорт в AsciiDoc",
+  "action.shortTableName": "Короткие имена таблиц",
+  "action.shortTableName.compact": "Короткие имена",
+  "action.colorRelations": "Цветные связи",
+  "action.animateRelations": "Анимация связей",
+  "action.animateRelations.compact": "Анимация",
+  "action.themeToggle": "Сменить тему",
+  "action.showLegend": "Показать эту легенду",
+  "action.closeLegend": "Закрыть легенду",
+  "action.search": "Поиск по таблицам",
+  "action.toggleRefs": "Переключить Ref в DBML",
+  "legend.title": "Горячие клавиши",
+  "message.noTables": "Таблицы не найдены",
+  "message.noSchema": "Схема не найдена",
+  "search.tooltip": "Нажмите ⌘+F или Ctrl+F для поиска",
+  "search.placeholder": "Поиск по таблицам и колонкам...",
+  "adoc.title": "Описание таблиц",
+  "adoc.noDescription": "Нет описания",
+  "adoc.columns": "| Наименование | Тип | Описание",
+  "adoc.relations": "Связи:",
+};
