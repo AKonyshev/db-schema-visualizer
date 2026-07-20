@@ -12,11 +12,15 @@ interface DetailLevelToggleProps {
   onClick: () => void;
 }
 
+// All three variants are the same action, so they share one key rather than
+// each looking it up.
+const DETAIL_LEVEL_SHORTCUT = shortcutKeyFor("detailLevel");
+
 const FullDetailLevel = ({ onClick }: DetailLevelToggleProps) => {
   return (
     <ToolbarButton
       label={t("action.detailLevel.full")}
-      shortcutKey={shortcutKeyFor("detailLevel")}
+      shortcutKey={DETAIL_LEVEL_SHORTCUT}
       onClick={onClick}
     >
       <PanelsTopLeftIcon />
@@ -29,7 +33,7 @@ const HeaderOnlyLevel = ({ onClick }: DetailLevelToggleProps) => {
   return (
     <ToolbarButton
       label={t("action.detailLevel.header")}
-      shortcutKey={shortcutKeyFor("detailLevel")}
+      shortcutKey={DETAIL_LEVEL_SHORTCUT}
       onClick={onClick}
     >
       <PanelTopIcon />
@@ -42,7 +46,7 @@ const KeyOnlyLevel = ({ onClick }: DetailLevelToggleProps) => {
   return (
     <ToolbarButton
       label={t("action.detailLevel.key")}
-      shortcutKey={shortcutKeyFor("detailLevel")}
+      shortcutKey={DETAIL_LEVEL_SHORTCUT}
       onClick={onClick}
     >
       <KeyRoundIcon />

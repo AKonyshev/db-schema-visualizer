@@ -2,6 +2,10 @@ import { type ButtonHTMLAttributes } from "react";
 
 import { composeTooltip } from "@/utils/composeTooltip";
 
+// `title` is omitted so a caller cannot reintroduce the native tooltip. The
+// accessible name is guarded by ordering instead, not by the type: TypeScript
+// does not check hyphenated JSX attributes at all, so omitting "aria-label"
+// here would look like protection while permitting every caller to pass it.
 interface ToolbarButtonProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "title"> {
   onClick: () => void;
@@ -23,14 +27,15 @@ const ToolbarButton = ({
 
   return (
     <button
-      // No `title`: the native tooltip lags ~1s and would appear on top of
-      // ours. aria-label carries the accessible name in its place, which an
-      // icon-only button would otherwise lack entirely — and it carries the
-      // shortcut too, so a screen-reader user learns the key like everyone else.
-      aria-label={tooltip}
       onClick={onClick}
       className={`group relative flex items-center p-1 text-gray-800 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-200 ${className}`}
       {...props}
+      // Deliberately AFTER the spread: later JSX attributes win, so a caller
+      // cannot replace the computed accessible name. There is no `title` — the
+      // native tooltip lags ~1s and would surface on top of ours — so this is
+      // the only name an icon-only button has, and it carries the shortcut so a
+      // screen-reader user learns the key like everyone else.
+      aria-label={tooltip}
     >
       {children}
 
