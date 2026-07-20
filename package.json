@@ -31,9 +31,6 @@
   "scripts": {
     "prepare": "husky",
     "publish:dbml": "bash scripts/publish-extension.sh dbml",
-    "publish:prisma": "bash scripts/publish-extension.sh prisma",
-    "publish:all": "bash scripts/publish-extension.sh all",
-    "package:dbml": "bash scripts/publish-extension.sh dbml --package",
-    "package:prisma": "bash scripts/publish-extension.sh prisma --package"
+    "package:dbml": "bash scripts/publish-extension.sh dbml --package"
   }
 }

@@ -16,13 +16,13 @@
 
 ## Colored relations
 
-1. With **Цветные связи** off, relations are grey; hovering a table colours only its own relations.
+1. With **Colored relations** off, relations are grey; hovering a table colours only its own relations.
 2. Turn it on — every relation is permanently painted in its source table's colour.
 3. Reload the webview; the setting survives.
 
 ## Relation animation
 
-1. Turn on **Анимация** and hover a table with relations — its relations show travelling dashes; all other relations stay static.
+1. Turn on **Animation** and hover a table with relations — its relations show travelling dashes; all other relations stay static.
 2. **Check the direction:** the dashes must travel from the source table towards the target. If they run backwards, flip the sign of the `dashOffset` step in `ConnectionPath.tsx`. A confidently wrong direction is worse than no animation, since reading direction is the whole point of the feature.
 3. Confirm the cardinality symbols (crow's foot) at both ends stay intact while the dashes move.
 4. Turn the setting off — the dashes disappear, and hovering/clicking relations behaves as before.
@@ -39,11 +39,6 @@
 1. Export PNG from toolbar (download).
 2. Export SVG (download `.svg` file).
 3. Export AsciiDoc (download `.adoc` file with table sections).
-
-## Prisma extension regression
-
-1. Open a `.prisma` file and launch diagram preview.
-2. Confirm diagram renders; new toolbar items work; no MetaInfo writes to the schema file.
 
 ## Import from database (PostgreSQL)
 

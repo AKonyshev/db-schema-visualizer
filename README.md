@@ -1,6 +1,6 @@
 # Database schema visualizer
 
-A VS Code extension to visualize database schemas as ERD diagrams from DBML or Prisma files.
+A VS Code extension to visualize database schemas as ERD diagrams from DBML files.
 
 > **Fork notice.** This repository is a fork of [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer), maintained independently under the [MIT License](./LICENSE). The original project and its authors are credited below; modifications in this fork are maintained by [AKonyshev](https://github.com/AKonyshev).
 
@@ -10,7 +10,7 @@ A VS Code extension to visualize database schemas as ERD diagrams from DBML or P
 
 ## Features
 
-- Create entity-relationship diagrams from DBML or Prisma code
+- Create entity-relationship diagrams from DBML code
 - Light and dark themes
 - DBML extension: MetaInfo layout persistence, SVG/AsciiDoc export, per-table relation visibility, Alt+H ref toggling
 - Colored and animated relations, plus keyboard shortcuts for the view actions with a built-in legend (`?`)
@@ -21,7 +21,6 @@ A VS Code extension to visualize database schemas as ERD diagrams from DBML or P
 ### Marketplace (this fork)
 
 - [DBML extension](https://marketplace.visualstudio.com/items?itemName=konyshevav.dbml-schema-visualizer)
-- [Prisma extension](https://marketplace.visualstudio.com/items?itemName=konyshevav.prisma-erd-visualizer)
 
 ### Upstream (original author)
 
@@ -41,7 +40,6 @@ Open the repo in VS Code or Cursor, then **Run and Debug → Debug DBML Extensio
 ## Extension packages
 
 - [DBML extension](./packages/dbml-vs-code-extension/README.md)
-- [Prisma extension](./packages/prisma-vs-code-extension/README.md)
 
 ## Attribution & license
 
@@ -56,7 +54,6 @@ This software is licensed under the [MIT License](./LICENSE). Per the license, t
 Upstream tutorials (still useful for core diagram features):
 
 - [Preview DBML from VS Code](https://juste.bocovo.me/preview-dbml-code-from-vscode)
-- [Prisma ERD in VS Code](https://juste.bocovo.me/visualize-the-entity-relationship-diagram-from-prisma-code-in-the-vscode-editor)
 
 ## Contribute
 

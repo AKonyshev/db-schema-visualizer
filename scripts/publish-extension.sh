@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-# Publish VS Code extensions to the Marketplace (publisher: konyshevav).
+# Publish the DBML VS Code extension to the Marketplace (publisher: konyshevav).
 #
 # Usage:
 #   ./scripts/publish-extension.sh dbml              # test, build, publish DBML extension
-#   ./scripts/publish-extension.sh prisma            # test, build, publish Prisma extension
-#   ./scripts/publish-extension.sh all               # publish both
 #   ./scripts/publish-extension.sh dbml --package    # build .vsix only (no upload)
 #   ./scripts/publish-extension.sh dbml --skip-tests # publish without running tests
 #
@@ -34,7 +32,7 @@ for arg in "$@"; do
     -h | --help) usage 0 ;;
     --package | --package-only) PACKAGE_ONLY=true ;;
     --skip-tests) SKIP_TESTS=true ;;
-    dbml | prisma | all) TARGETS+=("$arg") ;;
+    dbml) TARGETS+=("$arg") ;;
     *)
       echo "Unknown argument: $arg" >&2
       usage 1
@@ -49,7 +47,6 @@ fi
 resolve_package_dir() {
   case "$1" in
     dbml) echo "packages/dbml-vs-code-extension" ;;
-    prisma) echo "packages/prisma-vs-code-extension" ;;
     *) echo "Unknown extension: $1" >&2; exit 1 ;;
   esac
 }
@@ -110,16 +107,7 @@ yarn --cwd "$ROOT" install --frozen-lockfile 2>/dev/null || yarn --cwd "$ROOT" i
 
 mkdir -p "$ROOT/dist"
 
-expanded=()
-for t in "${TARGETS[@]}"; do
-  if [[ "$t" == all ]]; then
-    expanded+=(dbml prisma)
-  else
-    expanded+=("$t")
-  fi
-done
-
-for name in "${expanded[@]}"; do
+for name in "${TARGETS[@]}"; do
   publish_one "$name"
 done
 
