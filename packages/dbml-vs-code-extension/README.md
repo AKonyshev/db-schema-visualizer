@@ -38,6 +38,12 @@ Available while the diagram webview has focus. Keys are ignored while you are ty
 
 The same list is available in the app: press `?` or use the keyboard button in the toolbar.
 
+## Languages
+
+The interface follows your VS Code display language: English, Russian (`ru`) and Simplified Chinese (`zh-cn`). Any other display language falls back to English — including Traditional Chinese (`zh-tw`), because mainland and Taiwan terminology differ enough that showing Simplified would be misleading.
+
+The Chinese translation is a community contribution and has not been reviewed by a native speaker. Corrections are welcome — the catalogs live in `packages/json-table-schema-visualizer/src/i18n/locales/` and `packages/dbml-vs-code-extension/l10n/`.
+
 ## Extension settings
 
 - `dbmlERDPreviewer.preferredTheme` — `light` or `dark` (default: `dark`)

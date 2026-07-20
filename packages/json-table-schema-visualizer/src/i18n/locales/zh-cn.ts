@@ -1,0 +1,35 @@
+import { type MessageKey } from "../messages";
+
+// Community translation: nobody on the team reads Chinese, so this file has not
+// been reviewed by a native speaker. See the README section on languages before
+// relying on the terminology here. Corrections are welcome.
+export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
+  "action.autoArrange": "自动布局",
+  "action.detailLevel": "显示级别",
+  "action.detailLevel.full": "全部列",
+  "action.detailLevel.header": "仅表头",
+  "action.detailLevel.key": "仅键列",
+  "action.fitToView": "适应窗口",
+  "action.exportPng": "导出",
+  "action.exportSvg": "导出为 SVG",
+  "action.exportAdoc": "导出为 AsciiDoc",
+  "action.shortTableName": "简短表名",
+  "action.shortTableName.compact": "简短名称",
+  "action.colorRelations": "彩色关系线",
+  "action.animateRelations": "关系动画",
+  "action.animateRelations.compact": "动画",
+  "action.themeToggle": "切换主题",
+  "action.showLegend": "显示快捷键列表",
+  "action.closeLegend": "关闭列表",
+  "action.search": "搜索表",
+  "action.toggleRefs": "切换 DBML 中的 Ref",
+  "legend.title": "键盘快捷键",
+  "message.noTables": "未找到表",
+  "message.noSchema": "未找到架构",
+  "search.tooltip": "使用 ⌘+F 或 Ctrl+F 搜索",
+  "search.placeholder": "搜索表和列...",
+  "adoc.title": "表说明",
+  "adoc.noDescription": "无说明",
+  "adoc.columns": "| 名称 | 类型 | 说明",
+  "adoc.relations": "关系：",
+};

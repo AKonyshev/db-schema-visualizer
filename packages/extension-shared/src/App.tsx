@@ -6,6 +6,7 @@ import ErrorMessage from "json-table-schema-visualizer/src/components/Messages/E
 import { type Theme } from "json-table-schema-visualizer/src/types/theme";
 import ScrollDirectionProvider from "json-table-schema-visualizer/src/providers/ScrollDirectionProvider";
 import { MESSAGES_RU } from "json-table-schema-visualizer/src/i18n/locales/ru";
+import { MESSAGES_ZH_CN } from "json-table-schema-visualizer/src/i18n/locales/zh-cn";
 import { resolveLocale } from "json-table-schema-visualizer/src/i18n/resolveLocale";
 import {
   registerCatalog,
@@ -24,6 +25,7 @@ import { postToExtension } from "./vscodeApi";
 // Resolved once at module load: the locale cannot change without a window
 // reload, which recreates the webview.
 registerCatalog("ru", MESSAGES_RU);
+registerCatalog("zh-cn", MESSAGES_ZH_CN);
 setLocale(resolveLocale(window.EXTENSION_DEFAULT_CONFIG?.locale));
 
 const App = () => {
