@@ -176,23 +176,27 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   const { resetPositions } = useTablePositionContext();
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 
-  useKeyboardShortcuts({
-    colorRelations: () => {
-      setColorRelations((prev) => !prev);
-    },
-    animateRelations: () => {
-      setAnimateRelations((prev) => !prev);
-    },
-    shortTableName: () => {
-      setShortTableName((prev) => !prev);
-    },
-    detailLevel: nextDetailLevel,
-    autoArrange: resetPositions,
-    fitToView,
-    legend: () => {
-      setIsLegendOpen(true);
-    },
-  });
+  useKeyboardShortcuts(
+    isLegendOpen
+      ? {}
+      : {
+          colorRelations: () => {
+            setColorRelations((prev) => !prev);
+          },
+          animateRelations: () => {
+            setAnimateRelations((prev) => !prev);
+          },
+          shortTableName: () => {
+            setShortTableName((prev) => !prev);
+          },
+          detailLevel: nextDetailLevel,
+          autoArrange: resetPositions,
+          fitToView,
+          legend: () => {
+            setIsLegendOpen(true);
+          },
+        },
+  );
 
   /**
    * Center handler: listen for requests to center the stage on a given table
