@@ -6,11 +6,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-07-20
+
 ### Added
 
 - Localized interface following the VS Code display language: English, Russian and Simplified Chinese. Other display languages fall back to English, including Traditional Chinese. The Chinese translation is a community contribution and has not been reviewed by a native speaker.
 - Keyboard shortcuts for the view actions, with an on-screen legend: `C` colored relations, `A` relation animation, `S` short table names, `D` detail level, `L` auto-arrange, `F` fit to view, `?` legend. The legend is generated from the same registry the shortcuts fire from, so it cannot drift from the actual bindings.
-- **Анимация** — when enabled, the relations of the table under the cursor animate as travelling dashes, showing the direction of each relation.
+- **Relation animation** — when enabled, the relations of the table under the cursor animate as travelling dashes, showing the direction of each relation.
 
 ### Changed
 
