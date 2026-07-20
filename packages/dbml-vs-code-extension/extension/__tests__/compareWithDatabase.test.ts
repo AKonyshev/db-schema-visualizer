@@ -60,6 +60,18 @@ function openDbmlEditor(text = "Table users { id int }"): void {
 }
 
 describe("compareWithDatabase", () => {
+  // These tests drive failure paths on purpose, and the production code logs
+  // the cause to the Extension Host log. Silencing it here keeps the suite's
+  // output pristine — a wall of expected stack traces makes a passing run look
+  // broken. Scoped to this suite, so an unexpected error elsewhere still shows.
+  beforeEach(() => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.mocked(console.error).mockRestore();
+  });
+
   beforeEach(() => {
     windowMock.activeTextEditor = undefined;
     jest.mocked(fetchPostgresSchema).mockReset();
