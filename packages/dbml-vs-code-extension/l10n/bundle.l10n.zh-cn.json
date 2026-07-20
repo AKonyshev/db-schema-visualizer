@@ -26,7 +26,6 @@
   "The schema was imported, but saving the DBML file failed.": "架构已导入，但保存 DBML 文件失败。",
   "The specified database does not exist.": "指定的数据库不存在。",
   "{0} cross-schema reference(s) were omitted.": "已忽略 {0} 个跨架构引用。",
-
   "Schema comparison: DBML model vs database": "架构比较：DBML 模型与数据库",
   "Schemas are identical.": "两个架构完全一致。",
   "Tables only in DBML": "仅存在于 DBML 的表",
@@ -44,5 +43,6 @@
   "only in database: {0}": "仅在数据库中：{0}",
   "Foreign keys only in DBML": "仅存在于 DBML 的外键",
   "Foreign keys only in database": "仅存在于数据库的外键",
-  "Index differences ({0} tables)": "索引差异（{0} 个表）"
+  "Index differences ({0} tables)": "索引差异（{0} 个表）",
+  "New connection": "新建连接"
 }

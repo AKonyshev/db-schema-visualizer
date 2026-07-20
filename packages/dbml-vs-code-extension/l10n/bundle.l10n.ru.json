@@ -26,7 +26,6 @@
   "The schema was imported, but saving the DBML file failed.": "Схема импортирована, но сохранить файл DBML не удалось.",
   "The specified database does not exist.": "Указанная база данных не существует.",
   "{0} cross-schema reference(s) were omitted.": "Пропущено межсхемных ссылок: {0}.",
-
   "Schema comparison: DBML model vs database": "Сравнение схем: модель DBML и база данных",
   "Schemas are identical.": "Схемы идентичны.",
   "Tables only in DBML": "Таблицы только в DBML",
@@ -44,5 +43,6 @@
   "only in database: {0}": "только в базе данных: {0}",
   "Foreign keys only in DBML": "Внешние ключи только в DBML",
   "Foreign keys only in database": "Внешние ключи только в базе данных",
-  "Index differences ({0} tables)": "Различия в индексах (таблиц: {0})"
+  "Index differences ({0} tables)": "Различия в индексах (таблиц: {0})",
+  "New connection": "Новое подключение"
 }

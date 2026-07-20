@@ -14,7 +14,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Changed
 
-- The **Подсветка связей** toolbar option is now **Цветные связи** with a palette icon. Behaviour is unchanged (off: relations are grey and colour on hover; on: every relation is permanently coloured by its source table), and the stored setting is preserved.
+- The relation-highlight toolbar option is now **Colored relations** with a palette icon. Behaviour is unchanged (off: relations are grey and colour on hover; on: every relation is permanently coloured by its source table), and the stored setting is preserved.
 - Relation visibility is now toggled by an icon in the table header instead of a toolbar button.
 - **Auto-arrange** now always recomputes a fresh layout instead of restoring previously saved positions, and persists the result.
 

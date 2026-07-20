@@ -2,7 +2,11 @@ import { ExtensionContext, QuickPickItem, l10n, window } from "vscode";
 
 import { getConnection, listConnections } from "./connectionStore";
 
-export const NEW_CONNECTION_LABEL = "$(add) New connection";
+// A function, not a constant: l10n.t must not run at module load, before the
+// bundle is available. The `$(add)` icon token stays outside the translated
+// text so a translator cannot break the markup.
+export const newConnectionLabel = (): string =>
+  `$(add) ${l10n.t("New connection")}`;
 
 export interface PickedConnection {
   connectionString: string;
@@ -24,7 +28,7 @@ export async function pickDatabaseConnection(
         connectionName: name,
       }),
     ),
-    { label: NEW_CONNECTION_LABEL, pickKind: "new" },
+    { label: newConnectionLabel(), pickKind: "new" },
   ];
   const choice = await window.showQuickPick(items, {
     placeHolder: l10n.t("Select a saved connection or create a new one"),

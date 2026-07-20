@@ -16,7 +16,7 @@ const ThemeToggler = () => {
   return (
     <ToolbarButton
       onClick={handleThemeToggle}
-      aria-label="Change theme mode"
+      aria-label={t("action.themeToggle")}
       title={t("action.themeToggle")}
     >
       <div className="cursor-pointer">

@@ -5,7 +5,7 @@ import {
   type SecretStore,
 } from "../connectionStore";
 import {
-  NEW_CONNECTION_LABEL,
+  newConnectionLabel,
   pickDatabaseConnection,
 } from "../pickDatabaseConnection";
 
@@ -88,12 +88,12 @@ describe("pickDatabaseConnection", () => {
     const secrets = fakeSecrets();
     await saveConnection(
       secrets,
-      NEW_CONNECTION_LABEL,
+      newConnectionLabel(),
       "postgres://saved-as-new-label",
     );
     jest
       .mocked(window.showQuickPick)
-      .mockImplementation(pickSaved(NEW_CONNECTION_LABEL) as never);
+      .mockImplementation(pickSaved(newConnectionLabel()) as never);
 
     await expect(pickDatabaseConnection(fakeContext(secrets))).resolves.toEqual(
       {

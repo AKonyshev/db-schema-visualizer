@@ -25,9 +25,9 @@ Available while the diagram webview has focus. Keys are ignored while you are ty
 
 | Key          | Action                                     |
 | ------------ | ------------------------------------------ |
-| `C`          | Colored relations (Цветные связи)          |
-| `A`          | Relation animation (Анимация связей)       |
-| `S`          | Short table names (Короткое имя таблицы)   |
+| `C`          | Colored relations                          |
+| `A`          | Relation animation                         |
+| `S`          | Short table names                          |
 | `D`          | Cycle detail level                         |
 | `L`          | Auto-arrange                               |
 | `F`          | Fit to view                                |
