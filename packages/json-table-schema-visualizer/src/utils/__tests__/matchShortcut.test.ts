@@ -49,6 +49,14 @@ describe("matchShortcut", () => {
   test("returns null for an unbound key", () => {
     expect(matchShortcut(event("q"))).toBeNull();
   });
+
+  test("does not match legend-only entries by their display text", () => {
+    // "Esc" is closeLegend's display text (executable: false), not an
+    // event.key value — the registry lookup must skip non-executable
+    // entries even when the display text happens to equal event.key.
+    expect(matchShortcut(event("Esc"))).toBeNull();
+    expect(matchShortcut(event("esc"))).toBeNull();
+  });
 });
 
 describe("SHORTCUTS registry", () => {
