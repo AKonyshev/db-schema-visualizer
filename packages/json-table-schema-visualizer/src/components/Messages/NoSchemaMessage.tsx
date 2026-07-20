@@ -1,9 +1,11 @@
 import MessageWrapper from "./MessageWrapper";
 
+import { t } from "@/i18n/t";
+
 const NoSchemaMessage = () => {
   return (
     <MessageWrapper>
-      <p>No schema found</p>
+      <p>{t("message.noSchema")}</p>
     </MessageWrapper>
   );
 };

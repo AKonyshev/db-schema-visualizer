@@ -2,6 +2,7 @@ import { PaletteIcon } from "lucide-react";
 
 import ToolbarButton from "../Button";
 
+import { t } from "@/i18n/t";
 import useLocalStorage from "@/hooks/localStorage";
 
 const EnableAlwaysHover = () => {
@@ -14,7 +15,7 @@ const EnableAlwaysHover = () => {
 
   return (
     <ToolbarButton
-      title="Colored relations"
+      title={t("action.colorRelations")}
       aria-pressed={isEnable}
       onClick={() => {
         setIsEnable((prev) => !prev);
@@ -23,7 +24,7 @@ const EnableAlwaysHover = () => {
     >
       <PaletteIcon />
 
-      <span className="ml-2">Colored relations</span>
+      <span className="ml-2">{t("action.colorRelations")}</span>
     </ToolbarButton>
   );
 };

@@ -7,6 +7,7 @@ import {
 } from "react";
 import { type JSONTableTable } from "shared/types/tableSchema";
 
+import { t } from "@/i18n/t";
 import eventEmitter from "@/events-emitter";
 import { useTablesInfo } from "@/hooks/table";
 
@@ -166,10 +167,7 @@ const Search = ({ tables }: SearchProps) => {
   return (
     <div className="fixed top-4 right-4 z-50" ref={dropdownRef}>
       <div className="relative">
-        <div
-          title="Use ⌘+F or control+F command to search"
-          className="relative flex items-center"
-        >
+        <div title={t("search.tooltip")} className="relative flex items-center">
           <input
             type="text"
             value={search}
@@ -179,7 +177,7 @@ const Search = ({ tables }: SearchProps) => {
               setSearch(e.target.value);
               setIsOpen(true);
             }}
-            placeholder="Search tables and columns..."
+            placeholder={t("search.placeholder")}
             className="w-72 px-4 py-3 focus:outline-none text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
 

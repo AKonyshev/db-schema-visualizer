@@ -2,6 +2,7 @@ import { WavesIcon } from "lucide-react";
 
 import ToolbarButton from "../Button";
 
+import { t } from "@/i18n/t";
 import useLocalStorage from "@/hooks/localStorage";
 
 const AnimateRelations = () => {
@@ -12,7 +13,7 @@ const AnimateRelations = () => {
 
   return (
     <ToolbarButton
-      title="Relation animation"
+      title={t("action.animateRelations")}
       aria-pressed={isEnable}
       onClick={() => {
         setIsEnable((prev) => !prev);
@@ -21,7 +22,7 @@ const AnimateRelations = () => {
     >
       <WavesIcon />
 
-      <span className="ml-2">Animation</span>
+      <span className="ml-2">{t("action.animateRelations.compact")}</span>
     </ToolbarButton>
   );
 };

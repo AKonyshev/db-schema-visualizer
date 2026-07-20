@@ -2,6 +2,7 @@ import { TypeIcon } from "lucide-react";
 
 import ToolbarButton from "../Button";
 
+import { t } from "@/i18n/t";
 import useLocalStorage from "@/hooks/localStorage";
 
 const ShortTableNameSetting = () => {
@@ -12,7 +13,7 @@ const ShortTableNameSetting = () => {
 
   return (
     <ToolbarButton
-      title="Short table names"
+      title={t("action.shortTableName")}
       aria-pressed={isEnable}
       onClick={() => {
         setIsEnable((prev) => !prev);
@@ -21,7 +22,7 @@ const ShortTableNameSetting = () => {
     >
       <TypeIcon />
 
-      <span className="ml-2">Short names</span>
+      <span className="ml-2">{t("action.shortTableName.compact")}</span>
     </ToolbarButton>
   );
 };

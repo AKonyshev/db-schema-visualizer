@@ -1,8 +1,10 @@
+import { type MessageKey } from "@/i18n/messages";
+
 export interface ShortcutEntry {
   id: string;
   /** `event.key` value for executable entries; display text for reference rows. */
   key: string;
-  label: string;
+  labelKey: MessageKey;
   /** false — a legend-only row; its logic lives elsewhere. */
   executable: boolean;
 }
@@ -13,46 +15,61 @@ export const SHORTCUTS = [
   {
     id: "colorRelations",
     key: "c",
-    label: "Colored relations",
+    labelKey: "action.colorRelations",
     executable: true,
   },
   {
     id: "animateRelations",
     key: "a",
-    label: "Relation animation",
+    labelKey: "action.animateRelations",
     executable: true,
   },
   {
     id: "shortTableName",
     key: "s",
-    label: "Short table names",
+    labelKey: "action.shortTableName",
     executable: true,
   },
   {
     id: "detailLevel",
     key: "d",
-    label: "Detail level",
+    labelKey: "action.detailLevel",
     executable: true,
   },
-  { id: "autoArrange", key: "l", label: "Auto-arrange", executable: true },
-  { id: "fitToView", key: "f", label: "Fit to view", executable: true },
-  { id: "legend", key: "?", label: "Show this legend", executable: true },
+  {
+    id: "autoArrange",
+    key: "l",
+    labelKey: "action.autoArrange",
+    executable: true,
+  },
+  {
+    id: "fitToView",
+    key: "f",
+    labelKey: "action.fitToView",
+    executable: true,
+  },
+  {
+    id: "legend",
+    key: "?",
+    labelKey: "action.showLegend",
+    executable: true,
+  },
   {
     id: "closeLegend",
     key: "Esc",
-    label: "Close the legend",
+    labelKey: "action.closeLegend",
     executable: false,
   },
   {
     id: "search",
     key: "Ctrl/Cmd+F",
-    label: "Search tables",
+    labelKey: "action.search",
     executable: false,
   },
   {
     id: "toggleRefs",
     key: "Alt+H",
-    label: "Toggle refs in DBML",
+    labelKey: "action.toggleRefs",
     executable: false,
   },
 ] as const satisfies readonly ShortcutEntry[];

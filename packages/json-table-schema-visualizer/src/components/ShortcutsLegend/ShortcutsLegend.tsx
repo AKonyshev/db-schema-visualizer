@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 
+import { t } from "@/i18n/t";
 import { SHORTCUTS } from "@/constants/shortcuts";
 
 interface ShortcutsLegendProps {
@@ -31,7 +32,7 @@ const ShortcutsLegend = ({ onClose }: ShortcutsLegendProps) => {
         }}
       >
         <h2 className="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">
-          Keyboard shortcuts
+          {t("legend.title")}
         </h2>
 
         <ul className="flex flex-col gap-2">
@@ -40,7 +41,7 @@ const ShortcutsLegend = ({ onClose }: ShortcutsLegendProps) => {
               key={shortcut.id}
               className="flex items-center justify-between gap-6 text-xs text-gray-800 dark:text-gray-200"
             >
-              <span>{shortcut.label}</span>
+              <span>{t(shortcut.labelKey)}</span>
               <kbd className="rounded bg-gray-300 px-2 py-1 font-mono dark:bg-gray-800">
                 {shortcut.key}
               </kbd>

@@ -13,6 +13,8 @@ import EnableAlwaysHover from "./EnableAlwaysHover/EnableAlwaysHover";
 import AnimateRelations from "./AnimateRelations/AnimateRelations";
 import ToolbarButton from "./Button";
 
+import { t } from "@/i18n/t";
+
 const Toolbar = ({
   onFitToView,
   onDownloadPng,
@@ -40,7 +42,7 @@ const Toolbar = ({
       <EnableAlwaysHover />
       <AnimateRelations />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
-      <ToolbarButton title="Keyboard shortcuts" onClick={onShowLegend}>
+      <ToolbarButton title={t("legend.title")} onClick={onShowLegend}>
         <KeyboardIcon />
       </ToolbarButton>
       <ThemeToggler />

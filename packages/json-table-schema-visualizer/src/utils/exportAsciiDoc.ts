@@ -1,17 +1,19 @@
 import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 
+import { t } from "@/i18n/t";
+
 export const generateAsciiDoc = (
   tables: JSONTableTable[],
   refs: JSONTableRef[],
 ): string => {
-  let asciiDoc = "== Table reference\n";
+  let asciiDoc = `== ${t("adoc.title")}\n`;
 
   tables.forEach((table) => {
     asciiDoc += `=== ${table.name}\n`;
     asciiDoc += '[cols="1,1,1", options="header"]\n';
-    asciiDoc += `.${table.note ?? "No description"}\n`;
+    asciiDoc += `.${table.note ?? t("adoc.noDescription")}\n`;
     asciiDoc += "|===\n";
-    asciiDoc += "| Name | Type | Description\n";
+    asciiDoc += `${t("adoc.columns")}\n`;
 
     table.fields.forEach((field) => {
       asciiDoc += `| ${field.name} | ${field.type.type_name} | ${field.note ?? ""}\n`;
@@ -26,7 +28,7 @@ export const generateAsciiDoc = (
     );
 
     if (tableRefs.length > 0) {
-      asciiDoc += "==== Relations:\n";
+      asciiDoc += `==== ${t("adoc.relations")}\n`;
       tableRefs.forEach((relation) => {
         asciiDoc += `- ${relation.endpoints[0].fieldNames.join(", ")} -> ${relation.endpoints[1].tableName}.${relation.endpoints[1].fieldNames.join(", ")}\n`;
       });

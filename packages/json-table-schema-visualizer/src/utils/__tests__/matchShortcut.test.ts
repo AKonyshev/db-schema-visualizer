@@ -67,9 +67,9 @@ describe("SHORTCUTS registry", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  test("every entry has a label", () => {
+  test("every entry has a label key", () => {
     SHORTCUTS.forEach((entry) => {
-      expect(entry.label.length).toBeGreaterThan(0);
+      expect(entry.labelKey.length).toBeGreaterThan(0);
     });
   });
 });
