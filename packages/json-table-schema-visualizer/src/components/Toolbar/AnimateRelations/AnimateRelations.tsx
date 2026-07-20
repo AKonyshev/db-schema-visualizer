@@ -2,12 +2,13 @@ import { WavesIcon } from "lucide-react";
 
 import ToolbarButton from "../Button";
 
+import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { t } from "@/i18n/t";
 import useLocalStorage from "@/hooks/localStorage";
 
 const AnimateRelations = () => {
   const [isEnable, setIsEnable] = useLocalStorage<boolean>(
-    "animateRelations",
+    STORAGE_KEYS.ANIMATE_RELATIONS,
     false,
   );
 

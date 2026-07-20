@@ -5,10 +5,7 @@ import ConnectionPath from "./ConnectionPath";
 import type { RelationItem } from "@/types/relation";
 
 import { useRelationsCoords } from "@/hooks/relationConnection";
-import {
-  computeConnectionLinePath,
-  computeConnectionPathWithSymbols,
-} from "@/utils/computeConnectionPaths";
+import { computeConnectionPaths } from "@/utils/computeConnectionPaths";
 
 interface RelationConnectionProps {
   source: RelationItem;
@@ -22,8 +19,10 @@ const RelationConnection = ({ source, target }: RelationConnectionProps) => {
   const { x: sourceX, y: sourceY } = sourceXY;
   const { x: targetX, y: targetY } = targetXY;
 
-  const pathWithSymbols = useMemo(() => {
-    return computeConnectionPathWithSymbols({
+  // One memo, not two: the connection and its animated overlay share the same
+  // bezier, so computing them apart would run it twice on every render.
+  const { line, withSymbols } = useMemo(() => {
+    return computeConnectionPaths({
       targetXY,
       sourceXY,
       sourcePosition,
@@ -33,23 +32,14 @@ const RelationConnection = ({ source, target }: RelationConnectionProps) => {
     });
   }, [sourcePosition, targetPosition, sourceX, targetX, sourceY, targetY]);
 
-  const animationLinePath = useMemo(() => {
-    return computeConnectionLinePath({
-      targetXY,
-      sourceXY,
-      sourcePosition,
-      targetPosition,
-    });
-  }, [sourcePosition, targetPosition, sourceX, targetX, sourceY, targetY]);
-
   const relationOwner =
     source.relation === "1" ? source.tableName : target.tableName;
 
   return (
     <>
       <ConnectionPath
-        path={pathWithSymbols}
-        linePath={animationLinePath}
+        path={withSymbols}
+        linePath={line}
         sourceTableName={source.tableName}
         targetTableName={target.tableName}
         relationOwner={relationOwner}

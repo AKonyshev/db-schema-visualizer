@@ -2,12 +2,13 @@ import { TypeIcon } from "lucide-react";
 
 import ToolbarButton from "../Button";
 
+import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { t } from "@/i18n/t";
 import useLocalStorage from "@/hooks/localStorage";
 
 const ShortTableNameSetting = () => {
   const [isEnable, setIsEnable] = useLocalStorage<boolean>(
-    "shortTableNameSetting",
+    STORAGE_KEYS.SHORT_TABLE_NAME,
     false,
   );
 

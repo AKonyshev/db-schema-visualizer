@@ -2,14 +2,15 @@ import { PaletteIcon } from "lucide-react";
 
 import ToolbarButton from "../Button";
 
+import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { t } from "@/i18n/t";
 import useLocalStorage from "@/hooks/localStorage";
 
 const EnableAlwaysHover = () => {
-  // The key deliberately stays `enableAlwaysHover`: renaming it would reset the
-  // setting for everyone who has already enabled the mode.
+  // The stored key does not match this option's name on purpose — see
+  // STORAGE_KEYS for why it must not be renamed.
   const [isEnable, setIsEnable] = useLocalStorage<boolean>(
-    "enableAlwaysHover",
+    STORAGE_KEYS.COLOR_RELATIONS,
     false,
   );
 

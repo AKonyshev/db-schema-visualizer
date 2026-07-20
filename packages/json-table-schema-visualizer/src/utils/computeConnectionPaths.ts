@@ -34,15 +34,26 @@ interface Props {
   relationTarget: string;
 }
 
-export const computeConnectionPathWithSymbols = ({
+export interface ConnectionPaths {
+  /** The bezier line alone — safe to dash without tearing the symbols. */
+  line: string;
+  /** The same line followed by both cardinality symbols, as one path string. */
+  withSymbols: string;
+}
+
+// Both forms in one pass. A caller that renders the connection AND its animated
+// overlay needs both, and asking for them separately would run the bezier twice
+// per render — `withSymbols` is built from the very `line` returned here, so the
+// two can never disagree either.
+export const computeConnectionPaths = ({
   relationSource,
   relationTarget,
   sourceXY,
   targetXY,
   sourcePosition,
   targetPosition,
-}: Props): string => {
-  const linePath = computeConnectionLinePath({
+}: Props): ConnectionPaths => {
+  const line = computeConnectionLinePath({
     sourceXY,
     sourcePosition,
     targetXY,
@@ -60,5 +71,11 @@ export const computeConnectionPathWithSymbols = ({
     targetXY,
   );
 
-  return `${linePath} ${sourceSymbolPath} ${targetSymbolPath}`;
+  return {
+    line,
+    withSymbols: `${line} ${sourceSymbolPath} ${targetSymbolPath}`,
+  };
 };
+
+export const computeConnectionPathWithSymbols = (props: Props): string =>
+  computeConnectionPaths(props).withSymbols;

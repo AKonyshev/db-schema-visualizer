@@ -11,6 +11,7 @@ import ShortcutsLegend from "../ShortcutsLegend/ShortcutsLegend";
 
 import type { Stage as CoreStage } from "konva/lib/Stage";
 
+import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { useWindowSize } from "@/hooks/window";
 import { useCursorChanger } from "@/hooks/cursor";
 import { DIAGRAM_PADDING } from "@/constants/sizing";
@@ -161,15 +162,15 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   };
 
   const [, setColorRelations] = useLocalStorage<boolean>(
-    "enableAlwaysHover",
+    STORAGE_KEYS.COLOR_RELATIONS,
     false,
   );
   const [, setAnimateRelations] = useLocalStorage<boolean>(
-    "animateRelations",
+    STORAGE_KEYS.ANIMATE_RELATIONS,
     false,
   );
   const [, setShortTableName] = useLocalStorage<boolean>(
-    "shortTableNameSetting",
+    STORAGE_KEYS.SHORT_TABLE_NAME,
     false,
   );
   const { next: nextDetailLevel } = useTableDetailLevel();

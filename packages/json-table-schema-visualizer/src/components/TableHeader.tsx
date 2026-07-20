@@ -4,6 +4,7 @@ import KonvaText from "./dumb/KonvaText";
 
 import type { KonvaEventObject } from "konva/lib/Node";
 
+import { STORAGE_KEYS } from "@/constants/storageKeys";
 import {
   COLUMN_HEIGHT,
   FONT_SIZES,
@@ -39,7 +40,7 @@ const setCursor = (
 
 const TableHeader = ({ title }: TableHeaderProps) => {
   const [isShortTableName] = useLocalStorage<boolean>(
-    "shortTableNameSetting",
+    STORAGE_KEYS.SHORT_TABLE_NAME,
     false,
   );
   const titleDisplay = isShortTableName ? title.split(".")[1] ?? title : title;

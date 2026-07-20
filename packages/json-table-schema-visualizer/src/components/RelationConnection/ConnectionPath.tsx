@@ -4,6 +4,7 @@ import Konva from "konva";
 
 import type { XYPosition } from "@/types/positions";
 
+import { STORAGE_KEYS } from "@/constants/storageKeys";
 import eventEmitter from "@/events-emitter";
 import { tableCoordsStore } from "@/stores/tableCoords";
 import {
@@ -55,9 +56,12 @@ const ConnectionPath = ({
   const sourceTableColors = useTableColor(relationOwner);
   const srcWidth = useTableWidthStoredValue(sourceTableName);
   const tgtWidth = useTableWidthStoredValue(targetTableName);
-  const [alwaysHover] = useLocalStorage<boolean>("enableAlwaysHover", false);
+  const [alwaysHover] = useLocalStorage<boolean>(
+    STORAGE_KEYS.COLOR_RELATIONS,
+    false,
+  );
   const [animateRelations] = useLocalStorage<boolean>(
-    "animateRelations",
+    STORAGE_KEYS.ANIMATE_RELATIONS,
     false,
   );
   const dashRef = useRef<Konva.Path>(null);
