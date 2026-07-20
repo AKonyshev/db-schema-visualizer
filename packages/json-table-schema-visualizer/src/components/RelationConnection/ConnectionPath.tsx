@@ -367,8 +367,8 @@ const ConnectionPath = ({
           ref={dashRef}
           data={linePath}
           listening={false}
-          strokeWidth={2}
-          stroke={strokeColor}
+          strokeWidth={3}
+          stroke={themeColors.bg}
           dash={[8, 8]}
         />
       )}

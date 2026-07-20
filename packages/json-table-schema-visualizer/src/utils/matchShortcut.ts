@@ -1,4 +1,4 @@
-import { SHORTCUTS } from "@/constants/shortcuts";
+import { SHORTCUTS, type ExecutableShortcutId } from "@/constants/shortcuts";
 
 export interface ShortcutEventLike {
   key: string;
@@ -18,7 +18,9 @@ const isTypingTarget = (target: ShortcutEventLike["target"]): boolean => {
   );
 };
 
-export const matchShortcut = (event: ShortcutEventLike): string | null => {
+export const matchShortcut = (
+  event: ShortcutEventLike,
+): ExecutableShortcutId | null => {
   // shift намеренно не блокируется: '?' набирается как Shift+/.
   if (event.ctrlKey || event.metaKey || event.altKey) {
     return null;
@@ -32,5 +34,12 @@ export const matchShortcut = (event: ShortcutEventLike): string | null => {
     (shortcut) => shortcut.executable && shortcut.key.toLowerCase() === key,
   );
 
-  return entry?.id ?? null;
+  if (entry == null) {
+    return null;
+  }
+
+  // Предикат выше уже гарантирует entry.executable === true, поэтому entry.id
+  // принадлежит объединению ExecutableShortcutId — TypeScript просто не умеет
+  // сузить это через .find().
+  return entry.id as ExecutableShortcutId;
 };

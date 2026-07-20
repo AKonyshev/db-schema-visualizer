@@ -9,7 +9,7 @@ export interface ShortcutEntry {
 
 // Единственный источник правды: из него растут обработчик клавиш и легенда,
 // поэтому легенда не может разойтись с тем, что реально нажимается.
-export const SHORTCUTS: ShortcutEntry[] = [
+export const SHORTCUTS = [
   { id: "colorRelations", key: "c", label: "Цветные связи", executable: true },
   {
     id: "animateRelations",
@@ -50,4 +50,9 @@ export const SHORTCUTS: ShortcutEntry[] = [
     label: "Переключить Ref в DBML",
     executable: false,
   },
-];
+] as const satisfies readonly ShortcutEntry[];
+
+export type ExecutableShortcutId = Extract<
+  (typeof SHORTCUTS)[number],
+  { executable: true }
+>["id"];

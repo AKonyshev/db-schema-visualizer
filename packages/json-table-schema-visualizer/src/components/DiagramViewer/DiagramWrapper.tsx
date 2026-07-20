@@ -177,25 +177,24 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 
   useKeyboardShortcuts(
-    isLegendOpen
-      ? {}
-      : {
-          colorRelations: () => {
-            setColorRelations((prev) => !prev);
-          },
-          animateRelations: () => {
-            setAnimateRelations((prev) => !prev);
-          },
-          shortTableName: () => {
-            setShortTableName((prev) => !prev);
-          },
-          detailLevel: nextDetailLevel,
-          autoArrange: resetPositions,
-          fitToView,
-          legend: () => {
-            setIsLegendOpen(true);
-          },
-        },
+    {
+      colorRelations: () => {
+        setColorRelations((prev) => !prev);
+      },
+      animateRelations: () => {
+        setAnimateRelations((prev) => !prev);
+      },
+      shortTableName: () => {
+        setShortTableName((prev) => !prev);
+      },
+      detailLevel: nextDetailLevel,
+      autoArrange: resetPositions,
+      fitToView,
+      legend: () => {
+        setIsLegendOpen(true);
+      },
+    },
+    !isLegendOpen,
   );
 
   /**

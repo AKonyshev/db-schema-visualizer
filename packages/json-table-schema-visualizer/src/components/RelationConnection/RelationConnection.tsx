@@ -22,7 +22,7 @@ const RelationConnection = ({ source, target }: RelationConnectionProps) => {
   const { x: sourceX, y: sourceY } = sourceXY;
   const { x: targetX, y: targetY } = targetXY;
 
-  const linePath = useMemo(() => {
+  const pathWithSymbols = useMemo(() => {
     return computeConnectionPathWithSymbols({
       targetXY,
       sourceXY,
@@ -48,7 +48,7 @@ const RelationConnection = ({ source, target }: RelationConnectionProps) => {
   return (
     <>
       <ConnectionPath
-        path={linePath}
+        path={pathWithSymbols}
         linePath={animationLinePath}
         sourceTableName={source.tableName}
         targetTableName={target.tableName}
