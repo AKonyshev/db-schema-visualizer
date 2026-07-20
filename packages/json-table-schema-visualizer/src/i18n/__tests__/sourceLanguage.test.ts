@@ -7,10 +7,10 @@ import path from "node:path";
 // that bypassed the message catalog — both are defects.
 //
 // The scan runs in Node rather than through `git grep` deliberately: this
-// repo's git build silently matches NOTHING for \p{Script=...} and byte-matches
-// false positives for literal ranges like [а-я]. Either behaviour would make
-// this test permanently green and useless. Node's RegExp with the `u` flag
-// handles Unicode script properties correctly.
+// repo's git build silently matches NOTHING for \p{Script=...} patterns, and
+// byte-matches false positives when given a literal non-ASCII character range.
+// Either behaviour would make this test permanently green and useless. Node's
+// RegExp with the `u` flag handles Unicode script properties correctly.
 //
 // If you change this guard, first verify it still FAILS on known-bad input.
 const NON_ENGLISH = /[\p{Script=Cyrillic}\p{Script=Han}]/u;
