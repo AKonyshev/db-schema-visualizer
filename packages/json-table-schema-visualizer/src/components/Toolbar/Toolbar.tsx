@@ -5,9 +5,7 @@ import AutoArrangeTableButton from "./AutoArrage/AutoArrangeTables";
 import ThemeToggler from "./ThemeToggler/ThemeToggler";
 import DetailLevelToggle from "./DetailLevelToggle/DetailLevelToggle";
 import FitToViewButton from "./FitToView/FitToView";
-import ExportButton from "./Export/Export";
-import ExportSvgBtn from "./ExportSvg/ExportSvgBtn";
-import ExportAdocBtn from "./ExportAdoc/ExportAdocBtn";
+import ExportMenu from "./Export/ExportMenu";
 import ShortTableNameSetting from "./ShortTableNameSetting/ShortTableNameSetting";
 import EnableAlwaysHover from "./EnableAlwaysHover/EnableAlwaysHover";
 import AnimateRelations from "./AnimateRelations/AnimateRelations";
@@ -35,9 +33,11 @@ const Toolbar = ({
       <DetailLevelToggle />
       <FitToViewButton onClick={onFitToView} />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
-      <ExportButton onDownload={onDownloadPng} />
-      <ExportSvgBtn onClick={onDownloadSvg} />
-      <ExportAdocBtn onClick={onDownloadAdoc} />
+      <ExportMenu
+        onDownloadPng={onDownloadPng}
+        onDownloadSvg={onDownloadSvg}
+        onDownloadAdoc={onDownloadAdoc}
+      />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
       <ShortTableNameSetting />
       <EnableAlwaysHover />
