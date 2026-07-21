@@ -44,5 +44,11 @@
   "Foreign keys only in DBML": "仅存在于 DBML 的外键",
   "Foreign keys only in database": "仅存在于数据库的外键",
   "Index differences ({0} tables)": "索引差异（{0} 个表）",
-  "New connection": "新建连接"
+  "New connection": "新建连接",
+  "Actions": "操作",
+  "Connections": "连接",
+  "Show diagram": "显示关系图",
+  "Import from database": "从数据库导入",
+  "Compare with database": "与数据库比较",
+  "No saved connections": "没有已保存的连接"
 }

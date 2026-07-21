@@ -86,3 +86,4 @@
 3. Click **＋** in the panel title, enter a name + `postgres://` string — the connection appears under Connections (name only; no password shown).
 4. On a connection, use the inline **Import** / **Compare** icons — the flow runs against that connection without asking to pick one.
 5. Use the inline **Delete** icon — confirm the modal; the connection disappears. Click **⟳** to refresh.
+6. With a non-English display language, the group names and the three action labels are translated, and so is "No saved connections" when there are none. A saved connection's own name is user data and must stay exactly as typed, untranslated.

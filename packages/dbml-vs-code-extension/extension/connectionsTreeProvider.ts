@@ -19,11 +19,14 @@ export class ConnectionsTreeProvider
     this._onDidChangeTreeData.fire();
   }
 
+  // Labels are translated here rather than in panelNodes: that module is a
+  // pure model with no vscode dependency, and its English strings double as the
+  // l10n keys. A connection's name is user data and is never translated.
   public getTreeItem(node: PanelNode): vscode.TreeItem {
     switch (node.kind) {
       case "group": {
         const item = new vscode.TreeItem(
-          node.label,
+          vscode.l10n.t(node.label),
           vscode.TreeItemCollapsibleState.Expanded,
         );
         item.contextValue =
@@ -31,11 +34,12 @@ export class ConnectionsTreeProvider
         return item;
       }
       case "action": {
+        const label = vscode.l10n.t(node.label);
         const item = new vscode.TreeItem(
-          node.label,
+          label,
           vscode.TreeItemCollapsibleState.None,
         );
-        item.command = { command: node.commandId, title: node.label };
+        item.command = { command: node.commandId, title: label };
         item.iconPath = new vscode.ThemeIcon(node.icon);
         return item;
       }
@@ -50,7 +54,7 @@ export class ConnectionsTreeProvider
       }
       case "empty": {
         const item = new vscode.TreeItem(
-          node.label,
+          vscode.l10n.t(node.label),
           vscode.TreeItemCollapsibleState.None,
         );
         item.contextValue = "dbmlEmpty";

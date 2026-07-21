@@ -44,5 +44,11 @@
   "Foreign keys only in DBML": "Внешние ключи только в DBML",
   "Foreign keys only in database": "Внешние ключи только в базе данных",
   "Index differences ({0} tables)": "Различия в индексах (таблиц: {0})",
-  "New connection": "Новое подключение"
+  "New connection": "Новое подключение",
+  "Actions": "Действия",
+  "Connections": "Подключения",
+  "Show diagram": "Показать диаграмму",
+  "Import from database": "Импорт из базы данных",
+  "Compare with database": "Сравнить с базой данных",
+  "No saved connections": "Нет сохранённых подключений"
 }
