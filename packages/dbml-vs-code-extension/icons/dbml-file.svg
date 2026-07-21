@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 208 208" width="208" height="208">
+  <rect width="208" height="208" rx="46" fill="#0F172A"/>
+
+  <!-- one entity, kept deliberately simple: this renders at 16px in the file explorer -->
+  <rect x="38" y="52" width="132" height="104" rx="14" fill="#E2E8F0"/>
+  <path d="M38 66a14 14 0 0 1 14-14h104a14 14 0 0 1 14 14v16H38z" fill="#F59E0B"/>
+  <rect x="56" y="100" width="96" height="11" rx="5.5" fill="#94A3B8"/>
+  <rect x="56" y="124" width="66" height="11" rx="5.5" fill="#94A3B8"/>
+</svg>

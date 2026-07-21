@@ -45,8 +45,8 @@
           ".dbml"
         ],
         "icon": {
-          "dark": "./icons/dbml-logo.svg",
-          "light": "./icons/dbml-logo.svg"
+          "dark": "./icons/dbml-file.svg",
+          "light": "./icons/dbml-file.svg"
         }
       }
     ],
@@ -54,10 +54,7 @@
       {
         "command": "dbml-erd-visualizer.previewDiagrams",
         "title": "%command.previewDiagrams%",
-        "icon": {
-          "light": "./assets/icons/open-preview.svg",
-          "dark": "./assets/icons/open-preview-dark.svg"
-        }
+        "icon": "$(open-preview)"
       },
       {
         "command": "dbml-erd-visualizer.toggleTableRefs",
