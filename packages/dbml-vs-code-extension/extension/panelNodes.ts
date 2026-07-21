@@ -4,6 +4,14 @@ export type PanelNode =
   | { kind: "connection"; name: string }
   | { kind: "empty"; label: string };
 
+// The two top-level groups. They live here rather than inline in the tree
+// provider so that every static panel string sits in one model — which is what
+// lets one test check them all against the translation bundles.
+export const GROUP_NODES: PanelNode[] = [
+  { kind: "group", id: "actions", label: "Actions" },
+  { kind: "group", id: "connections", label: "Connections" },
+];
+
 export const ACTION_NODES: PanelNode[] = [
   {
     kind: "action",

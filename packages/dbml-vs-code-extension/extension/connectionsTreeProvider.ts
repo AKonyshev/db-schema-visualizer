@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { listConnections } from "./connectionStore";
 import {
   ACTION_NODES,
+  GROUP_NODES,
   buildConnectionNodes,
   type PanelNode,
 } from "./panelNodes";
@@ -65,10 +66,7 @@ export class ConnectionsTreeProvider
 
   public async getChildren(node?: PanelNode): Promise<PanelNode[]> {
     if (node === undefined) {
-      return [
-        { kind: "group", id: "actions", label: "Actions" },
-        { kind: "group", id: "connections", label: "Connections" },
-      ];
+      return GROUP_NODES;
     }
     if (node.kind === "group" && node.id === "actions") {
       return ACTION_NODES;
