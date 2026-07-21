@@ -2,15 +2,17 @@ import dagre from "@dagrejs/dagre";
 
 import { computeTableDimension } from "../computeTableDimension";
 
+import { getLayoutEdges } from "./getLayoutEdges";
+
 import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 
 import { TABLES_GAP_X, TABLES_GAP_Y } from "@/constants/sizing";
-import { type XYPosition } from "@/types/positions";
+import { type XYWHPosition } from "@/types/positions";
 
 const computeTablesPositions = (
   tables: JSONTableTable[],
   refs: JSONTableRef[],
-): Map<string, XYPosition> => {
+): Map<string, XYWHPosition> => {
   const graph = new dagre.graphlib.Graph();
   graph.setGraph({
     nodesep: TABLES_GAP_X * 3,
@@ -26,8 +28,8 @@ const computeTablesPositions = (
     graph.setNode(table.name, { width, height });
   });
 
-  refs.forEach((ref) => {
-    graph.setEdge(ref.endpoints[0].tableName, ref.endpoints[1].tableName);
+  getLayoutEdges(tables, refs).forEach(([source, target]) => {
+    graph.setEdge(source, target);
   });
 
   dagre.layout(graph);
@@ -45,7 +47,7 @@ const computeTablesPositions = (
   });
 
   if (rawPositions.length === 0) {
-    return new Map<string, XYPosition>();
+    return new Map<string, XYWHPosition>();
   }
 
   const minX = Math.min(...rawPositions.map((pos) => pos.x));
@@ -54,11 +56,16 @@ const computeTablesPositions = (
   const paddingX = TABLES_GAP_X;
   const paddingY = TABLES_GAP_Y;
 
-  const tablesPositions = new Map<string, XYPosition>();
+  const tablesPositions = new Map<string, XYWHPosition>();
   rawPositions.forEach((pos) => {
+    const table = tables.find((t) => t.name === pos.name);
+    const { width, height } =
+      table != null ? computeTableDimension(table) : { width: 0, height: 0 };
     tablesPositions.set(pos.name, {
       x: pos.x - minX + paddingX,
       y: pos.y - minY + paddingY,
+      w: width,
+      h: height,
     });
   });
 

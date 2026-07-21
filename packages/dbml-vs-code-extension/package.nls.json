@@ -1,0 +1,13 @@
+{
+  "viewsContainer.title": "DBML Schema Visualizer",
+  "command.previewDiagrams": "Show diagram",
+  "command.toggleTableRefs": "Toggle table references visibility in DBML",
+  "command.importFromDatabase": "DBML: Import from database",
+  "command.compareWithDatabase": "DBML: Compare with database",
+  "command.addConnection": "DBML: Add database connection",
+  "command.refreshConnections": "DBML: Refresh connections",
+  "command.deleteConnection": "DBML: Delete connection",
+  "command.importFromConnection": "DBML: Import from this connection",
+  "command.compareWithConnection": "DBML: Compare with this connection",
+  "configuration.title": "DBML Entity Relationship Diagram"
+}

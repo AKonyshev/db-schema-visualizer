@@ -1,11 +1,17 @@
 import { Group, Layer, Stage } from "react-konva";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  type JSONTableRef,
+  type JSONTableTable,
+} from "shared/types/tableSchema";
 import { type KonvaEventObject } from "konva/lib/Node";
 
 import Toolbar from "../Toolbar/Toolbar";
+import ShortcutsLegend from "../ShortcutsLegend/ShortcutsLegend";
 
 import type { Stage as CoreStage } from "konva/lib/Stage";
 
+import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { useWindowSize } from "@/hooks/window";
 import { useCursorChanger } from "@/hooks/cursor";
 import { DIAGRAM_PADDING } from "@/constants/sizing";
@@ -16,13 +22,21 @@ import { useScrollDirectionContext } from "@/hooks/scrollDirection";
 import { ScrollDirection } from "@/types/scrollDirection";
 import eventEmitter from "@/events-emitter";
 import { tableCoordsStore } from "@/stores/tableCoords";
-import { useTablesInfo } from "@/hooks/table";
+import { useTablesInfo, useTablePositionContext } from "@/hooks/table";
+import { exportStageSVG } from "@/export/svg/svg-exporter";
+import { generateAsciiDoc } from "@/utils/exportAsciiDoc";
+import { generateMarkdown } from "@/utils/exportMarkdown";
+import useLocalStorage from "@/hooks/localStorage";
+import { useKeyboardShortcuts } from "@/hooks/keyboardShortcuts";
+import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 
 interface DiagramWrapperProps {
   children: ReactNode;
+  tables: JSONTableTable[];
+  refs: JSONTableRef[];
 }
 
-const DiagramWrapper = ({ children }: DiagramWrapperProps) => {
+const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   const scaleBy = 1.02;
   const { height: windowHeight, width: windowWidth } = useWindowSize();
   const { scrollDirection } = useScrollDirectionContext();
@@ -148,6 +162,43 @@ const DiagramWrapper = ({ children }: DiagramWrapperProps) => {
     }
   };
 
+  const [, setColorRelations] = useLocalStorage<boolean>(
+    STORAGE_KEYS.COLOR_RELATIONS,
+    false,
+  );
+  const [, setAnimateRelations] = useLocalStorage<boolean>(
+    STORAGE_KEYS.ANIMATE_RELATIONS,
+    false,
+  );
+  const [, setShortTableName] = useLocalStorage<boolean>(
+    STORAGE_KEYS.SHORT_TABLE_NAME,
+    false,
+  );
+  const { next: nextDetailLevel } = useTableDetailLevel();
+  const { resetPositions } = useTablePositionContext();
+  const [isLegendOpen, setIsLegendOpen] = useState(false);
+
+  useKeyboardShortcuts(
+    {
+      colorRelations: () => {
+        setColorRelations((prev) => !prev);
+      },
+      animateRelations: () => {
+        setAnimateRelations((prev) => !prev);
+      },
+      shortTableName: () => {
+        setShortTableName((prev) => !prev);
+      },
+      detailLevel: nextDetailLevel,
+      autoArrange: resetPositions,
+      fitToView,
+      legend: () => {
+        setIsLegendOpen(true);
+      },
+    },
+    !isLegendOpen,
+  );
+
   /**
    * Center handler: listen for requests to center the stage on a given table
    *  when the search option is clicked.
@@ -208,7 +259,15 @@ const DiagramWrapper = ({ children }: DiagramWrapperProps) => {
     };
   }, []);
 
-  const onDownload = () => {
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const onDownloadPng = () => {
     if (stageRef.current == null) return;
     const stage = stageRef.current;
 
@@ -247,6 +306,26 @@ const DiagramWrapper = ({ children }: DiagramWrapperProps) => {
     link.click();
   };
 
+  const onDownloadSvg = async () => {
+    if (stageRef.current == null) return;
+    const result = await exportStageSVG(stageRef.current, true);
+    if (result instanceof Blob) {
+      downloadBlob(result, `diagram-${Date.now()}.svg`);
+    }
+  };
+
+  const onDownloadMarkdown = () => {
+    const markdown = generateMarkdown(tables, refs);
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    downloadBlob(blob, `diagram-${Date.now()}.md`);
+  };
+
+  const onDownloadAdoc = () => {
+    const asciiDoc = generateAsciiDoc(tables, refs);
+    const blob = new Blob([asciiDoc], { type: "text/plain" });
+    downloadBlob(blob, `diagram-${Date.now()}.adoc`);
+  };
+
   return (
     <>
       <Stage
@@ -268,7 +347,26 @@ const DiagramWrapper = ({ children }: DiagramWrapperProps) => {
         </Layer>
       </Stage>
 
-      <Toolbar onFitToView={fitToView} onDownload={onDownload} />
+      <Toolbar
+        onFitToView={fitToView}
+        onDownloadPng={onDownloadPng}
+        onDownloadSvg={() => {
+          void onDownloadSvg();
+        }}
+        onDownloadAdoc={onDownloadAdoc}
+        onDownloadMarkdown={onDownloadMarkdown}
+        onShowLegend={() => {
+          setIsLegendOpen(true);
+        }}
+      />
+
+      {isLegendOpen && (
+        <ShortcutsLegend
+          onClose={() => {
+            setIsLegendOpen(false);
+          }}
+        />
+      )}
     </>
   );
 };

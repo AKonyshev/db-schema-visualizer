@@ -5,6 +5,13 @@ import NoSchemaMessage from "json-table-schema-visualizer/src/components/Message
 import ErrorMessage from "json-table-schema-visualizer/src/components/Messages/ErrorMessage";
 import { type Theme } from "json-table-schema-visualizer/src/types/theme";
 import ScrollDirectionProvider from "json-table-schema-visualizer/src/providers/ScrollDirectionProvider";
+import { MESSAGES_RU } from "json-table-schema-visualizer/src/i18n/locales/ru";
+import { MESSAGES_ZH_CN } from "json-table-schema-visualizer/src/i18n/locales/zh-cn";
+import { resolveLocale } from "json-table-schema-visualizer/src/i18n/resolveLocale";
+import {
+  registerCatalog,
+  setLocale,
+} from "json-table-schema-visualizer/src/i18n/t";
 
 import {
   WebviewCommand,
@@ -12,12 +19,22 @@ import {
 } from "../extension/types/webviewCommand";
 
 import { useSchema } from "./hooks/schema";
+import DbmlFileSyncEffects from "./components/DbmlFileSyncEffects";
+import { postToExtension } from "./vscodeApi";
+
+// Resolved once at module load: the locale cannot change without a window
+// reload, which recreates the webview.
+registerCatalog("ru", MESSAGES_RU);
+registerCatalog("zh-cn", MESSAGES_ZH_CN);
+setLocale(resolveLocale(window.EXTENSION_DEFAULT_CONFIG?.locale));
 
 const App = () => {
   const { setTheme, theme, themeColors } = useCreateTheme(
     window.EXTENSION_DEFAULT_CONFIG?.theme,
   );
-  const { schema, key, schemaErrorMessage } = useSchema();
+  const { schema, key, schemaErrorMessage, rawContent } = useSchema();
+  const supportsDbmlFileSync =
+    window.EXTENSION_DEFAULT_CONFIG?.supportsDbmlFileSync === true;
 
   if (schemaErrorMessage !== null && schema === null) {
     return <ErrorMessage message={schemaErrorMessage} />;
@@ -35,13 +52,7 @@ const App = () => {
       message: theme,
     };
 
-    if (window.vsCodeWebviewAPI === undefined) {
-      console.error(
-        "can't send message to extension due vsCodeWebviewAPI global variable is not defined",
-      );
-    } else {
-      window.vsCodeWebviewAPI?.postMessage(updateThemeMessage);
-    }
+    postToExtension(updateThemeMessage);
   };
 
   return (
@@ -53,7 +64,22 @@ const App = () => {
       <ScrollDirectionProvider
         scrollDirection={window.EXTENSION_DEFAULT_CONFIG?.scrollDirection}
       >
-        <DiagramViewer key={key} {...schema} />
+        <DiagramViewer
+          key={key}
+          documentKey={key}
+          {...schema}
+          syncEffects={
+            supportsDbmlFileSync ? (
+              <DbmlFileSyncEffects
+                rawContent={rawContent}
+                documentKey={key}
+                singleTableName={
+                  schema.tables.length === 1 ? schema.tables[0].name : undefined
+                }
+              />
+            ) : null
+          }
+        />
       </ScrollDirectionProvider>
     </ThemeProvider>
   );

@@ -19,7 +19,7 @@ const normalizeField = (field: FieldResult): unknown => {
 };
 
 const normalizeIndex = (index: IndexResult): unknown => {
-  if (typeof index.pk === "boolean" && !index.pk) {
+  if (index.pk === undefined || (typeof index.pk === "boolean" && !index.pk)) {
     const { pk: _removed, ...rest } = index;
     return rest as any;
   }
@@ -36,10 +36,10 @@ const normalizeTable = (table: TableResult): unknown => {
 
   if (withNormalizedFieldsAndIndexes.headerColor === undefined) {
     const { headerColor: _removed, ...rest } = withNormalizedFieldsAndIndexes;
-    return rest;
+    return { x: 0, y: 0, ...rest };
   }
 
-  return withNormalizedFieldsAndIndexes;
+  return { x: 0, y: 0, ...withNormalizedFieldsAndIndexes };
 };
 
 const normalizeSchema = (schema: SchemaResult): unknown => ({
@@ -47,10 +47,19 @@ const normalizeSchema = (schema: SchemaResult): unknown => ({
   tables: schema.tables.map((table) => normalizeTable(table)),
 });
 
+const expectedSchemaWithCoords = {
+  ...dbmlTestCodeInJSONTableFormat,
+  tables: dbmlTestCodeInJSONTableFormat.tables.map((table) => ({
+    x: 0,
+    y: 0,
+    ...table,
+  })),
+};
+
 describe("transform dbml schema to json table schema", () => {
   test("transform dbml schema to json table schema", () => {
     expect(normalizeSchema(dbmlSchemaToJSONTableSchema(parsedDBML))).toEqual(
-      dbmlTestCodeInJSONTableFormat,
+      expectedSchemaWithCoords,
     );
   });
 });

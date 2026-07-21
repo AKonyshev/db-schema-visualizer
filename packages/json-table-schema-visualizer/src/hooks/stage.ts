@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 import { useWindowSize } from "./window";
 
@@ -6,9 +6,25 @@ import { DIAGRAM_PADDING, STAGE_SCALE_FACTOR } from "@/constants/sizing";
 import { type StageState } from "@/types/stage";
 import { stageStateStore } from "@/stores/stagesState";
 import { tableCoordsStore } from "@/stores/tableCoords";
+import eventEmitter from "@/events-emitter";
+
+const TABLE_COORDS_RESET_EVENT = "tableCoords:resetTablesPositions";
 
 export const useStageStartingState = (): StageState => {
   const { height: windowHeight, width: windowWidth } = useWindowSize();
+  const coordsRevision = useSyncExternalStore(
+    (onStoreChange) => {
+      const handler = (): void => {
+        onStoreChange();
+      };
+      eventEmitter.on(TABLE_COORDS_RESET_EVENT, handler);
+      return () => {
+        eventEmitter.off(TABLE_COORDS_RESET_EVENT, handler);
+      };
+    },
+    () => tableCoordsStore.getCurrentStore().size,
+    () => 0,
+  );
 
   const state = useMemo(() => {
     const savedStageState = stageStateStore.getCurrentStageState();
@@ -30,6 +46,12 @@ export const useStageStartingState = (): StageState => {
 
     const contentW = maxX - minX;
     const contentH = maxY - minY;
+    if (contentW <= 0 || contentH <= 0) {
+      return {
+        scale: 1,
+        position: { x: DIAGRAM_PADDING, y: DIAGRAM_PADDING },
+      };
+    }
     const scaleX = (windowWidth - DIAGRAM_PADDING) / contentW;
     const scaleY = (windowHeight - DIAGRAM_PADDING) / contentH;
     const scale =
@@ -48,7 +70,7 @@ export const useStageStartingState = (): StageState => {
     };
 
     return state;
-  }, []);
+  }, [coordsRevision, windowHeight, windowWidth]);
 
   return state;
 };

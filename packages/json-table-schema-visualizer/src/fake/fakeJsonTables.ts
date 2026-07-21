@@ -32,6 +32,8 @@ export const exampleData: JSONTableSchema = {
   tables: [
     {
       name: "follows",
+      x: 0,
+      y: 0,
       note: "a note",
       fields: [
         {
@@ -78,6 +80,8 @@ export const exampleData: JSONTableSchema = {
     },
     {
       name: "users",
+      x: 0,
+      y: 0,
       note: "a note",
       fields: [
         {
@@ -101,6 +105,8 @@ export const exampleData: JSONTableSchema = {
     },
     {
       name: "bookings",
+      x: 0,
+      y: 0,
       note: "a note",
       fields: [
         {

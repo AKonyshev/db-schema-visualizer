@@ -1,4 +1,12 @@
 node_modules/
+dist/
+# tsc output of the `compile-tests` script
+out/
 *storybook.log
 .DS_Store
 coverage/
+# design/plan artifacts — never committed in this repo
+docs/superpowers/
+.superpowers/
+# specs and tickets: the local-markdown tracker stays on the author's machine
+.scratch/

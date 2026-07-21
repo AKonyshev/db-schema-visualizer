@@ -1,10 +1,11 @@
 {
-  "name": "dbml-erd-visualizer",
-  "displayName": "DBML Entity-Relationship Diagrams visualizer",
-  "description": "A VS Code extension for viewing the ERD (Entity Relationship Diagram) database schema from a dbml file in your VS Code Editor.",
-  "version": "0.8.0",
+  "name": "dbml-schema-visualizer",
+  "displayName": "DBML Schema Visualizer",
+  "description": "Visualize DBML schemas as ERD diagrams, import from PostgreSQL, and compare with a live database.",
+  "version": "0.13.0",
   "icon": "assets/logo.png",
-  "publisher": "bocovo",
+  "publisher": "konyshevav",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.87.0"
   },
@@ -13,7 +14,25 @@
   ],
   "activationEvents": [],
   "main": "./dist/extension/index.js",
+  "l10n": "./l10n",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "dbmlSchemaVisualizer",
+          "title": "%viewsContainer.title%",
+          "icon": "assets/icons/panel.svg"
+        }
+      ]
+    },
+    "views": {
+      "dbmlSchemaVisualizer": [
+        {
+          "id": "dbml-erd-visualizer.panel",
+          "name": "DBML"
+        }
+      ]
+    },
     "languages": [
       {
         "id": "dbml",
@@ -34,24 +53,111 @@
     "commands": [
       {
         "command": "dbml-erd-visualizer.previewDiagrams",
-        "title": "Show diagram",
+        "title": "%command.previewDiagrams%",
         "icon": {
           "light": "./assets/icons/open-preview.svg",
           "dark": "./assets/icons/open-preview-dark.svg"
         }
+      },
+      {
+        "command": "dbml-erd-visualizer.toggleTableRefs",
+        "title": "%command.toggleTableRefs%"
+      },
+      {
+        "command": "dbml-erd-visualizer.importFromDatabase",
+        "title": "%command.importFromDatabase%"
+      },
+      {
+        "command": "dbml-erd-visualizer.compareWithDatabase",
+        "title": "%command.compareWithDatabase%"
+      },
+      {
+        "command": "dbml-erd-visualizer.addConnection",
+        "title": "%command.addConnection%",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dbml-erd-visualizer.refreshConnections",
+        "title": "%command.refreshConnections%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dbml-erd-visualizer.deleteConnection",
+        "title": "%command.deleteConnection%",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dbml-erd-visualizer.importFromConnection",
+        "title": "%command.importFromConnection%",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "dbml-erd-visualizer.compareWithConnection",
+        "title": "%command.compareWithConnection%",
+        "icon": "$(diff)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "dbml-erd-visualizer.toggleTableRefs",
+        "key": "alt+h",
+        "when": "resourceLangId == dbml && activeWebviewPanelName == 'dblm-preview-webview'"
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "dbml-erd-visualizer.importFromConnection",
+          "when": "false"
+        },
+        {
+          "command": "dbml-erd-visualizer.compareWithConnection",
+          "when": "false"
+        },
+        {
+          "command": "dbml-erd-visualizer.deleteConnection",
+          "when": "false"
+        }
+      ],
       "editor/title": [
         {
           "when": "resourceLangId == dbml",
           "command": "dbml-erd-visualizer.previewDiagrams",
           "group": "navigation"
         }
+      ],
+      "view/title": [
+        {
+          "command": "dbml-erd-visualizer.addConnection",
+          "when": "view == dbml-erd-visualizer.panel",
+          "group": "navigation"
+        },
+        {
+          "command": "dbml-erd-visualizer.refreshConnections",
+          "when": "view == dbml-erd-visualizer.panel",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "dbml-erd-visualizer.importFromConnection",
+          "when": "view == dbml-erd-visualizer.panel && viewItem == dbmlConnection",
+          "group": "inline"
+        },
+        {
+          "command": "dbml-erd-visualizer.compareWithConnection",
+          "when": "view == dbml-erd-visualizer.panel && viewItem == dbmlConnection",
+          "group": "inline"
+        },
+        {
+          "command": "dbml-erd-visualizer.deleteConnection",
+          "when": "view == dbml-erd-visualizer.panel && viewItem == dbmlConnection",
+          "group": "inline"
+        }
       ]
     },
     "configuration": {
-      "title": "DBML Entity Relationship Diagram",
+      "title": "%configuration.title%",
       "properties": {
         "dbmlERDPreviewer.preferredTheme": {
           "type": "string",
@@ -82,12 +188,13 @@
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "yarn run compile-tests && yarn run build && yarn run lint",
-    "lint": "eslint src --ext ts",
-    "test": "vscode-test",
-    "build": "npx vite build && yarn run generate:css",
+    "compile-tests": "tsc -p tsconfig.tests.json",
+    "watch-tests": "tsc -p tsconfig.tests.json -w",
+    "pretest": "yarn run lint",
+    "lint": "eslint extension --ext ts",
+    "test": "jest",
+    "build": "npx vite build",
+    "dev": "npx vite build --watch",
     "package": "yarn run build",
     "preview": "npx vite preview",
     "create:package": "vsce package",
@@ -112,14 +219,21 @@
     "vite-tsconfig-paths": "^4.3.2"
   },
   "dependencies": {
+    "db-to-dbml": "0.0.0",
     "dbml-to-json-table-schema": "0.0.0",
+    "extension-shared": "1.0.0",
     "json-table-schema-visualizer": "1.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "schema-diff": "0.0.0",
     "shared": "0.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/BOCOVO/db-schema-visualizer"
+    "url": "https://github.com/AKonyshev/db-schema-visualizer.git"
+  },
+  "homepage": "https://github.com/AKonyshev/db-schema-visualizer#readme",
+  "bugs": {
+    "url": "https://github.com/AKonyshev/db-schema-visualizer/issues"
   }
 }

@@ -9,3 +9,8 @@ export interface XYPosition {
   x: number;
   y: number;
 }
+
+export interface XYWHPosition extends XYPosition {
+  w: number;
+  h: number;
+}

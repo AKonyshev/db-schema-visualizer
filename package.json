@@ -29,6 +29,8 @@
     "typescript": "^5.4.3"
   },
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "publish:dbml": "bash scripts/publish-extension.sh dbml",
+    "package:dbml": "bash scripts/publish-extension.sh dbml --package"
   }
 }

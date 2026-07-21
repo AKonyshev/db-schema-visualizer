@@ -1,15 +1,22 @@
-import { type DefaultPageConfig } from "@/extension/types/defaultPageConfig";
+// Relative, not the `@/` alias: this package defines no `paths` mapping, so the
+// alias silently resolved to `any` and degraded every global declared below.
+import { type DefaultPageConfig } from "./extension/types/defaultPageConfig";
+import { type SetSchemaCommandPayload } from "./extension/types/webviewCommand";
 
-export interface WebviewApi<StateType> {
+export interface WebviewApi<StateType = unknown> {
   postMessage: (message: unknown) => void;
   getState: () => StateType | undefined;
   setState: <T extends StateType | undefined>(newState: T) => T;
 }
 
+declare function acquireVsCodeApi<StateType>(): WebviewApi<StateType>;
+
 declare global {
   interface Window {
     EXTENSION_DEFAULT_CONFIG?: DefaultPageConfig;
-    vsCodeWebviewAPI: WebviewApi;
+    vsCodeWebviewAPI?: WebviewApi;
+    __SCHEMA_BOOTSTRAP__?: SetSchemaCommandPayload | null;
+    __SCHEMA_ERROR_BOOTSTRAP__?: SetSchemaCommandPayload | null;
   }
 }
 

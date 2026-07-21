@@ -47,18 +47,6 @@
     },
     {
       "type": "npm",
-      "script": "build:prisma",
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}/packages/prisma-vs-code-extension"
-      }
-    },
-    {
-      "type": "npm",
       "script": "build",
       "path": "packages/dbml-vs-code-extension",
       "group": "build",

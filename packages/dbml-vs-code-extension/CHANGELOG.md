@@ -1,8 +1,83 @@
 # Change Log
 
-All notable changes to the "dbml-erd-visualizer" extension will be documented in this file.
+All notable changes to the "dbml-schema-visualizer" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+
+## [Unreleased]
+
+## [0.13.0] - 2026-07-21
+
+### Added
+
+- **Export to Markdown** — the same table reference the AsciiDoc export produces, in Markdown: a section per table with its description, a column table and its relations.
+
+## [0.12.0] - 2026-07-21
+
+### Added
+
+- Toolbar tooltips that appear immediately and are styled like the rest of the editor, replacing the native ones that took about a second and looked out of place. Where an action has a keyboard shortcut the tooltip names it, read from the same registry the shortcut fires from. The shortcut is part of each button's accessible name too, so it reaches screen-reader users as well.
+
+### Changed
+
+- Toolbar labels now follow one rule: a control that holds a state shows its name, so its value can be read at a glance; a one-shot action shows only an icon and explains itself through its tooltip. **Auto-arrange** and **Fit to view** therefore lost their labels, and the toolbar is narrower than before. The theme toggle is the one exception — it holds state but stays icon-only, because its icon already switches between a sun and a moon.
+- The three export buttons (PNG, SVG, AsciiDoc) had near-identical icons and gave no way to tell the formats apart. They are now one **Export** button opening a menu that names each format; it closes on `Esc` or a click outside.
+
+### Fixed
+
+- The Activity Bar panel kept its group names, action labels and empty-state text in English while the command palette and the diagram followed the display language. All of them are translated now. A saved connection's own name is user data and is deliberately left as typed.
+
+## [0.11.0] - 2026-07-20
+
+### Added
+
+- Localized interface following the VS Code display language: English, Russian and Simplified Chinese. Other display languages fall back to English, including Traditional Chinese. The Chinese translation is a community contribution and has not been reviewed by a native speaker.
+- Keyboard shortcuts for the view actions, with an on-screen legend: `C` colored relations, `A` relation animation, `S` short table names, `D` detail level, `L` auto-arrange, `F` fit to view, `?` legend. The legend is generated from the same registry the shortcuts fire from, so it cannot drift from the actual bindings.
+- **Relation animation** — when enabled, the relations of the table under the cursor animate as travelling dashes, showing the direction of each relation.
+
+### Changed
+
+- The relation-highlight toolbar option is now **Colored relations** with a palette icon. Behaviour is unchanged (off: relations are grey and colour on hover; on: every relation is permanently coloured by its source table), and the stored setting is preserved.
+- Relation visibility is now toggled by an icon in the table header instead of a toolbar button.
+- **Auto-arrange** now always recomputes a fresh layout instead of restoring previously saved positions, and persists the result.
+
+### Fixed
+
+- Toolbar settings (colored relations, short table names) now take effect immediately instead of waiting for an unrelated re-render.
+- Webview styles were missing when the extension ran under the debugger (F5); the CSS is now generated on every build, including watch rebuilds.
+- Auto-layout was skewed by refs pointing at tables outside the schema and by self-references, which created phantom nodes.
+- A connection string with surrounding whitespace passed validation but failed at connect time.
+- Import: a file-write failure (read-only path, full disk) was reported as a database error.
+- Import: a failure to open the saved file no longer swallows the "save this connection" prompt or the "N cross-schema references were omitted" notice.
+- A saved connection whose name matched the "New connection" entry was indistinguishable from it in the picker; a vanished connection now reports itself instead of failing silently.
+- Underlying causes of import/compare failures are now logged to the Extension Host log instead of being discarded.
+- Panel: per-connection commands are hidden from the command palette, and the connections tree refreshes automatically.
+
+## [0.10.0] - 2026-07-17
+
+### Added
+
+- Add an Activity Bar sidebar panel with quick actions (Show diagram, Import from database, Compare with database) and a saved-connections list with per-connection import, compare, and delete.
+
+## [0.9.0] - 2026-07-17
+
+Fork release published under publisher `konyshevav`. Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) (MIT).
+
+### Added
+
+- **DBML: Import from database** — generate a `.dbml` file from a PostgreSQL schema
+- **DBML: Compare with database** — diff the active `.dbml` file against a live PostgreSQL schema (Markdown report)
+- Saved PostgreSQL connection strings in VS Code SecretStorage
+- MetaInfo block sync: table positions are saved into `/*MetaInfo ... MetaInfo*/` in the DBML file
+- Export diagram to SVG and AsciiDoc
+- Toggle relation visibility per table on the canvas
+- Alt+H command to comment/uncomment refs in DBML for the hovered table
+- Toolbar options: short table names and always-on relation highlighting
+- Hidden refs indicator on tables when MetaInfo marks refs as hidden
+
+### Changed
+
+- Independent fork maintenance; see repository README for upstream attribution and license
 
 ## [0.8.0]
 

@@ -1,5 +1,4 @@
-import { commands, type ExtensionContext } from "vscode";
-
+import { commands, window, type ExtensionContext } from "vscode";
 import { parseDBMLToJSON } from "dbml-to-json-table-schema";
 
 import { MainPanel } from "extension-shared/extension/views/panel";
@@ -8,14 +7,62 @@ import {
   WEB_VIEW_NAME,
   WEB_VIEW_TITLE,
 } from "@/extension/constants";
+import { importFromDatabase } from "./importFromDatabase";
+import { compareWithDatabase } from "./compareWithDatabase";
+import { ConnectionsTreeProvider } from "./connectionsTreeProvider";
+import {
+  addConnection,
+  compareWithConnection,
+  deleteConnectionCommand,
+  importFromConnection,
+} from "./panelCommands";
+import type { PanelNode } from "./panelNodes";
 
 export function activate(context: ExtensionContext): void {
-  // Add command to the extension context
+  const treeProvider = new ConnectionsTreeProvider(context.secrets);
+
   context.subscriptions.push(
+    window.registerTreeDataProvider("dbml-erd-visualizer.panel", treeProvider),
+    context.secrets.onDidChange(() => {
+      treeProvider.refresh();
+    }),
     commands.registerCommand(
       "dbml-erd-visualizer.previewDiagrams",
       async () => {
         lunchExtension(context);
+      },
+    ),
+    commands.registerCommand("dbml-erd-visualizer.toggleTableRefs", () => {
+      MainPanel.postMessageToWebview({ type: "toggleTableRefs" });
+    }),
+    commands.registerCommand("dbml-erd-visualizer.importFromDatabase", () => {
+      void importFromDatabase(context);
+    }),
+    commands.registerCommand("dbml-erd-visualizer.compareWithDatabase", () => {
+      void compareWithDatabase(context);
+    }),
+    commands.registerCommand("dbml-erd-visualizer.addConnection", () => {
+      void addConnection(context, treeProvider);
+    }),
+    commands.registerCommand("dbml-erd-visualizer.refreshConnections", () => {
+      treeProvider.refresh();
+    }),
+    commands.registerCommand(
+      "dbml-erd-visualizer.deleteConnection",
+      (node?: PanelNode) => {
+        void deleteConnectionCommand(context, treeProvider, node);
+      },
+    ),
+    commands.registerCommand(
+      "dbml-erd-visualizer.importFromConnection",
+      (node?: PanelNode) => {
+        void importFromConnection(context, node);
+      },
+    ),
+    commands.registerCommand(
+      "dbml-erd-visualizer.compareWithConnection",
+      (node?: PanelNode) => {
+        void compareWithConnection(context, node);
       },
     ),
   );
@@ -31,8 +78,9 @@ const lunchExtension = (context: ExtensionContext): void => {
     },
     parser: parseDBMLToJSON,
     fileExt: "dbml",
+    supportsDbmlFileSync: true,
+    diagnosticSourceId: "dbml-erd-visualizer",
   });
 };
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export function deactivate() {}
+export function deactivate(): void {}

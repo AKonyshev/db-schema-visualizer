@@ -1,8 +1,10 @@
 import { Path, Group, Circle, RegularPolygon } from "react-konva";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
+import Konva from "konva";
 
 import type { XYPosition } from "@/types/positions";
 
+import { STORAGE_KEYS } from "@/constants/storageKeys";
 import eventEmitter from "@/events-emitter";
 import { tableCoordsStore } from "@/stores/tableCoords";
 import {
@@ -10,6 +12,7 @@ import {
   COLUMN_HEIGHT,
   TABLE_HEADER_HEIGHT,
 } from "@/constants/sizing";
+import useLocalStorage from "@/hooks/localStorage";
 import { useThemeColors } from "@/hooks/theme";
 import { useTablesInfo } from "@/hooks/table";
 import { useTableColor } from "@/hooks/tableColor";
@@ -24,6 +27,7 @@ import {
 
 interface ConnectionPathProps {
   path: string;
+  linePath: string;
   sourceTableName: string;
   targetTableName: string;
   relationOwner: string;
@@ -38,6 +42,7 @@ const ARROW_BUTTON_DISAPPEARANCE_DELAY = 50;
 
 const ConnectionPath = ({
   path,
+  linePath,
   sourceTableName,
   targetTableName,
   relationOwner,
@@ -51,6 +56,15 @@ const ConnectionPath = ({
   const sourceTableColors = useTableColor(relationOwner);
   const srcWidth = useTableWidthStoredValue(sourceTableName);
   const tgtWidth = useTableWidthStoredValue(targetTableName);
+  const [alwaysHover] = useLocalStorage<boolean>(
+    STORAGE_KEYS.COLOR_RELATIONS,
+    false,
+  );
+  const [animateRelations] = useLocalStorage<boolean>(
+    STORAGE_KEYS.ANIMATE_RELATIONS,
+    false,
+  );
+  const dashRef = useRef<Konva.Path>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [btnVisible, setBtnVisible] = useState(false);
   const [btnPos, setBtnPos] = useState<XYPosition>({ x: 0, y: 0 });
@@ -139,6 +153,7 @@ const ConnectionPath = ({
   };
 
   const highlight =
+    alwaysHover ||
     hoveredTableName === sourceTableName ||
     hoveredTableName === targetTableName ||
     isHovered;
@@ -146,6 +161,32 @@ const ConnectionPath = ({
   const strokeColor = highlight
     ? sourceTableColors?.regular ?? themeColors.connection.active
     : themeColors.connection.default;
+
+  const isAnimated =
+    animateRelations &&
+    (hoveredTableName === sourceTableName ||
+      hoveredTableName === targetTableName);
+
+  useEffect(() => {
+    const node = dashRef.current;
+    if (node == null || !isAnimated) {
+      return;
+    }
+    const layer = node.getLayer();
+    if (layer == null) {
+      return;
+    }
+    // Konva.Animation mutates the node directly — no React re-render per frame.
+    // A decreasing dashOffset drives the dashes from source towards target.
+    const animation = new Konva.Animation(() => {
+      node.dashOffset(node.dashOffset() - 0.5);
+    }, layer);
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [isAnimated]);
 
   const handleOnHover = () => {
     setIsHovered(true);
@@ -324,6 +365,17 @@ const ConnectionPath = ({
         strokeWidth={2}
         stroke={strokeColor}
       />
+
+      {isAnimated && (
+        <Path
+          ref={dashRef}
+          data={linePath}
+          listening={false}
+          strokeWidth={3}
+          stroke={themeColors.bg}
+          dash={[8, 8]}
+        />
+      )}
 
       {btnVisible && (
         <Group x={btnPos.x} y={btnPos.y} listening={true} ref={arrowGroupRef}>

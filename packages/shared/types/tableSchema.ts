@@ -52,4 +52,8 @@ export interface JSONTableTable
   > {
   fields: JSONTableField[];
   indexes: JSONTableIndex[];
+  x: number;
+  y: number;
+  fromMetaInfo?: boolean;
+  hasHiddenRefs?: boolean;
 }

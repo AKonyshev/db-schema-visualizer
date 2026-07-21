@@ -1,26 +1,58 @@
 import PropTypes from "prop-types";
+import { KeyboardIcon } from "lucide-react";
 
 import AutoArrangeTableButton from "./AutoArrage/AutoArrangeTables";
 import ThemeToggler from "./ThemeToggler/ThemeToggler";
 import DetailLevelToggle from "./DetailLevelToggle/DetailLevelToggle";
 import FitToViewButton from "./FitToView/FitToView";
-import ExportButton from "./Export/Export";
+import ExportMenu from "./Export/ExportMenu";
+import ShortTableNameSetting from "./ShortTableNameSetting/ShortTableNameSetting";
+import EnableAlwaysHover from "./EnableAlwaysHover/EnableAlwaysHover";
+import AnimateRelations from "./AnimateRelations/AnimateRelations";
+import ToolbarButton from "./Button";
+
+import { shortcutKeyFor } from "@/constants/shortcuts";
+import { t } from "@/i18n/t";
 
 const Toolbar = ({
   onFitToView,
-  onDownload,
+  onDownloadPng,
+  onDownloadSvg,
+  onDownloadAdoc,
+  onDownloadMarkdown,
+  onShowLegend,
 }: {
   onFitToView: () => void;
-  onDownload: () => void;
+  onDownloadPng: () => void;
+  onDownloadSvg: () => void;
+  onDownloadAdoc: () => void;
+  onDownloadMarkdown: () => void;
+  onShowLegend: () => void;
 }) => {
   return (
-    <div className="flex absolute [&_svg]:w-5 [&_svg]:h-5 px-6 py-1 bottom-14 text-sm bg-gray-100 dark:bg-gray-700 shadow-lg rounded-2xl">
+    <div className="flex flex-wrap items-center gap-2 absolute [&_svg]:w-5 [&_svg]:h-5 px-6 py-1 bottom-14 text-sm bg-gray-100 dark:bg-gray-700 shadow-lg rounded-2xl max-w-[95vw]">
       <AutoArrangeTableButton />
       <DetailLevelToggle />
       <FitToViewButton onClick={onFitToView} />
-      <hr className="mx-4 my-1 w-px h-6 bg-gray-300" />
-      <ExportButton onDownload={onDownload} />
-      <hr className="mx-4 my-1 w-px h-6 bg-gray-300" />
+      <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
+      <ExportMenu
+        onDownloadPng={onDownloadPng}
+        onDownloadSvg={onDownloadSvg}
+        onDownloadAdoc={onDownloadAdoc}
+        onDownloadMarkdown={onDownloadMarkdown}
+      />
+      <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
+      <ShortTableNameSetting />
+      <EnableAlwaysHover />
+      <AnimateRelations />
+      <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
+      <ToolbarButton
+        label={t("legend.title")}
+        shortcutKey={shortcutKeyFor("legend")}
+        onClick={onShowLegend}
+      >
+        <KeyboardIcon />
+      </ToolbarButton>
       <ThemeToggler />
     </div>
   );
