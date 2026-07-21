@@ -6,6 +6,8 @@ import ToolbarButton from "../Button";
 import { type MessageKey } from "@/i18n/messages";
 import { t } from "@/i18n/t";
 
+const PANEL_ID = "toolbar-export-formats";
+
 interface ExportMenuProps {
   onDownloadPng: () => void;
   onDownloadSvg: () => void;
@@ -20,8 +22,11 @@ const ExportMenu = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Esc and click-outside, mirroring ShortcutsLegend so the app has one way of
-  // dismissing a popup rather than two.
+  // Esc plus click-outside. ShortcutsLegend reaches the same outcome by a
+  // different route — it is a modal with a full-screen backdrop that closes on
+  // its own click — which does not fit a dropdown anchored to one button, so
+  // this listens for an outside mousedown instead. Same behaviour for the user,
+  // deliberately different mechanism.
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -58,7 +63,7 @@ const ExportMenu = ({
       <ToolbarButton
         label={t("action.export")}
         aria-expanded={isOpen}
-        aria-haspopup="menu"
+        aria-controls={PANEL_ID}
         onClick={() => {
           setIsOpen((prev) => !prev);
         }}
@@ -67,14 +72,20 @@ const ExportMenu = ({
       </ToolbarButton>
 
       {isOpen && (
+        // Deliberately not role="menu"/"menuitem". Those roles promise the ARIA
+        // menu pattern — arrow-key roving focus, Home/End, focus moved to the
+        // first item on open and restored to the trigger on close — and none of
+        // that is implemented. Announcing a menu and then not behaving like one
+        // is worse for a screen-reader user than plain buttons, which Tab and
+        // Enter already handle. This is a disclosure: aria-expanded on the
+        // trigger, aria-controls pointing here.
         <div
-          role="menu"
+          id={PANEL_ID}
           className="absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 overflow-hidden rounded-lg bg-gray-100 shadow-lg dark:bg-gray-700"
         >
           {items.map((item) => (
             <button
               key={item.labelKey}
-              role="menuitem"
               className="block w-full whitespace-nowrap px-4 py-2 text-left text-xs text-gray-800 hover:bg-gray-200 dark:text-gray-200 dark:hover:bg-gray-600"
               onClick={() => {
                 // Close first: the download itself may open a save dialog, and

@@ -59,6 +59,7 @@
 5. Open the menu and press `Esc` — it closes and nothing is exported.
 6. Open the menu and click elsewhere on the diagram — it closes and nothing is exported.
 7. Move the pointer across the export button on the way to a neighbouring button — the menu must not open on hover alone.
+8. Keyboard only: Tab to the export button and press Enter — the list opens. Tab moves through PNG, SVG and AsciiDoc; Enter on one exports it. `Esc` closes the list. (Arrow keys are deliberately not wired: the list is plain buttons, not an ARIA menu.)
 
 ## Import from database (PostgreSQL)
 
