@@ -14,6 +14,7 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "action.exportPng": "PNG",
   "action.exportSvg": "SVG",
   "action.exportAdoc": "AsciiDoc",
+  "action.exportMarkdown": "Markdown",
   "action.shortTableName": "简短表名",
   "action.shortTableName.compact": "简短名称",
   "action.colorRelations": "彩色关系线",
@@ -33,4 +34,8 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "adoc.noDescription": "无说明",
   "adoc.columns": "| 名称 | 类型 | 说明",
   "adoc.relations": "关系：",
+  "md.title": "表说明",
+  "md.noDescription": "无说明",
+  "md.columns": "| 名称 | 类型 | 说明 |",
+  "md.relations": "关系：",
 };

@@ -11,6 +11,7 @@ export const MESSAGES_EN = {
   "action.exportPng": "PNG",
   "action.exportSvg": "SVG",
   "action.exportAdoc": "AsciiDoc",
+  "action.exportMarkdown": "Markdown",
   "action.shortTableName": "Short table names",
   "action.shortTableName.compact": "Short names",
   "action.colorRelations": "Colored relations",
@@ -30,6 +31,10 @@ export const MESSAGES_EN = {
   "adoc.noDescription": "No description",
   "adoc.columns": "| Name | Type | Description",
   "adoc.relations": "Relations:",
+  "md.title": "Table reference",
+  "md.noDescription": "No description",
+  "md.columns": "| Name | Type | Description |",
+  "md.relations": "Relations:",
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_EN;

@@ -53,13 +53,14 @@
 ## Export
 
 1. The toolbar has one export button, not three.
-2. Click it — a menu lists PNG, SVG and AsciiDoc by name. The entries name the format only, without repeating the word "Export".
+2. Click it — a menu lists PNG, SVG, AsciiDoc and Markdown by name. The entries name the format only, without repeating the word "Export".
 3. Pick PNG — the image downloads and the menu closes.
-4. Pick SVG (download `.svg` file) and AsciiDoc (download `.adoc` file with table sections); each closes the menu too.
-5. Open the menu and press `Esc` — it closes and nothing is exported.
-6. Open the menu and click elsewhere on the diagram — it closes and nothing is exported.
-7. Move the pointer across the export button on the way to a neighbouring button — the menu must not open on hover alone.
-8. Keyboard only: Tab to the export button and press Enter — the list opens. Tab moves through PNG, SVG and AsciiDoc; Enter on one exports it. `Esc` closes the list. (Arrow keys are deliberately not wired: the list is plain buttons, not an ARIA menu.)
+4. Pick SVG (`.svg`), AsciiDoc (`.adoc`) and Markdown (`.md`) in turn; each downloads and closes the menu.
+5. Open the `.md` file in a Markdown preview — the column lists render as real tables, not as rows of pipe characters.
+6. Open the menu and press `Esc` — it closes and nothing is exported.
+7. Open the menu and click elsewhere on the diagram — it closes and nothing is exported.
+8. Move the pointer across the export button on the way to a neighbouring button — the menu must not open on hover alone.
+9. Keyboard only: Tab to the export button and press Enter — the list opens. Tab moves through all four formats; Enter on one exports it. `Esc` closes the list. (Arrow keys are deliberately not wired: the list is plain buttons, not an ARIA menu.)
 
 ## Import from database (PostgreSQL)
 

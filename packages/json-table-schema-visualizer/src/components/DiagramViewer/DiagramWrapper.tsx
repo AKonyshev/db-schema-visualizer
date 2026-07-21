@@ -25,6 +25,7 @@ import { tableCoordsStore } from "@/stores/tableCoords";
 import { useTablesInfo, useTablePositionContext } from "@/hooks/table";
 import { exportStageSVG } from "@/export/svg/svg-exporter";
 import { generateAsciiDoc } from "@/utils/exportAsciiDoc";
+import { generateMarkdown } from "@/utils/exportMarkdown";
 import useLocalStorage from "@/hooks/localStorage";
 import { useKeyboardShortcuts } from "@/hooks/keyboardShortcuts";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
@@ -313,6 +314,12 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
     }
   };
 
+  const onDownloadMarkdown = () => {
+    const markdown = generateMarkdown(tables, refs);
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    downloadBlob(blob, `diagram-${Date.now()}.md`);
+  };
+
   const onDownloadAdoc = () => {
     const asciiDoc = generateAsciiDoc(tables, refs);
     const blob = new Blob([asciiDoc], { type: "text/plain" });
@@ -347,6 +354,7 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
           void onDownloadSvg();
         }}
         onDownloadAdoc={onDownloadAdoc}
+        onDownloadMarkdown={onDownloadMarkdown}
         onShowLegend={() => {
           setIsLegendOpen(true);
         }}

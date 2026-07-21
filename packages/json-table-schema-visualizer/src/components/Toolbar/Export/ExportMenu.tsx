@@ -12,12 +12,14 @@ interface ExportMenuProps {
   onDownloadPng: () => void;
   onDownloadSvg: () => void;
   onDownloadAdoc: () => void;
+  onDownloadMarkdown: () => void;
 }
 
 const ExportMenu = ({
   onDownloadPng,
   onDownloadSvg,
   onDownloadAdoc,
+  onDownloadMarkdown,
 }: ExportMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,6 +58,7 @@ const ExportMenu = ({
     { labelKey: "action.exportPng", run: onDownloadPng },
     { labelKey: "action.exportSvg", run: onDownloadSvg },
     { labelKey: "action.exportAdoc", run: onDownloadAdoc },
+    { labelKey: "action.exportMarkdown", run: onDownloadMarkdown },
   ];
 
   return (

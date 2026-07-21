@@ -13,6 +13,7 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "action.exportPng": "PNG",
   "action.exportSvg": "SVG",
   "action.exportAdoc": "AsciiDoc",
+  "action.exportMarkdown": "Markdown",
   "action.shortTableName": "Короткие имена таблиц",
   "action.shortTableName.compact": "Короткие имена",
   "action.colorRelations": "Цветные связи",
@@ -32,4 +33,8 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "adoc.noDescription": "Нет описания",
   "adoc.columns": "| Наименование | Тип | Описание",
   "adoc.relations": "Связи:",
+  "md.title": "Описание таблиц",
+  "md.noDescription": "Нет описания",
+  "md.columns": "| Наименование | Тип | Описание |",
+  "md.relations": "Связи:",
 };

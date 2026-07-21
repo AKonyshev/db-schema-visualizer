@@ -19,12 +19,14 @@ const Toolbar = ({
   onDownloadPng,
   onDownloadSvg,
   onDownloadAdoc,
+  onDownloadMarkdown,
   onShowLegend,
 }: {
   onFitToView: () => void;
   onDownloadPng: () => void;
   onDownloadSvg: () => void;
   onDownloadAdoc: () => void;
+  onDownloadMarkdown: () => void;
   onShowLegend: () => void;
 }) => {
   return (
@@ -37,6 +39,7 @@ const Toolbar = ({
         onDownloadPng={onDownloadPng}
         onDownloadSvg={onDownloadSvg}
         onDownloadAdoc={onDownloadAdoc}
+        onDownloadMarkdown={onDownloadMarkdown}
       />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
       <ShortTableNameSetting />

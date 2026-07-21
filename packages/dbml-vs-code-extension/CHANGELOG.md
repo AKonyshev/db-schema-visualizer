@@ -6,6 +6,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+### Added
+
+- **Export to Markdown** — the same table reference the AsciiDoc export produces, in Markdown: a section per table with its description, a column table and its relations.
+
 ## [0.12.0] - 2026-07-21
 
 ### Added
