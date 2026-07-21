@@ -42,6 +42,14 @@
 4. Export and the theme toggle have no shortcut — their tooltips show the label alone, with no empty brackets and no `undefined`.
 5. The tooltip does not block the pointer: moving across a button and onto its neighbour switches tooltips cleanly, without flicker.
 
+## Toolbar labels
+
+1. Buttons that hold a state show their name: detail level, short table names, colored relations, relation animation.
+2. One-shot actions show only an icon: auto-arrange, fit to view, export, the keyboard button.
+3. The theme toggle is the stated exception — stateful but icon-only, because the icon itself swaps between a sun and a moon.
+4. **Recognisability check:** look at auto-arrange and fit to view, which no longer carry a label. Are both still recognisable from the icon alone? If either is not, the icon is the thing to replace — do not restore the label, which would turn the rule back into a case-by-case argument.
+5. The toolbar fits on one line at a normal window width, and is no wider than before this change.
+
 ## Export
 
 1. Export PNG from toolbar (download).

@@ -17,7 +17,6 @@ const FitToViewButton = ({ onClick }: FitToViewButtonProps) => {
       shortcutKey={shortcutKeyFor("fitToView")}
     >
       <ExpandIcon />
-      <span className="ml-2">{t("action.fitToView")}</span>
     </ToolbarButton>
   );
 };

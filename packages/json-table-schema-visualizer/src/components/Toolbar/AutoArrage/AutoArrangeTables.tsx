@@ -16,8 +16,6 @@ const AutoArrangeTableButton = () => {
       shortcutKey={shortcutKeyFor("autoArrange")}
     >
       <LayoutPanelLeftIcon />
-
-      <span className="ml-2">{t("action.autoArrange")}</span>
     </ToolbarButton>
   );
 };
