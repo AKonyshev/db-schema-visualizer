@@ -2,17 +2,15 @@
 
 Visualize a database schema as an entity-relationship diagram from a `.dbml` file in VS Code.
 
-> **Fork.** Published as [konyshevav.dbml-schema-visualizer](https://marketplace.visualstudio.com/items?itemName=konyshevav.dbml-schema-visualizer). Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) ([MIT License](./LICENCE)).
+> **Unofficial fork.** Not affiliated with, or endorsed by, the authors of the original project. Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) ([MIT License](./LICENCE)); maintained independently by [AKonyshev](https://github.com/AKonyshev).
 
 ## Features
-
-![Demo](https://github.com/BOCOVO/db-schema-visualizer/assets/51182814/a59fd0c0-246d-4f00-be39-9885d88b8b85)
 
 - Entity-relationship diagram from your DBML file
 - Drag tables; positions can be stored in a `MetaInfo` block inside the DBML file
 - Light and dark themes
 - Display modes: all columns, relational columns only, or table headers only
-- Export diagram as PNG, SVG, or AsciiDoc
+- Export diagram as PNG, SVG, AsciiDoc, or Markdown
 - Hide/show relations per table via the icon in the table header; **Alt+H** comments refs in DBML for the table under the cursor
 - Colored relations: either one neutral colour for all of them, or each relation painted in its source table's colour
 - Relation animation: the relations of the table under the cursor animate to show their direction

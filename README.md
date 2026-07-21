@@ -4,10 +4,6 @@ A VS Code extension to visualize database schemas as ERD diagrams from DBML file
 
 > **Fork notice.** This repository is a fork of [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer), maintained independently under the [MIT License](./LICENSE). The original project and its authors are credited below; modifications in this fork are maintained by [AKonyshev](https://github.com/AKonyshev).
 
-## Demo
-
-![DBML Demo](./assets/demo.gif)
-
 ## Features
 
 - Create entity-relationship diagrams from DBML code
@@ -17,10 +13,6 @@ A VS Code extension to visualize database schemas as ERD diagrams from DBML file
 - **Fork additions (DBML):** import a PostgreSQL schema to DBML, compare an open `.dbml` file with a live database
 
 ## Install
-
-### Marketplace (this fork)
-
-- [DBML extension](https://marketplace.visualstudio.com/items?itemName=konyshevav.dbml-schema-visualizer)
 
 ### Upstream (original author)
 
