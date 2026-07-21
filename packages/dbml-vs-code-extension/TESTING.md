@@ -48,7 +48,7 @@
 2. One-shot actions show only an icon: auto-arrange, fit to view, export, the keyboard button.
 3. The theme toggle is the stated exception — stateful but icon-only, because the icon itself swaps between a sun and a moon.
 4. **Recognisability check:** look at auto-arrange and fit to view, which no longer carry a label. Are both still recognisable from the icon alone? If either is not, the icon is the thing to replace — do not restore the label, which would turn the rule back into a case-by-case argument.
-5. The toolbar fits on one line at a normal window width, and is no wider than before this change.
+5. At a normal window width the toolbar stays on a single line — no button wraps to a second row. (This replaces "no wider than before": with the change already made there is nothing left to compare against, and staying on one line is what the width actually had to protect.)
 
 ## Export
 
