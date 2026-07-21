@@ -6,6 +6,21 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-07-21
+
+### Added
+
+- Toolbar tooltips that appear immediately and are styled like the rest of the editor, replacing the native ones that took about a second and looked out of place. Where an action has a keyboard shortcut the tooltip names it, read from the same registry the shortcut fires from. The shortcut is part of each button's accessible name too, so it reaches screen-reader users as well.
+
+### Changed
+
+- Toolbar labels now follow one rule: a control that holds a state shows its name, so its value can be read at a glance; a one-shot action shows only an icon and explains itself through its tooltip. **Auto-arrange** and **Fit to view** therefore lost their labels, and the toolbar is narrower than before. The theme toggle is the one exception — it holds state but stays icon-only, because its icon already switches between a sun and a moon.
+- The three export buttons (PNG, SVG, AsciiDoc) had near-identical icons and gave no way to tell the formats apart. They are now one **Export** button opening a menu that names each format; it closes on `Esc` or a click outside.
+
+### Fixed
+
+- The Activity Bar panel kept its group names, action labels and empty-state text in English while the command palette and the diagram followed the display language. All of them are translated now. A saved connection's own name is user data and is deliberately left as typed.
+
 ## [0.11.0] - 2026-07-20
 
 ### Added
