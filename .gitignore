@@ -8,3 +8,5 @@ coverage/
 # design/plan artifacts — never committed in this repo
 docs/superpowers/
 .superpowers/
+# specs and tickets: the local-markdown tracker stays on the author's machine
+.scratch/

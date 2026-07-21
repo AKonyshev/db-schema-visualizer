@@ -2,6 +2,8 @@
 
 Issues and specs (you may know a spec as a PRD) for this repo live as markdown files in `.scratch/`.
 
+**`.scratch/` is git-ignored.** The tracker is local to whoever is working on the repo: tickets are not pushed, not visible to anyone else, and not present in a fresh clone. Write them as usual — just never `git add` them, and do not expect a ticket to still be there after cloning elsewhere.
+
 ## Conventions
 
 - One feature per directory: `.scratch/<feature-slug>/`
