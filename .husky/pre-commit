@@ -1,1 +1,16 @@
+# `set -e` is load-bearing. Without it the hook exits with the status of the
+# LAST command only, so a failing `yarn lint-staged` followed by a passing
+# `yarn test` would exit 0 and the commit would go through with the type errors
+# lint-staged just caught. Every command below must be able to stop the commit.
+set -e
+
 yarn lint-staged
+
+# The full suite, every commit (~25s). It runs after lint-staged rather than
+# inside it because the suites are repo-wide: they do not take a file list, and
+# nothing about which files are staged narrows what needs to run.
+#
+# The consequence to know: lint-staged stashes unstaged changes for its own run,
+# this does not. `yarn test` therefore tests the working tree, not the staged
+# snapshot — with a dirty tree it can pass on code the commit does not contain.
+yarn test
