@@ -53,18 +53,17 @@ const App = () => {
       setTheme={saveThemePreference}
       scrollDirection={scrollDirection}
       syncEffects={
-        // The null check is what the core's early return used to provide: the
-        // core renders a message and ignores these effects when there is no
-        // schema, but the expression below still has to be safe to evaluate.
-        supportsDbmlFileSync && schema !== null ? (
-          <DbmlFileSyncEffects
-            rawContent={rawContent}
-            documentKey={key}
-            singleTableName={
-              schema.tables.length === 1 ? schema.tables[0].name : undefined
-            }
-          />
-        ) : null
+        supportsDbmlFileSync
+          ? (schema) => (
+              <DbmlFileSyncEffects
+                rawContent={rawContent}
+                documentKey={key}
+                singleTableName={
+                  schema.tables.length === 1 ? schema.tables[0].name : undefined
+                }
+              />
+            )
+          : undefined
       }
     />
   );

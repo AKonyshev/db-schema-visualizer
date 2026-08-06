@@ -1,15 +1,16 @@
 import { type ReactNode } from "react";
 import { type JSONTableSchema } from "shared/types/tableSchema";
 
-import DiagramViewer from "@/components/DiagramViewer/DiagramViewer";
-import ErrorMessage from "@/components/Messages/ErrorMessage";
-import NoSchemaMessage from "@/components/Messages/NoSchemaMessage";
+import DiagramViewer from "../DiagramViewer/DiagramViewer";
+import ErrorMessage from "../Messages/ErrorMessage";
+import NoSchemaMessage from "../Messages/NoSchemaMessage";
+
 import ScrollDirectionProvider from "@/providers/ScrollDirectionProvider";
 import ThemeProvider from "@/providers/ThemeProvider";
 import { type ScrollDirection } from "@/types/scrollDirection";
 import { type Theme, type ThemeColors } from "@/types/theme";
 
-export interface DiagramAppProps {
+interface DiagramAppProps {
   schema: JSONTableSchema | null;
   schemaErrorMessage: string | null;
   /** Identifies the document: switching it remounts the viewer and selects that
@@ -20,8 +21,9 @@ export interface DiagramAppProps {
   setTheme: (value: Theme) => void;
   scrollDirection: ScrollDirection;
   /** Host-specific effects rendered inside the viewer — the extension uses this
-   * to write table positions back into the open file. */
-  syncEffects?: ReactNode;
+   * to write table positions back into the open file. Called only once a schema
+   * exists, so the host never has to re-check for one. */
+  syncEffects?: (schema: JSONTableSchema) => ReactNode;
 }
 
 // The composition both hosts share. It reads nothing from `window` and knows
@@ -37,7 +39,7 @@ const DiagramApp = ({
   themeColors,
   setTheme,
   scrollDirection,
-  syncEffects = null,
+  syncEffects,
 }: DiagramAppProps) => {
   if (schemaErrorMessage !== null && schema === null) {
     return <ErrorMessage message={schemaErrorMessage} />;
@@ -54,7 +56,7 @@ const DiagramApp = ({
           key={documentKey}
           documentKey={documentKey}
           {...schema}
-          syncEffects={syncEffects}
+          syncEffects={syncEffects?.(schema) ?? null}
         />
       </ScrollDirectionProvider>
     </ThemeProvider>
