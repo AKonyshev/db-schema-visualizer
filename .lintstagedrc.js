@@ -1,17 +1,18 @@
-// Note on the function form below: when a lint-staged value is a function, its
-// return string is used VERBATIM and the staged filenames are NOT appended.
-// That is a footgun — this config used to read `() => "yarn tsc-files --noEmit"`,
-// which therefore ran with no input files, and `tsc-files` with no files exits 0.
-// The pre-commit typecheck silently passed everything.
+// Only per-file work belongs here. The repo-wide checks — `yarn typecheck` and
+// `yarn test` — live in `.husky/pre-commit`, because neither takes a file list
+// and nothing about which files are staged narrows what they need to cover.
 //
-// Here the function form is deliberate and correct: `yarn typecheck` checks whole
-// tsconfig projects, so it must NOT receive a file list. Anything that should see
-// the staged filenames has to stay a plain string, as the entries below are.
+// Type checking used to hang off the `*.{ts,tsx}` glob, which meant a commit
+// touching only a `tsconfig.json` skipped it — the one edit most able to break
+// type checking was the one edit that escaped it.
+//
+// Every value below must stay a plain string. When a lint-staged value is a
+// FUNCTION, its return string is used verbatim and the staged filenames are
+// never appended; this config once read `() => "yarn tsc-files --noEmit"`, which
+// therefore ran with no input files, and `tsc-files` with no files exits 0. The
+// pre-commit typecheck silently passed everything for as long as that stood.
 
 module.exports = {
-  // Commands within a single glob run in order, so autofix and format first,
-  // then type-check whatever they left behind.
-  "*.{ts,tsx}": ["eslint --fix", "prettier --write", () => "yarn typecheck"],
-  "*.js": ["eslint --fix", "prettier --write"],
+  "*.{ts,tsx,js}": ["eslint --fix", "prettier --write"],
   "*.{md,json}": "prettier --write",
 };

@@ -2,7 +2,8 @@
 
 `yarn typecheck` runs `tsc --noEmit -p <package>/tsconfig.json` for every package
 under `packages/`, in parallel (`scripts/typecheck.js`). The whole sweep takes a
-couple of seconds. It runs on every commit via `lint-staged` → husky `pre-commit`.
+couple of seconds. It runs on every commit, invoked directly from husky
+`pre-commit` rather than through `lint-staged`.
 
 ## Why whole projects rather than the staged files
 
@@ -16,15 +17,20 @@ It matters here specifically because `extension-shared` and `dbml-vs-code-extens
 compile `json-table-schema-visualizer` sources under their own compiler options. A
 change in the visualizer can break them without breaking the visualizer's own build.
 
-## Four traps that made this silently pass everything
+Package builds type-check themselves too — `packages/web`'s `build` script runs
+`tsc --noEmit` before `vite build`, because Vite strips types without checking
+them and the container build in production runs that script alone, with no
+`yarn typecheck` anywhere near it.
+
+## Five traps that made this silently pass everything
 
 These are the ways the check has broken before. Preserve them when editing.
 
 **1. A function value in `.lintstagedrc.js` does not receive the staged filenames.**
 lint-staged uses the returned string verbatim. The config used to read
 `() => "yarn tsc-files --noEmit"`, so it ran with no input files, and `tsc-files`
-with no files exits 0 — every type error passed. Only use the function form for
-commands that must _not_ get a file list, like `yarn typecheck`.
+with no files exits 0 — every type error passed. There is no function value left
+in that config; keep it that way and put repo-wide commands in the husky hook.
 
 **2. `include`/`exclude` resolve relative to the config that declares them,
 not the one that inherits them.** The root `tsconfig.json` used to declare
@@ -50,6 +56,13 @@ therefore means adding its tsconfig; there is no way to opt out quietly.
 config, three tests, no `test` script — so `scripts/test.js` now makes the
 matching call for a package with test files and no way to run them. See
 [testing.md](./testing.md); the two scripts share their package discovery.
+
+**5. Hanging the check off a `*.{ts,tsx}` glob exempted the files most able to
+break it.** A commit touching only a `tsconfig.json`, a `package.json` or a vite
+config ran prettier and nothing else — so the edits that reconfigure type
+checking were exactly the edits type checking never saw. `yarn typecheck` now
+runs from `.husky/pre-commit` on every commit regardless of what is staged,
+alongside `yarn test` and for the same reason: neither takes a file list.
 
 ## What `@/` maps to
 

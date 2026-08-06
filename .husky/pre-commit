@@ -6,6 +6,11 @@ set -e
 
 yarn lint-staged
 
+# Whole tsconfig projects, so it takes no file list — which is why it lives here
+# rather than behind a lint-staged glob. It used to hang off `*.{ts,tsx}`, and a
+# commit touching only a `tsconfig.json` therefore skipped it entirely.
+yarn typecheck
+
 # The full suite, every commit (~25s). It runs after lint-staged rather than
 # inside it because the suites are repo-wide: they do not take a file list, and
 # nothing about which files are staged narrows what needs to run.
