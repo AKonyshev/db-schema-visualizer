@@ -10,12 +10,9 @@ const isSupported = (candidate: string): candidate is SupportedLocale =>
 // plain ones, plus the single regional exception `zh-cn`. Trying the full tag
 // first and the primary subtag second covers both.
 //
-// The widening stops there, and that is the point. `resolveLocale` matches
-// exactly so that `zh-tw` cannot reach the Simplified Chinese catalog: mainland
-// and Taiwan terminology differ, and that translation is community-contributed
-// and unreviewed by a native speaker. Falling back from `zh-tw` to a bare `zh`
-// finds nothing, which is the correct answer — English — rather than a
-// confident one nobody has checked.
+// The widening stops there. It has to: see the comment on `resolveLocale` for
+// why the match is exact. `zh-tw` fails the full tag, then fails a bare `zh`,
+// and lands on English — which is the answer that comment exists to protect.
 export const resolveBrowserLocale = (
   languages: readonly string[] | undefined,
 ): SupportedLocale => {

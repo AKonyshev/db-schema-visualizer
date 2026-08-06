@@ -11,7 +11,7 @@ const MAX_PERCENT = 70;
 const DEFAULT_PERCENT = 35;
 const KEYBOARD_STEP_PERCENT = 5;
 
-const clamp = (percent: number): number =>
+const clampPercent = (percent: number): number =>
   Math.min(MAX_PERCENT, Math.max(MIN_PERCENT, percent));
 
 interface SplitLayoutProps {
@@ -29,7 +29,7 @@ const SplitLayout = ({ left, right }: SplitLayoutProps): JSX.Element => {
     const onMove = (event: MouseEvent): void => {
       // Clamped so neither pane can be dragged away entirely: a zero-width
       // editor cannot be typed in, and a zero-width diagram cannot be read.
-      setLeftPercent(clamp((event.clientX / window.innerWidth) * 100));
+      setLeftPercent(clampPercent((event.clientX / window.innerWidth) * 100));
     };
 
     const onUp = (): void => {
@@ -71,9 +71,13 @@ const SplitLayout = ({ left, right }: SplitLayoutProps): JSX.Element => {
         onMouseDown={startDrag}
         onKeyDown={(event) => {
           if (event.key === "ArrowLeft") {
-            setLeftPercent((current) => clamp(current - KEYBOARD_STEP_PERCENT));
+            setLeftPercent((current) =>
+              clampPercent(current - KEYBOARD_STEP_PERCENT),
+            );
           } else if (event.key === "ArrowRight") {
-            setLeftPercent((current) => clamp(current + KEYBOARD_STEP_PERCENT));
+            setLeftPercent((current) =>
+              clampPercent(current + KEYBOARD_STEP_PERCENT),
+            );
           } else {
             return;
           }

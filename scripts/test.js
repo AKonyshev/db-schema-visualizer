@@ -3,7 +3,8 @@
 //
 // It shells out to `yarn workspace <name> test` rather than invoking jest
 // itself, because each package owns both its jest config and the flags it wants
-// (most pass --collectCoverage, dbml-schema-visualizer deliberately does not).
+// (whether a suite collects coverage is the package's own choice — see
+// docs/testing.md, which is the one place that records which do).
 // The sweep therefore runs exactly what a person runs by hand — there is no
 // second, subtly different way to execute the suites.
 //

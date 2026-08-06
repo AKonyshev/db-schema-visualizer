@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState, type RefObject } from "react";
+import { useCallback, useLayoutEffect, useState, type RefObject } from "react";
 
 import { type Dimension } from "@/types/dimension";
 
@@ -20,24 +20,29 @@ import { type Dimension } from "@/types/dimension";
 export const useElementSize = (ref: RefObject<HTMLElement>): Dimension => {
   const [size, setSize] = useState<Dimension>({ width: 0, height: 0 });
 
-  useLayoutEffect(() => {
+  // Only set state on an actual change, or measuring after every render would
+  // schedule a render after every measurement.
+  const measure = useCallback((): void => {
     const element = ref.current;
     if (element === null) {
       return;
     }
 
-    // Only set state on an actual change, or measuring after every render would
-    // schedule a render after every measurement.
-    const measure = (): void => {
-      const { width, height } = element.getBoundingClientRect();
-      setSize((previous) =>
-        previous.width === width && previous.height === height
-          ? previous
-          : { width, height },
-      );
-    };
+    const { width, height } = element.getBoundingClientRect();
+    setSize((previous) =>
+      previous.width === width && previous.height === height
+        ? previous
+        : { width, height },
+    );
+  }, [ref]);
 
-    measure();
+  // Observed once. Re-subscribing on every render would tear down and rebuild
+  // the observer for no gain.
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (element === null) {
+      return;
+    }
 
     const observer = new ResizeObserver(measure);
     observer.observe(element);
@@ -45,7 +50,10 @@ export const useElementSize = (ref: RefObject<HTMLElement>): Dimension => {
     return () => {
       observer.disconnect();
     };
-  });
+  }, [ref, measure]);
+
+  // Measured on every render, which is the cheap part.
+  useLayoutEffect(measure);
 
   return size;
 };

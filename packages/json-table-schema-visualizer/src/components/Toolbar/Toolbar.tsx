@@ -30,7 +30,15 @@ const Toolbar = ({
   onShowLegend: () => void;
 }) => {
   return (
-    <div className="flex flex-wrap items-center gap-2 absolute [&_svg]:w-5 [&_svg]:h-5 px-6 py-1 bottom-14 text-sm bg-gray-100 dark:bg-gray-700 shadow-lg rounded-2xl max-w-[95vw]">
+    // Centred explicitly. It used to be centred by the flex container above it —
+    // an absolutely positioned child of a flex parent is placed at the static
+    // position `items-center` gives it — which meant the toolbar's alignment
+    // depended on a rule about a parent it does not name. Wrapping the diagram
+    // in a plain block was enough to stretch it edge to edge.
+    //
+    // `max-w-full` rather than a viewport width, so a narrow pane clips the
+    // toolbar's own box rather than letting it run past the diagram.
+    <div className="absolute bottom-14 left-1/2 flex w-max max-w-full -translate-x-1/2 flex-wrap items-center gap-2 rounded-2xl bg-gray-100 px-6 py-1 text-sm shadow-lg dark:bg-gray-700 [&_svg]:h-5 [&_svg]:w-5">
       <AutoArrangeTableButton />
       <DetailLevelToggle />
       <FitToViewButton onClick={onFitToView} />

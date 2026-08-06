@@ -55,15 +55,29 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   // repositioning the stage only once
   const { scale: defaultStageScale, position: defaultStagePosition } =
     useStageStartingState({ width: viewWidth, height: viewHeight });
+  const hasPositionedStage = useRef(false);
   useEffect(() => {
-    if (stageRef.current != null) {
-      stageRef.current.scale({
-        x: defaultStageScale,
-        y: defaultStageScale,
-      });
-      stageRef.current.position(defaultStagePosition);
+    // Once, and only after there is a real size to fit into. The starting state
+    // now depends on the container's dimensions, so without this guard every
+    // resize — a dragged divider most of all — would re-fit the diagram and
+    // throw away the reader's pan. Panning is not persisted, so there would be
+    // nothing to restore it from.
+    if (
+      hasPositionedStage.current ||
+      stageRef.current === null ||
+      viewWidth === 0 ||
+      viewHeight === 0
+    ) {
+      return;
     }
-  }, [defaultStageScale, defaultStagePosition]);
+
+    stageRef.current.scale({
+      x: defaultStageScale,
+      y: defaultStageScale,
+    });
+    stageRef.current.position(defaultStagePosition);
+    hasPositionedStage.current = true;
+  }, [defaultStageScale, defaultStagePosition, viewWidth, viewHeight]);
 
   const handleZooming = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
