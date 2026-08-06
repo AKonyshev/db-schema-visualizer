@@ -2,15 +2,16 @@ import { createRoot } from "react-dom/client";
 import DiagramApp from "json-table-schema-visualizer/src/components/DiagramApp/DiagramApp";
 import { initI18n } from "json-table-schema-visualizer/src/i18n/initI18n";
 import { useCreateTheme } from "json-table-schema-visualizer/src/hooks/theme";
-import { detailLevelStore } from "json-table-schema-visualizer/src/stores/detailLevelStore";
-import { stageStateStore } from "json-table-schema-visualizer/src/stores/stagesState";
+import { switchDocument } from "json-table-schema-visualizer/src/stores/switchDocument";
 import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
-import { tableRelationsVisibilityStore } from "json-table-schema-visualizer/src/stores/tableRelationsVisibilityStore";
 import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDirection";
 
 import { sampleSchema } from "./fixtures/sampleSchema";
 
-import "./styles/index.css";
+// The visualizer's own stylesheet, not a copy of it: the Tailwind directives and
+// the full-height rules are the same for either host, and a second file would
+// only be a second thing to forget.
+import "json-table-schema-visualizer/src/styles/index.css";
 
 const DOCUMENT_KEY = "scaffold";
 
@@ -35,19 +36,10 @@ const App = (): JSX.Element => {
 
 initI18n("en");
 
-// The four per-document stores have to be pointed at the document before
-// anything renders. This is not bookkeeping: `tableCoordsStore.switchTo` is
-// also what computes the initial auto-layout when nothing is stored yet, so
-// without it the tables keep whatever coordinates they were left with — which
-// in a fresh browser means piled at the origin, half of them off-screen.
-//
-// One call, not a hook, because this document never changes. When the schema
-// starts following an editor and tabs arrive, this becomes reactive and worth
-// sharing with the extension's own switching logic.
-tableCoordsStore.switchTo(DOCUMENT_KEY, sampleSchema.tables, sampleSchema.refs);
-stageStateStore.switchTo(DOCUMENT_KEY);
-detailLevelStore.switchTo(DOCUMENT_KEY);
-tableRelationsVisibilityStore.switchTo(DOCUMENT_KEY);
+// Before anything renders — see switchDocument for why this is not optional.
+// Called once rather than from an effect because this document never changes;
+// when the schema starts following an editor, this moves into that flow.
+switchDocument(DOCUMENT_KEY, sampleSchema.tables, sampleSchema.refs);
 
 // Positions live in memory while dragging and are flushed on the way out, the
 // same as in the extension's webview.
