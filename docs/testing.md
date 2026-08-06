@@ -23,7 +23,9 @@ Two things follow from where it sits:
 ## Each package owns its own suite
 
 A package's `test` script and its `jest.config.js` are the package's business.
-Most pass `--collectCoverage`; `dbml-schema-visualizer` deliberately does not.
+Most pass `--collectCoverage`; `dbml-schema-visualizer` and `web` do not.
+`dbml-schema-visualizer` also has a `pretest` script that yarn runs first, which
+is where the eslint pass in its output comes from — the sweep does not add it.
 `scripts/test.js` runs the declared script rather than invoking jest itself, so
 those choices keep working and adding a package needs no change here.
 
@@ -38,8 +40,9 @@ survived.
 script, and because every suite was invoked by hand there was no aggregate run
 to notice. The tests had not executed since they were written.
 
-`scripts/test.js` treats a package that contains `*.test.ts` files and declares
-no `test` script as an error, names it, and exits before running anything. This
+`scripts/test.js` treats a package that contains `*.test.ts` or `*.test.tsx`
+files and declares no `test` script as an error, names it, and exits before
+running anything. This
 is the same call `scripts/typecheck.js` makes for a package that contains
 TypeScript and has no `tsconfig.json` — see trap 4 in
 [typecheck.md](./typecheck.md). In both cases the alternative is a green summary

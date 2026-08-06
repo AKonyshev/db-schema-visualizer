@@ -13,6 +13,9 @@
 // pre-commit typecheck silently passed everything for as long as that stood.
 
 module.exports = {
-  "*.{ts,tsx,js}": ["eslint --fix", "prettier --write"],
+  // `cjs` and `mjs` are here because they were not, and `packages/web/jest.config.cjs`
+  // slipped past both eslint and prettier as a result — the same shape of hole as
+  // trap 5, one file extension over.
+  "*.{ts,tsx,js,cjs,mjs}": ["eslint --fix", "prettier --write"],
   "*.{md,json}": "prettier --write",
 };

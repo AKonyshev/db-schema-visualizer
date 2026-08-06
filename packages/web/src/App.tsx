@@ -5,16 +5,18 @@ import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDi
 
 import EditorPane from "./components/EditorPane";
 import SplitLayout from "./components/SplitLayout";
+import { INITIAL_DBML } from "./document/initialText";
 import { parseDbmlText } from "./document/parseDbmlText";
 import { useDebouncedValue } from "./hooks/useDebouncedValue";
 
-interface AppProps {
-  initialText: string;
-  documentKey: string;
-}
+// Keyed for the whole session on purpose: `documentKey` identifies the diagram's
+// stored table layout, and changing it would remount the viewer and throw away
+// the reader's arrangement on every edit. The extension switches only when a
+// different file is opened.
+export const DOCUMENT_KEY = "web";
 
-const App = ({ initialText, documentKey }: AppProps): JSX.Element => {
-  const [text, setText] = useState(initialText);
+const App = (): JSX.Element => {
+  const [text, setText] = useState(INITIAL_DBML);
   const debouncedText = useDebouncedValue(text);
   const { schema, errorMessage } = useMemo(
     () => parseDbmlText(debouncedText),
@@ -26,14 +28,10 @@ const App = ({ initialText, documentKey }: AppProps): JSX.Element => {
     <SplitLayout
       left={<EditorPane value={text} onChange={setText} />}
       right={
-        // documentKey is constant for the session on purpose: it keys the
-        // diagram, and changing it would remount the viewer and throw away the
-        // reader's table positions on every edit. The extension does the same —
-        // it only switches when a different file is opened.
         <DiagramApp
           schema={schema}
           schemaErrorMessage={errorMessage}
-          documentKey={documentKey}
+          documentKey={DOCUMENT_KEY}
           theme={theme}
           themeColors={themeColors}
           setTheme={setTheme}

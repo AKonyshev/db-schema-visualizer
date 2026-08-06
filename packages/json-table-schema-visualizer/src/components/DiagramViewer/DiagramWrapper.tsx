@@ -12,7 +12,7 @@ import ShortcutsLegend from "../ShortcutsLegend/ShortcutsLegend";
 import type { Stage as CoreStage } from "konva/lib/Stage";
 
 import { STORAGE_KEYS } from "@/constants/storageKeys";
-import { useWindowSize } from "@/hooks/window";
+import { useElementSize } from "@/hooks/elementSize";
 import { useCursorChanger } from "@/hooks/cursor";
 import { DIAGRAM_PADDING } from "@/constants/sizing";
 import { useThemeColors } from "@/hooks/theme";
@@ -38,7 +38,8 @@ interface DiagramWrapperProps {
 
 const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   const scaleBy = 1.02;
-  const { height: windowHeight, width: windowWidth } = useWindowSize();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { height: viewHeight, width: viewWidth } = useElementSize(containerRef);
   const { scrollDirection } = useScrollDirectionContext();
   const { onChange: onGrabbing, onRestore: onGrabRelease } =
     useCursorChanger("grabbing");
@@ -53,7 +54,7 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
 
   // repositioning the stage only once
   const { scale: defaultStageScale, position: defaultStagePosition } =
-    useStageStartingState();
+    useStageStartingState({ width: viewWidth, height: viewHeight });
   useEffect(() => {
     if (stageRef.current != null) {
       stageRef.current.scale({
@@ -327,7 +328,11 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   };
 
   return (
-    <>
+    // `relative` so the toolbar below anchors to this box rather than to the
+    // page, and `overflow-hidden` so a stage mid-resize cannot widen the
+    // document. Both matter only once the diagram shares a page with something
+    // else, which is exactly when they stop being cosmetic.
+    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
       <Stage
         draggable
         ref={stageRef}
@@ -336,9 +341,9 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
         onWheel={handleZooming}
         onMouseDown={handleStagePointerDown}
         onTouchStart={handleStagePointerDown}
-        width={windowWidth}
-        height={windowHeight}
-        style={{ width: "fit-content", backgroundColor: themeColors.bg }}
+        width={viewWidth}
+        height={viewHeight}
+        style={{ backgroundColor: themeColors.bg }}
       >
         <Layer>
           <Group offsetX={-DIAGRAM_PADDING} offsetY={-DIAGRAM_PADDING}>
@@ -367,7 +372,7 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
           }}
         />
       )}
-    </>
+    </div>
   );
 };
 

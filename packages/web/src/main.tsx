@@ -3,7 +3,7 @@ import { initI18n } from "json-table-schema-visualizer/src/i18n/initI18n";
 import { switchDocument } from "json-table-schema-visualizer/src/stores/switchDocument";
 import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
 
-import App from "./App";
+import App, { DOCUMENT_KEY } from "./App";
 import { INITIAL_DBML } from "./document/initialText";
 import { parseDbmlText } from "./document/parseDbmlText";
 
@@ -12,16 +12,17 @@ import { parseDbmlText } from "./document/parseDbmlText";
 // only be a second thing to forget.
 import "json-table-schema-visualizer/src/styles/index.css";
 
-const DOCUMENT_KEY = "web";
-
 initI18n("en");
 
 // Before anything renders — see switchDocument for why this is not optional. It
 // runs once, with the text the editor starts on: the stores are keyed by
-// document, and this session has one. Editing the text does not re-run it,
-// because that would recompute the auto-layout and throw away the reader's
-// arrangement on every pause in typing. New tables get their positions from the
-// diagram's own provider, exactly as they do in the extension.
+// document, and this session has one.
+//
+// Editing the text does not re-run it, because that would recompute the
+// auto-layout and discard whatever arrangement the reader had made. The cost is
+// that a table added afterwards has no stored position and starts at the origin,
+// on top of whatever is there, until `L` re-arranges — the same as adding a table
+// to an open file in the extension.
 const initial = parseDbmlText(INITIAL_DBML);
 switchDocument(
   DOCUMENT_KEY,
@@ -38,7 +39,5 @@ window.addEventListener("unload", () => {
 const container = document.getElementById("app");
 
 if (container !== null) {
-  createRoot(container).render(
-    <App initialText={INITIAL_DBML} documentKey={DOCUMENT_KEY} />,
-  );
+  createRoot(container).render(<App />);
 }

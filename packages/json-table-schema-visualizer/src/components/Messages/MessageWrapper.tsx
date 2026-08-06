@@ -8,13 +8,19 @@ const MessageWrapper = ({ children }: PropsWithChildren) => {
   return (
     <div className="flex h-full w-full items-center justify-center p-6">
       {/* These screens render before the theme provider — DiagramApp returns
-          them ahead of it — so nothing sets a colour and the browser default of
-          black applied, which on the dark canvas measured as unreadable. A mid
-          grey is legible against either theme without needing to know which one
-          is active.
+          them ahead of it — so nothing set a colour and the browser default of
+          black applied, measured as unreadable on the dark canvas.
+
+          Deferring to VS Code's own foreground keeps the extension looking as it
+          always did, including on a light theme where a hardcoded grey would be
+          the wrong contrast; the fallback only applies where that variable does
+          not exist, which is the site.
 
           Long parser diagnostics arrive as a single line, hence the wrapping. */}
-      <div className="max-w-prose whitespace-pre-wrap break-words text-center text-neutral-400">
+      <div
+        className="max-w-prose whitespace-pre-wrap break-words text-center"
+        style={{ color: "var(--vscode-foreground, #a3a3a3)" }}
+      >
         {children}
       </div>
     </div>

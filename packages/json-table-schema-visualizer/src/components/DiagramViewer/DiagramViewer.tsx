@@ -44,7 +44,10 @@ const DiagramViewer = ({
       <TablesPositionsProvider tables={tables} refs={refs}>
         <MainProviders tables={tables} enums={enums}>
           <main
-            className={`relative flex flex-col items-center ${theme === Theme.dark ? "dark" : ""}`}
+            // `h-full w-full` so the diagram below can measure a real box. This
+            // element had no height of its own and did not need one while the
+            // stage sized itself to the viewport regardless of its container.
+            className={`relative flex h-full w-full flex-col items-center ${theme === Theme.dark ? "dark" : ""}`}
           >
             {syncEffects}
             <Search tables={tables} />

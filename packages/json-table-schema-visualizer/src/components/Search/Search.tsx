@@ -175,7 +175,9 @@ const Search = ({ tables }: SearchProps) => {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50" ref={dropdownRef}>
+    // `absolute`, not `fixed`: pinned to the diagram's own box so it stays over
+    // the diagram when that is one pane of a page rather than the whole window.
+    <div className="absolute top-4 right-4 z-50" ref={dropdownRef}>
       <div className="relative">
         <div title={t("search.tooltip")} className="relative flex items-center">
           <input

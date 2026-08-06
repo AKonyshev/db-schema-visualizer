@@ -6,8 +6,13 @@
 //
 // TypeScript resolves `import ... from "./svgcanvas.esm.js"` to this file, so the
 // vendored JS never enters the program and no `allowJs` is required. That makes
-// this file a promise nobody verifies: anything declared here is believed, so it
-// declares what the vendored file actually has and nothing more.
+// this file a promise nobody verifies: anything declared here is believed.
+//
+// So it declares the surface this codebase uses, and each declaration was
+// checked against the vendored source. It is deliberately not a full description
+// of the module — the `Element` export and the `document` option are real and
+// omitted, because declaring things no caller wants is how a wrong declaration
+// gets in unnoticed.
 
 export interface ContextOptions {
   width?: number;
