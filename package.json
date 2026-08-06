@@ -30,6 +30,7 @@
   "scripts": {
     "prepare": "husky",
     "typecheck": "node scripts/typecheck.js",
+    "test": "node scripts/test.js",
     "publish:dbml": "bash scripts/publish-extension.sh dbml",
     "package:dbml": "bash scripts/publish-extension.sh dbml --package"
   }

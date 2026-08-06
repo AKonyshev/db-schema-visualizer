@@ -13,35 +13,20 @@ const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const repoRoot = path.resolve(__dirname, "..");
-const packagesDir = path.join(repoRoot, "packages");
+const { repoRoot, packageDirs, containsFile } = require("./workspace-packages");
+
 const tsc = require.resolve("typescript/bin/tsc");
 
-const IGNORED_DIRS = new Set(["node_modules", "dist", "out", ".turbo"]);
+const containsTypeScript = (dir) =>
+  containsFile(dir, (name) => /\.tsx?$/.test(name));
 
-const containsTypeScript = (dir) => {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      if (IGNORED_DIRS.has(entry.name)) continue;
-      if (containsTypeScript(path.join(dir, entry.name))) return true;
-      continue;
-    }
-    if (/\.tsx?$/.test(entry.name)) return true;
-  }
-
-  return false;
-};
-
-const packageDirs = fs
-  .readdirSync(packagesDir, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && !IGNORED_DIRS.has(entry.name))
-  .map((entry) => path.join(packagesDir, entry.name));
+const dirs = packageDirs();
 
 // A package with TypeScript in it and no tsconfig used to be dropped from the
 // sweep without a word, so `typecheck passed` meant "passed, except the ones I
 // skipped". That is the same silently-green failure this whole script exists to
 // prevent, so it is an error rather than a filter.
-const unchecked = packageDirs.filter(
+const unchecked = dirs.filter(
   (dir) =>
     !fs.existsSync(path.join(dir, "tsconfig.json")) && containsTypeScript(dir),
 );
@@ -55,7 +40,7 @@ if (unchecked.length > 0) {
   process.exit(1);
 }
 
-const projects = packageDirs
+const projects = dirs
   .map((dir) => path.join(dir, "tsconfig.json"))
   .filter((tsconfig) => fs.existsSync(tsconfig));
 

@@ -46,6 +46,11 @@ summary still read `typecheck passed`. The script now treats a package that
 contains TypeScript and has no config as an error and names it. Adding a package
 therefore means adding its tsconfig; there is no way to opt out quietly.
 
+`packages/shared` then turned out to have the same hole in its tests — a jest
+config, three tests, no `test` script — so `scripts/test.js` now makes the
+matching call for a package with test files and no way to run them. See
+[testing.md](./testing.md); the two scripts share their package discovery.
+
 ## What `@/` maps to
 
 In `json-table-schema-visualizer` the alias points at that package's own `src`.
