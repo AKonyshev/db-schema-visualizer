@@ -1,22 +1,13 @@
 import { SHORTCUTS, type ExecutableShortcutId } from "@/constants/shortcuts";
+import { isTypingTarget, type TypingTarget } from "@/utils/isTypingTarget";
 
 export interface ShortcutEventLike {
   key: string;
   ctrlKey: boolean;
   metaKey: boolean;
   altKey: boolean;
-  target: { tagName?: string; isContentEditable?: boolean } | null;
+  target: TypingTarget | null;
 }
-
-const isTypingTarget = (target: ShortcutEventLike["target"]): boolean => {
-  if (target == null) {
-    return false;
-  }
-  const tag = target.tagName?.toUpperCase();
-  return (
-    tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable === true
-  );
-};
 
 export const matchShortcut = (
   event: ShortcutEventLike,

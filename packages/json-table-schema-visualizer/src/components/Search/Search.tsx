@@ -10,6 +10,7 @@ import { type JSONTableTable } from "shared/types/tableSchema";
 import { t } from "@/i18n/t";
 import eventEmitter from "@/events-emitter";
 import { useTablesInfo } from "@/hooks/table";
+import { isTypingTarget, type TypingTarget } from "@/utils/isTypingTarget";
 
 interface SearchResult {
   type: "table" | "column";
@@ -126,10 +127,19 @@ const Search = ({ tables }: SearchProps) => {
 
   useEffect(() => {
     const handleShortcut = (e: globalThis.KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
-        e.preventDefault();
-        inputRef.current?.focus();
+      if (!((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f")) {
+        return;
       }
+
+      // Ctrl/Cmd+F belongs to whatever holds focus. The listener is on the
+      // window, so without this the preventDefault below would deny a focused
+      // text field its own find — including a code editor sharing the page.
+      if (isTypingTarget(e.target as TypingTarget | null)) {
+        return;
+      }
+
+      e.preventDefault();
+      inputRef.current?.focus();
     };
 
     window.addEventListener("keydown", handleShortcut);
