@@ -17,9 +17,46 @@ const repoRoot = path.resolve(__dirname, "..");
 const packagesDir = path.join(repoRoot, "packages");
 const tsc = require.resolve("typescript/bin/tsc");
 
-const projects = fs
-  .readdirSync(packagesDir)
-  .map((name) => path.join(packagesDir, name, "tsconfig.json"))
+const IGNORED_DIRS = new Set(["node_modules", "dist", "out", ".turbo"]);
+
+const containsTypeScript = (dir) => {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      if (IGNORED_DIRS.has(entry.name)) continue;
+      if (containsTypeScript(path.join(dir, entry.name))) return true;
+      continue;
+    }
+    if (/\.tsx?$/.test(entry.name)) return true;
+  }
+
+  return false;
+};
+
+const packageDirs = fs
+  .readdirSync(packagesDir, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && !IGNORED_DIRS.has(entry.name))
+  .map((entry) => path.join(packagesDir, entry.name));
+
+// A package with TypeScript in it and no tsconfig used to be dropped from the
+// sweep without a word, so `typecheck passed` meant "passed, except the ones I
+// skipped". That is the same silently-green failure this whole script exists to
+// prevent, so it is an error rather than a filter.
+const unchecked = packageDirs.filter(
+  (dir) =>
+    !fs.existsSync(path.join(dir, "tsconfig.json")) && containsTypeScript(dir),
+);
+
+if (unchecked.length > 0) {
+  console.error("typecheck: these packages have TypeScript but no tsconfig:");
+  for (const dir of unchecked) {
+    console.error(`  ${path.relative(repoRoot, dir)}`);
+  }
+  console.error("add one, or the package is never checked.");
+  process.exit(1);
+}
+
+const projects = packageDirs
+  .map((dir) => path.join(dir, "tsconfig.json"))
   .filter((tsconfig) => fs.existsSync(tsconfig));
 
 if (projects.length === 0) {

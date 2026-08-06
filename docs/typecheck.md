@@ -16,7 +16,7 @@ It matters here specifically because `extension-shared` and `dbml-vs-code-extens
 compile `json-table-schema-visualizer` sources under their own compiler options. A
 change in the visualizer can break them without breaking the visualizer's own build.
 
-## Three traps that made this silently pass everything
+## Four traps that made this silently pass everything
 
 These are the ways the check has broken before. Preserve them when editing.
 
@@ -38,6 +38,25 @@ each package declares its own `include`.
 `require("./tsconfig.json")` to reuse `compilerOptions.paths`, and Node's JSON
 parser rejects comments. A comment in a package tsconfig breaks that package's
 tests. Explanations belong here instead.
+
+**4. A package with no `tsconfig.json` used to be skipped without a word.**
+`scripts/typecheck.js` built its list by filtering for configs that exist, so
+`packages/shared` — six `.ts` files, no config — was never checked, while the
+summary still read `typecheck passed`. The script now treats a package that
+contains TypeScript and has no config as an error and names it. Adding a package
+therefore means adding its tsconfig; there is no way to opt out quietly.
+
+## What `@/` maps to
+
+In `json-table-schema-visualizer` the alias points at that package's own `src`.
+In `extension-shared`, `dbml-vs-code-extension` and `web` it points at the
+visualizer's `src` instead, because those packages compile the visualizer's
+components and those components import each other through the alias.
+
+The consequence is that `@/` is not available for a package's own modules — code
+in the three host packages uses relative paths for its own files. Pointing the
+alias at both locations would resolve a name to whichever came first in the list,
+silently, so it is deliberately mapped to one.
 
 ## Vendored JavaScript
 

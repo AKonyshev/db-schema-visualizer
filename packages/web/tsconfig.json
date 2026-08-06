@@ -7,9 +7,6 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "baseUrl": "./",
     "paths": {
-      // `@/` means the visualizer's src throughout this monorepo — its own
-      // components import each other that way, and they are compiled as part of
-      // this package. Code in here uses relative paths for its own modules.
       "@/*": ["../json-table-schema-visualizer/src/*"]
     },
     "types": ["vite/client"]
