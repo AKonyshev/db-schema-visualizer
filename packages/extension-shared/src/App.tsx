@@ -23,8 +23,12 @@ const App = () => {
   const { schema, key, schemaErrorMessage, rawContent } = useSchema();
   const supportsDbmlFileSync =
     window.EXTENSION_DEFAULT_CONFIG?.supportsDbmlFileSync === true;
-  // The host injects no config into the dev-server webview, so fall back to the
-  // same default the core's ScrollDirectionContext uses.
+  // In practice the config is always injected — `setupHtml` runs `injectScripts`
+  // on both the dev-server and the packaged HTML, and `index.html` carries the
+  // marker — so this fallback should never fire. It is here because the failure
+  // it prevents is silent and nasty: the wheel handler in DiagramWrapper is an
+  // `if`/`else if` with no `else`, so an undefined direction leaves its delta at
+  // zero and the wheel zooms *out* whichever way you scroll.
   const scrollDirection =
     window.EXTENSION_DEFAULT_CONFIG?.scrollDirection ?? ScrollDirection.UpOut;
 
