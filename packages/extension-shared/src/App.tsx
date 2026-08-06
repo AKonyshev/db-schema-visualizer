@@ -1,6 +1,7 @@
 import DiagramApp from "json-table-schema-visualizer/src/components/DiagramApp/DiagramApp";
 import { useCreateTheme } from "json-table-schema-visualizer/src/hooks/theme";
 import { type Theme } from "json-table-schema-visualizer/src/types/theme";
+import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDirection";
 
 import {
   WebviewCommand,
@@ -22,6 +23,10 @@ const App = () => {
   const { schema, key, schemaErrorMessage, rawContent } = useSchema();
   const supportsDbmlFileSync =
     window.EXTENSION_DEFAULT_CONFIG?.supportsDbmlFileSync === true;
+  // The host injects no config into the dev-server webview, so fall back to the
+  // same default the core's ScrollDirectionContext uses.
+  const scrollDirection =
+    window.EXTENSION_DEFAULT_CONFIG?.scrollDirection ?? ScrollDirection.UpOut;
 
   // update the preference in the extension settings
   const saveThemePreference = (theme: Theme) => {
@@ -42,7 +47,7 @@ const App = () => {
       theme={theme}
       themeColors={themeColors}
       setTheme={saveThemePreference}
-      scrollDirection={window.EXTENSION_DEFAULT_CONFIG?.scrollDirection}
+      scrollDirection={scrollDirection}
       syncEffects={
         // The null check is what the core's early return used to provide: the
         // core renders a message and ignores these effects when there is no

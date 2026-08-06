@@ -1,4 +1,3 @@
-// @ts-expect-error svgcanvas has no types
 import { type Stage } from "konva/lib/Stage";
 
 import { Context } from "./svgcanvas.esm.js";
@@ -38,9 +37,11 @@ export async function exportStageSVG(
 
   stage.draw();
 
-  let out = c2s.getSerializedSvg();
+  const svg = c2s.getSerializedSvg();
 
-  out = blob ? new Blob([out], { type: "image/svg+xml;charset=utf-8" }) : out;
+  const out: string | Blob = blob
+    ? new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
+    : svg;
 
   layer.canvas.context._context = oldContext;
   stage.position(oldPosition);

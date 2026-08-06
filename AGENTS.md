@@ -16,3 +16,10 @@ The five canonical roles, used verbatim (`needs-triage`, `needs-info`,
 ### Domain docs
 
 Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Type checking
+
+`yarn typecheck` checks every package; it also runs on every commit. Package
+`tsconfig.json` files must stay strict JSON (no comments) — `jest.config.js`
+`require()`s them. See `docs/typecheck.md` before changing the tsconfigs, the
+lint-staged config, or `scripts/typecheck.js`.
