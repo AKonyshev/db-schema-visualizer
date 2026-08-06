@@ -6,13 +6,16 @@ import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableC
 import App, { DOCUMENT_KEY } from "./App";
 import { INITIAL_DBML } from "./document/initialText";
 import { parseDbmlText } from "./document/parseDbmlText";
+import { resolveBrowserLocale } from "./i18n/resolveBrowserLocale";
 
 // The visualizer's own stylesheet, not a copy of it: the Tailwind directives and
 // the full-height rules are the same for either host, and a second file would
 // only be a second thing to forget.
 import "json-table-schema-visualizer/src/styles/index.css";
 
-initI18n("en");
+// `languages` rather than `language`: the first choice may be one we do not
+// have, and the reader's second choice is a better answer than English.
+initI18n(resolveBrowserLocale(navigator.languages));
 
 // Before anything renders — see switchDocument for why this is not optional. It
 // runs once, with the text the editor starts on: the stores are keyed by
