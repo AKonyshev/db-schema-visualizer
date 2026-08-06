@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 // English is the source language of this repository. Anything else in the
@@ -44,7 +44,17 @@ describe("source language", () => {
     const offenders: string[] = [];
 
     for (const file of listSourceFiles()) {
-      const contents = readFileSync(path.join(repoRoot, file), "utf-8");
+      const absolute = path.join(repoRoot, file);
+
+      // `git ls-files` reads the index, so a file deleted but not yet staged is
+      // still listed while being gone from disk. That is an ordinary working
+      // state; reading it threw ENOENT and took the whole guard down with a
+      // message about the wrong thing entirely.
+      if (!existsSync(absolute)) {
+        continue;
+      }
+
+      const contents = readFileSync(absolute, "utf-8");
       contents.split("\n").forEach((line, index) => {
         if (NON_ENGLISH.test(line)) {
           offenders.push(`${file}:${index + 1}: ${line.trim()}`);
