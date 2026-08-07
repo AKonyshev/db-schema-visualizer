@@ -29,6 +29,8 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "action.openFile.hint": "打开 .dbml 文件，或将文件拖到页面上",
   "action.downloadFile": "下载",
   "action.downloadFile.hint": "将此架构下载为 .dbml 文件",
+  "action.writeLayout": "保存布局",
+  "action.writeLayout.hint": "将表的位置写入文本，让布局随文件一起传递",
   "tab.untitled": "架构",
   "tab.new": "新建架构",
   "tab.close": "关闭此架构",

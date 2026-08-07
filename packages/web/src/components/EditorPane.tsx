@@ -63,11 +63,24 @@ const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
 
   useEffect(() => {
     const editor = editorRef.current;
+    const model = editor?.getModel() ?? null;
     // Only when the two have genuinely diverged — writing the value back on
     // every keystroke would reset the caret to the start of the document.
-    if (editor !== null && editor.getValue() !== value) {
-      editor.setValue(value);
+    if (editor === null || model === null || editor.getValue() === value) {
+      return;
     }
+
+    // `executeEdits` between two undo stops rather than `setValue`, which
+    // discards the undo history outright. Everything that reaches this effect is
+    // a command the reader ran — writing the layout into the text, or Alt+H — and
+    // a command that cannot be undone is worse than one that does nothing. The
+    // two stops are what make each of them a single step rather than merging
+    // with whatever was typed before it.
+    editor.pushUndoStop();
+    editor.executeEdits("host", [
+      { range: model.getFullModelRange(), text: value },
+    ]);
+    editor.pushUndoStop();
   }, [value]);
 
   return <div ref={hostRef} className="h-full w-full" />;

@@ -26,6 +26,9 @@ export const MESSAGES_EN = {
   "action.openFile.hint": "Open a .dbml file, or drop one anywhere on the page",
   "action.downloadFile": "Download",
   "action.downloadFile.hint": "Download this schema as a .dbml file",
+  "action.writeLayout": "Save layout",
+  "action.writeLayout.hint":
+    "Write the table positions into the text, so the layout travels with the file",
   "tab.untitled": "Schema",
   "tab.new": "New schema",
   "tab.close": "Close this schema",

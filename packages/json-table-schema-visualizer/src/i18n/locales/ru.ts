@@ -28,6 +28,9 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "action.openFile.hint": "Откройте файл .dbml или перетащите его на страницу",
   "action.downloadFile": "Скачать",
   "action.downloadFile.hint": "Скачать эту схему файлом .dbml",
+  "action.writeLayout": "Сохранить раскладку",
+  "action.writeLayout.hint":
+    "Записать позиции таблиц в текст, чтобы раскладка ушла вместе с файлом",
   "tab.untitled": "Схема",
   "tab.new": "Новая схема",
   "tab.close": "Закрыть эту схему",

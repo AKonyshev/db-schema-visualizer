@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toggleTableRefs } from "dbml-to-json-table-schema";
 import DiagramApp from "json-table-schema-visualizer/src/components/DiagramApp/DiagramApp";
 import { useCreateTheme } from "json-table-schema-visualizer/src/hooks/theme";
 import { switchDocument } from "json-table-schema-visualizer/src/stores/switchDocument";
@@ -9,9 +10,11 @@ import DocumentBar from "./components/DocumentBar";
 import EditorPane from "./components/EditorPane";
 import SplitLayout from "./components/SplitLayout";
 import TabBar from "./components/TabBar";
+import ToggleRefsShortcut from "./components/ToggleRefsShortcut";
 import { toDbmlFilename } from "./document/dbmlFilename";
 import { downloadTextFile } from "./document/downloadTextFile";
 import { parseDbmlText } from "./document/parseDbmlText";
+import { writeLayoutIntoText } from "./document/writeLayoutIntoText";
 import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { useFileDrop } from "./hooks/useFileDrop";
 import {
@@ -129,6 +132,19 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
         // on every edit would rearrange the diagram under someone mid-sentence.
         const { schema } = parseDbmlText(contents);
         if (schema !== null) {
+          // A file carrying its own layout block overrules whatever this tab
+          // remembered, and the stored positions have to be cleared for it to be
+          // heard at all: `resetPositions` only consults a file's coordinates
+          // when it finds nothing stored, and a tab opened by the `+` button has
+          // already stored an empty layout for its empty document. Without this,
+          // a file arranged in the extension opens on the site in a layout the
+          // site invented — which is the round trip the whole format exists for.
+          if (schema.tables.some((table) => table.fromMetaInfo === true)) {
+            tableCoordsStore.clear(
+              documentKeyOf(activeTab(workspaceRef.current)),
+            );
+          }
+
           tableCoordsStore.resetPositions(schema.tables, schema.refs);
         }
 
@@ -141,6 +157,58 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
   );
 
   useFileDrop(openFile);
+
+  /**
+   * Both text-changing commands take the same shape, and the shape is the point:
+   * read the active tab's text, hand it to a transform that came from the
+   * package the extension uses, and put the answer back only if it differs.
+   *
+   * Comparing first is what keeps a command that changed nothing — Alt+H over a
+   * table with no relations, the layout button before a diagram exists — out of
+   * the undo history entirely, rather than leaving an empty step in it.
+   */
+  const runTextCommand = useCallback(
+    (transform: (text: string) => string) => {
+      const current = workspaceRef.current;
+      const text = activeTab(current).text;
+      const updated = transform(text);
+
+      if (updated !== text) {
+        changeWorkspace(updateActiveText(current, updated));
+      }
+    },
+    [changeWorkspace],
+  );
+
+  const writeLayout = useCallback(() => {
+    runTextCommand((text) =>
+      writeLayoutIntoText(text, tableCoordsStore.getCoordEntriesForMetaInfo()),
+    );
+  }, [runTextCommand]);
+
+  const toggleRefs = useCallback(
+    (tableName: string) => {
+      // The same call the extension makes, coordinates included: `toggleTableRefs`
+      // records the table as hidden in the layout block as it comments the
+      // relations out, and without a position to record it would write the table
+      // back at the origin.
+      const coords = tableCoordsStore.getCoords(tableName);
+
+      runTextCommand((text) =>
+        toggleTableRefs(text, tableName, {
+          name: tableName,
+          x: coords.x,
+          y: coords.y,
+        }),
+      );
+    },
+    [runTextCommand],
+  );
+
+  const syncEffects = useCallback(
+    () => <ToggleRefsShortcut onToggle={toggleRefs} />,
+    [toggleRefs],
+  );
 
   return (
     <SplitLayout
@@ -163,6 +231,7 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
             onDownload={() => {
               downloadTextFile(toDbmlFilename(tab.title), tab.text);
             }}
+            onWriteLayout={writeLayout}
           />
           {/* `min-h-0` so the editor shrinks inside the column rather than
               pushing the bars off the top. */}
@@ -189,6 +258,7 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
           themeColors={themeColors}
           setTheme={setTheme}
           scrollDirection={ScrollDirection.UpOut}
+          syncEffects={syncEffects}
         />
       }
     />
