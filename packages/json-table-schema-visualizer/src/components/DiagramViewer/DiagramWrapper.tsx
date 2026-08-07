@@ -177,6 +177,38 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
     }
   };
 
+  /**
+   * A fresh arrangement gets a fresh view.
+   *
+   * Auto-arrange moves every table at once, so the framing the reader had was
+   * framing a layout that no longer exists — press `L` on a diagram you have
+   * zoomed into and the result can land entirely off-screen, with nothing on
+   * screen changing to say why.
+   *
+   * This is deliberately *not* the `hasPositionedStage` path above. That one
+   * answers "where does the stage start", once, and must keep refusing to run
+   * again — a re-fit on every recomputation would take the reader's pan away
+   * whenever the split divider moved. This one answers a different question:
+   * the coordinates were replaced, so frame what replaced them.
+   *
+   * The same event covers opening a file and switching to a document with no
+   * stored layout, which are the other two ways a whole arrangement is computed
+   * at once. Framing those is right for the same reason.
+   */
+  useEffect(() => {
+    return tableCoordsStore.subscribeToReset(() => {
+      // Next frame, not now. The store emits before React has re-rendered the
+      // tables at their new coordinates, so measuring the stage here would frame
+      // the arrangement that has just been replaced — the old view, computed
+      // twice.
+      requestAnimationFrame(() => {
+        fitToView();
+      });
+    });
+    // `fitToView` reads nothing but `stageRef` and constants, so the copy
+    // captured here stays correct for the life of the component.
+  }, []);
+
   const [, setColorRelations] = useLocalStorage<boolean>(
     STORAGE_KEYS.COLOR_RELATIONS,
     false,
