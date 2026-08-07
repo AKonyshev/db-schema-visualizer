@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as monaco from "monaco-editor/editor/editor.api";
 
-import { DBML_LANGUAGE_ID } from "../editor/dbmlLanguage";
+import { DBML_LANGUAGE_ID, DBML_THEME_ID } from "../editor/dbmlLanguage";
 
 export interface EditorPaneProps {
   value: string;
@@ -35,7 +35,7 @@ const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
     const editor = monaco.editor.create(host, {
       value,
       language: DBML_LANGUAGE_ID,
-      theme: "vs-dark",
+      theme: DBML_THEME_ID,
       minimap: { enabled: false },
       fontSize: 13,
       scrollBeyondLastLine: false,

@@ -20,7 +20,12 @@ import "monaco-editor/editor/contrib/contextmenu/browser/contextmenu";
 // path that does not exist.
 import EditorWorker from "monaco-editor/editor/editor.worker?worker";
 
-import { DBML_LANGUAGE_ID, DBML_TOKENS } from "./dbmlLanguage";
+import {
+  DBML_LANGUAGE_ID,
+  DBML_THEME,
+  DBML_THEME_ID,
+  DBML_TOKENS,
+} from "./dbmlLanguage";
 
 // Called once, before the first render.
 //
@@ -40,4 +45,5 @@ export const setupMonaco = (): void => {
 
   monaco.languages.register({ id: DBML_LANGUAGE_ID });
   monaco.languages.setMonarchTokensProvider(DBML_LANGUAGE_ID, DBML_TOKENS);
+  monaco.editor.defineTheme(DBML_THEME_ID, DBML_THEME);
 };
