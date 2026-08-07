@@ -6,6 +6,7 @@ import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableC
 import App, { DOCUMENT_KEY } from "./App";
 import { INITIAL_DBML } from "./document/initialText";
 import { parseDbmlText } from "./document/parseDbmlText";
+import { setupMonaco } from "./editor/setupMonaco";
 import { resolveBrowserLocale } from "./i18n/resolveBrowserLocale";
 
 // The visualizer's own stylesheet, not a copy of it: the Tailwind directives and
@@ -16,6 +17,8 @@ import "json-table-schema-visualizer/src/styles/index.css";
 // `languages` rather than `language`: the first choice may be one we do not
 // have, and the reader's second choice is a better answer than English.
 initI18n(resolveBrowserLocale(navigator.languages));
+
+setupMonaco();
 
 // Before anything renders — see switchDocument for why this is not optional. It
 // runs once, with the text the editor starts on: the stores are keyed by

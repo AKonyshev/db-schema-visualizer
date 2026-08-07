@@ -21,8 +21,25 @@ describe("isTypingTarget", () => {
     );
   });
 
+  // Monaco 0.56 focuses a `<div class="native-edit-context" role="textbox">`
+  // via the EditContext API — no textarea, not contenteditable. Matching on the
+  // tag name alone missed it, and the diagram's table search took Ctrl/Cmd+F
+  // away from the editor as a result.
+  test("detects an element that declares itself a textbox", () => {
+    expect(isTypingTarget({ tagName: "DIV", role: "textbox" })).toBe(true);
+  });
+
+  test("detects a searchbox and a combobox the same way", () => {
+    expect(isTypingTarget({ tagName: "DIV", role: "searchbox" })).toBe(true);
+    expect(isTypingTarget({ tagName: "DIV", role: "combobox" })).toBe(true);
+  });
+
   test("returns false for an ordinary element", () => {
     expect(isTypingTarget({ tagName: "DIV" })).toBe(false);
+  });
+
+  test("returns false for an element with an unrelated role", () => {
+    expect(isTypingTarget({ tagName: "DIV", role: "button" })).toBe(false);
   });
 
   // Not redundant with the case above: an absent flag and an explicitly false
