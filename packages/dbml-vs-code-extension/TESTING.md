@@ -88,3 +88,46 @@
 4. On a connection, use the inline **Import** / **Compare** icons — the flow runs against that connection without asking to pick one.
 5. Use the inline **Delete** icon — confirm the modal; the connection disappears. Click **⟳** to refresh.
 6. With a non-English display language, the group names and the three action labels are translated, and so is "No saved connections" when there are none. A saved connection's own name is user data and must stay exactly as typed, untranslated.
+
+## The site
+
+Everything below is `packages/web`, not the extension. Build and serve it first —
+`yarn build:web`, then either `yarn workspace web preview` or the container image
+from [packages/web/README.md](../web/README.md) — and use the built output rather
+than the dev server, so what is tested is what would be deployed.
+
+1. **Live parsing.** Type a table into the editor; the diagram grows a table
+   without any button being pressed. Delete it again; the table goes.
+2. **A syntax error does not blank the page.** Delete a closing brace. The
+   diagram is replaced by a readable parser message, the editor keeps every
+   character you typed, and restoring the brace brings the diagram back.
+3. **Opening a file.** Use **Open** to pick a `.dbml` file, then drag a different
+   one anywhere onto the page. Both replace the editor's contents, and the
+   browser never navigates away from the page or opens the file itself.
+4. **Dragging tables.** Move a few tables around. The editor text does not change
+   while you drag. Press Ctrl/Cmd+Z in the editor: it takes back what you typed,
+   not where you dropped a table.
+5. **Downloading.** Press **Download**. The file is named after the tab, keeps
+   the `.dbml` extension without doubling it, and its contents match the editor
+   exactly. A file opened and downloaded again without edits is unchanged.
+6. **Tabs hold independent layouts.** Open two tabs with the same schema. Arrange
+   the tables differently in each, switch back and forth, and both arrangements
+   survive. Reload the page: the tabs, the selected one, and both layouts are
+   still there.
+7. **The layout round trip, both directions.** On the site, arrange a schema,
+   press **Save layout**, and download it. Open that file in the extension: the
+   tables are where you left them. Then move them in the extension, save, and
+   open the file on the site — again, where you left them. This is the whole
+   point of the shared metadata format, and it is the one thing no automated
+   check in this repository covers.
+8. **Alt+H.** Hover a table on the diagram and press Alt+H. Its relations are
+   commented out in the editor text and the lines it drew disappear. Press it
+   again over the same table to bring them back. Each press is a single
+   Ctrl/Cmd+Z.
+9. **Ctrl/Cmd+F belongs to whatever has focus.** With the caret in the editor, it
+   opens the editor's own find. With focus anywhere else on the page, it puts the
+   caret in the diagram's table search.
+10. **Nothing leaves the browser.** With the browser's network panel open and
+    recording, load the page and use it: open a file, type, download. Every
+    request is to the site's own origin. Then disconnect the machine from the
+    network entirely and reload — the page still works.

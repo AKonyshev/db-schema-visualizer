@@ -1,6 +1,6 @@
 # Database schema visualizer
 
-A VS Code extension to visualize database schemas as ERD diagrams from DBML files.
+A VS Code extension to visualize database schemas as ERD diagrams from DBML files — and the same visualizer as a website you can host yourself.
 
 > **Fork notice.** This repository is a fork of [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer), maintained independently under the [MIT License](./LICENSE). The original project and its authors are credited below; modifications in this fork are maintained by [AKonyshev](https://github.com/AKonyshev).
 
@@ -29,9 +29,26 @@ yarn install
 
 Open the repo in VS Code or Cursor, then **Run and Debug → Debug DBML Extension** (`F5`). See [packages/dbml-vs-code-extension/TESTING.md](./packages/dbml-vs-code-extension/TESTING.md) for manual test steps.
 
+## The site
+
+The same viewer runs as a web page — a DBML editor beside the diagram it
+describes — for people who will not be installing an editor to read a schema
+someone sent them. It has no backend: nothing you open leaves the browser, which
+is what lets it be deployed inside a closed network.
+
+```bash
+yarn build:web
+docker build -f packages/web/Dockerfile -t dbml-schema-visualizer-web .
+docker run --rm -p 8080:8080 dbml-schema-visualizer-web
+```
+
+See [packages/web/README.md](./packages/web/README.md) for local development,
+the container image, and the tests.
+
 ## Extension packages
 
 - [DBML extension](./packages/dbml-vs-code-extension/README.md)
+- [The site](./packages/web/README.md)
 
 ## Attribution & license
 

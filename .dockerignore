@@ -1,0 +1,21 @@
+# The build installs its own dependencies and builds its own output; copying the
+# host's would both slow the context transfer and risk baking in artefacts built
+# against a different platform.
+node_modules
+**/node_modules
+packages/*/dist
+packages/*/out
+packages/*/*.vsix
+
+.git
+.github
+.husky
+.scratch
+.claude
+
+# Test output and local tooling, none of which the image needs.
+coverage
+test-results
+playwright-report
+*.log
+.DS_Store
