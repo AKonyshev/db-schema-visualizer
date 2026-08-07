@@ -2,23 +2,41 @@
 // class parses JSON for its caller, which would move the decision about
 // unreadable storage out of `parseWorkspace` — where it is tested — and into a
 // `JSON.parse` that throws. These two functions hand over the raw string and
-// keep every judgement about it in one pure place.
+// keep every judgement about its contents in one pure place. What they do
+// decide is what the read itself did, which nothing else is in a position to
+// know.
 const WORKSPACE_KEY = "web:workspace";
 
 /**
- * The stored workspace as it was written, or `null` when there is nothing to
- * read.
+ * What reading storage found.
+ *
+ * `empty` and `unreadable` both leave the caller with no workspace to restore,
+ * and they are still worth telling apart: nothing stored means the keys lying
+ * around belong to nobody, while a refusal means there may be a workspace
+ * behind it whose documents are not anyone's to throw away.
+ */
+export type StoredWorkspace =
+  | { kind: "found"; raw: string }
+  | { kind: "empty" }
+  | { kind: "unreadable" };
+
+/**
+ * The stored workspace as it was written, unparsed.
  *
  * Reading can throw rather than return null: Safari's private mode and a
  * browser configured to block site data both raise on access. A reader who
  * cannot be given their previous tabs should still get a working page.
  */
-export const readStoredWorkspace = (): string | null => {
+export const readStoredWorkspace = (): StoredWorkspace => {
+  let raw: string | null;
+
   try {
-    return window.localStorage.getItem(WORKSPACE_KEY);
+    raw = window.localStorage.getItem(WORKSPACE_KEY);
   } catch {
-    return null;
+    return { kind: "unreadable" };
   }
+
+  return raw === null ? { kind: "empty" } : { kind: "found", raw };
 };
 
 /**

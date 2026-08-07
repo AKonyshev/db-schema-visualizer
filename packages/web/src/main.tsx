@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { initI18n } from "json-table-schema-visualizer/src/i18n/initI18n";
+import { forgetAllDocuments } from "json-table-schema-visualizer/src/stores/forgetAllDocuments";
 import { switchDocument } from "json-table-schema-visualizer/src/stores/switchDocument";
 import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
 
@@ -30,9 +31,27 @@ setupMonaco();
 // Storage outlives deployments, so anything unreadable — written by an older
 // version, or half-written, or blocked outright — becomes a fresh single-tab
 // workspace rather than a broken page. The judgement lives in `parseWorkspace`,
-// where it is tested; this line is only what to do when it says no.
-const workspace =
-  parseWorkspace(readStoredWorkspace()) ?? createWorkspace(INITIAL_DBML);
+// where it is tested; these lines are only what to do when it says no.
+const read = readStoredWorkspace();
+const stored = parseWorkspace(read.kind === "found" ? read.raw : null);
+
+// A refused workspace does not take its table layouts with it: those are filed
+// separately, under each tab's document key. The fresh one below numbers its
+// first tab 1 and would inherit `tableCoords:tab-1` from the workspace just
+// refused — a different schema's arrangement, leaving every table it does not
+// name piled at the default coordinate until the reader presses `L`. Which keys
+// were that workspace's cannot be known here, because the value that would have
+// said is the one we could not read, so all of them go.
+//
+// Not when storage refused to be read, though. A refusal leaves no workspace
+// either, but there may be one behind it — and the layouts of a workspace that
+// is merely out of reach are not ours to throw away, on this load or on any of
+// the ones that follow.
+if (read.kind !== "unreadable" && stored === null) {
+  forgetAllDocuments();
+}
+
+const workspace = stored ?? createWorkspace(INITIAL_DBML);
 
 // Before anything renders — see switchDocument for why this is not optional. It
 // points the per-document stores at the tab that will be active, so the viewer

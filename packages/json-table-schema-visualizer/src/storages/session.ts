@@ -15,4 +15,8 @@ export class AppSessionStorage<T> extends Storage<T> {
   removeItem(key: string): void {
     sessionStorage.removeItem(key);
   }
+
+  keys(): string[] {
+    return Object.keys(sessionStorage);
+  }
 }
