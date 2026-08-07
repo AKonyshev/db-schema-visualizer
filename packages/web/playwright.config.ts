@@ -23,6 +23,11 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "off",
+    // Pinned, because the site follows the browser's language: without this the
+    // interface the test reads is whatever language the machine running it
+    // happens to prefer, and a selector naming a label would pass on one
+    // developer's laptop and fail on another's.
+    locale: "en-US",
   },
 
   // `vite preview` serves `dist`, so the test cannot pass against source that

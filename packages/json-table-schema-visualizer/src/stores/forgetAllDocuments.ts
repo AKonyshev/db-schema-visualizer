@@ -1,23 +1,5 @@
-import { detailLevelStore } from "./detailLevelStore";
-import { stageStateStore } from "./stagesState";
-import { tableCoordsStore } from "./tableCoords";
-import { tableRelationsVisibilityStore } from "./tableRelationsVisibilityStore";
+import { PER_DOCUMENT_STORES } from "./perDocumentStores";
 
-/**
- * Every document every per-document store remembers, forgotten. The undo of
- * `switchDocument`, over all documents at once rather than one.
- *
- * For a host that has lost its own record of which documents it had — the web
- * target, when the workspace it stored comes back unreadable and it starts
- * over. The fresh workspace numbers its first tab 1, so without this it adopts
- * `tableCoords:tab-1` from the workspace just refused: a stranger's arrangement,
- * covering whichever tables it happens to name and leaving the rest stacked at
- * one default coordinate. The host cannot clear those keys by name, because the
- * thing that would have listed them is the value it could not read.
- *
- * Storage only, so call it before switching to a document rather than after —
- * see `PersistableStore.clearAll`.
- */
 /**
  * One store at a time, because the four do not share a storage: `stageState` is
  * in `sessionStorage` and the rest in `localStorage`, and a browser can refuse
@@ -36,17 +18,25 @@ const forget = (clearAll: () => void): void => {
   }
 };
 
+/**
+ * Every document every per-document store remembers, forgotten. The undo of
+ * `switchDocument`, over all documents at once rather than one.
+ *
+ * For a host that has lost its own record of which documents it had — the web
+ * target, when the workspace it stored comes back unreadable and it starts
+ * over. The fresh workspace numbers its first tab 1, so without this it adopts
+ * `tableCoords:tab-1` from the workspace just refused: a stranger's arrangement,
+ * covering whichever tables it happens to name and leaving the rest stacked at
+ * one default coordinate. The host cannot clear those keys by name, because the
+ * thing that would have listed them is the value it could not read.
+ *
+ * Storage only, so call it before switching to a document rather than after —
+ * see `PersistableStore.clearAll`.
+ */
 export const forgetAllDocuments = (): void => {
-  forget(() => {
-    tableCoordsStore.clearAll();
-  });
-  forget(() => {
-    stageStateStore.clearAll();
-  });
-  forget(() => {
-    detailLevelStore.clearAll();
-  });
-  forget(() => {
-    tableRelationsVisibilityStore.clearAll();
-  });
+  for (const store of PER_DOCUMENT_STORES) {
+    forget(() => {
+      store.clearAll();
+    });
+  }
 };

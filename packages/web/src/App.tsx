@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toggleTableRefs } from "dbml-to-json-table-schema";
 import DiagramApp from "json-table-schema-visualizer/src/components/DiagramApp/DiagramApp";
 import { useCreateTheme } from "json-table-schema-visualizer/src/hooks/theme";
@@ -17,6 +17,7 @@ import { parseDbmlText } from "./document/parseDbmlText";
 import { writeLayoutIntoText } from "./document/writeLayoutIntoText";
 import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { useFileDrop } from "./hooks/useFileDrop";
+import { useWorkspacePersistence } from "./workspace/useWorkspacePersistence";
 import {
   activateTab,
   activeTab,
@@ -24,11 +25,9 @@ import {
   closeTab,
   documentKeyOf,
   loadIntoActive,
-  serialiseWorkspace,
   updateActiveText,
   type Workspace,
 } from "./workspace/workspace";
-import { writeStoredWorkspace } from "./workspace/workspaceStorage";
 
 export interface AppProps {
   /** Restored from storage by the entry point, which has already pointed the
@@ -88,26 +87,20 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
   );
   const { theme, themeColors, setTheme } = useCreateTheme();
 
-  // Persisted on the same pause as the parse, so a schema being typed is not
-  // written to storage once per keystroke.
-  const workspaceToStore = useDebouncedValue(workspace);
-  useEffect(() => {
-    writeStoredWorkspace(serialiseWorkspace(workspaceToStore));
-  }, [workspaceToStore]);
+  useWorkspacePersistence(workspace, workspaceRef);
 
-  // The pause is what the line above buys, and this is what it costs: a reload
-  // inside it would lose the last keystrokes. Flushed on the way out, alongside
-  // the table positions the entry point flushes.
-  useEffect(() => {
-    const flush = (): void => {
-      writeStoredWorkspace(serialiseWorkspace(workspaceRef.current));
-    };
-
-    window.addEventListener("unload", flush);
-    return () => {
-      window.removeEventListener("unload", flush);
-    };
-  }, []);
+  /**
+   * Every transition reads the workspace as it is now and commits what the
+   * transition returns. Through a ref rather than through `workspace`, so these
+   * callbacks stay stable and a handler built on the first render does not
+   * commit the first render's workspace on the hundredth.
+   */
+  const applyToWorkspace = useCallback(
+    (transition: (current: Workspace) => Workspace) => {
+      changeWorkspace(transition(workspaceRef.current));
+    },
+    [changeWorkspace],
+  );
 
   const openFile = useCallback(
     (file: File) => {
@@ -148,20 +141,20 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
           tableCoordsStore.resetPositions(schema.tables, schema.refs);
         }
 
-        changeWorkspace(
-          loadIntoActive(workspaceRef.current, file.name, contents),
+        applyToWorkspace((current) =>
+          loadIntoActive(current, file.name, contents),
         );
       });
     },
-    [changeWorkspace],
+    [applyToWorkspace],
   );
 
   useFileDrop(openFile);
 
   /**
-   * Both text-changing commands take the same shape, and the shape is the point:
-   * read the active tab's text, hand it to a transform that came from the
-   * package the extension uses, and put the answer back only if it differs.
+   * The text-changing commands take one further shape, and the shape is the
+   * point: hand the active tab's text to a transform that came from the package
+   * the extension uses, and put the answer back only if it differs.
    *
    * Comparing first is what keeps a command that changed nothing — Alt+H over a
    * table with no relations, the layout button before a diagram exists — out of
@@ -169,15 +162,14 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
    */
   const runTextCommand = useCallback(
     (transform: (text: string) => string) => {
-      const current = workspaceRef.current;
-      const text = activeTab(current).text;
-      const updated = transform(text);
+      applyToWorkspace((current) => {
+        const text = activeTab(current).text;
+        const updated = transform(text);
 
-      if (updated !== text) {
-        changeWorkspace(updateActiveText(current, updated));
-      }
+        return updated === text ? current : updateActiveText(current, updated);
+      });
     },
-    [changeWorkspace],
+    [applyToWorkspace],
   );
 
   const writeLayout = useCallback(() => {
@@ -217,13 +209,13 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
           <TabBar
             workspace={workspace}
             onActivate={(number) => {
-              changeWorkspace(activateTab(workspaceRef.current, number));
+              applyToWorkspace((current) => activateTab(current, number));
             }}
             onClose={(number) => {
-              changeWorkspace(closeTab(workspaceRef.current, number));
+              applyToWorkspace((current) => closeTab(current, number));
             }}
             onAdd={() => {
-              changeWorkspace(addTab(workspaceRef.current, NEW_TAB_TEXT));
+              applyToWorkspace((current) => addTab(current, NEW_TAB_TEXT));
             }}
           />
           <DocumentBar
@@ -243,7 +235,7 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
               key={documentKey}
               value={tab.text}
               onChange={(next) => {
-                changeWorkspace(updateActiveText(workspaceRef.current, next));
+                applyToWorkspace((current) => updateActiveText(current, next));
               }}
             />
           </div>

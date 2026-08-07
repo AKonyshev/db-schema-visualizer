@@ -1,14 +1,30 @@
 import { expect, test, type Request } from "@playwright/test";
 
+// A relative path rather than the package name the rest of this package uses:
+// Playwright's loader resolves the workspace symlink but will not add the `.ts`
+// extension across it, and this file is compiled by Playwright rather than Vite.
+import { MESSAGES_EN } from "../../json-table-schema-visualizer/src/i18n/messages";
+
 // Everything the page is allowed to talk to. `blob:` and `data:` are the site
 // handing bytes to itself — the download path builds a blob URL on purpose —
 // and neither leaves the machine.
+//
+// Compared as an origin rather than as a string prefix: the port is assigned
+// per run, and `http://127.0.0.1:4173` is a prefix of `http://127.0.0.1:41730`,
+// so a prefix test would wave through a request to a different server on this
+// very machine — the closest thing to a leak the test can see.
 const isSameOrigin = (request: Request, origin: string): boolean => {
   const url = request.url();
 
-  return (
-    url.startsWith(origin) || url.startsWith("blob:") || url.startsWith("data:")
-  );
+  if (url.startsWith("blob:") || url.startsWith("data:")) {
+    return true;
+  }
+
+  try {
+    return new URL(url).origin === origin;
+  } catch {
+    return false;
+  }
 };
 
 test("the built site works, and asks the network for nothing", async ({
@@ -74,7 +90,13 @@ test("the built site works, and asks the network for nothing", async ({
     })
     .not.toBe(0);
 
-  await page.getByRole("textbox", { name: /search|поиск|搜索/i }).fill("smoke");
+  // The label comes from the catalogue rather than being spelled out here, so a
+  // renamed placeholder fails this test instead of silently making it match
+  // nothing. The locale is pinned to English in the config, which is what lets
+  // the English catalogue be the right one to read.
+  await page
+    .getByRole("textbox", { name: MESSAGES_EN["search.placeholder"] })
+    .fill("smoke");
   await expect(page.getByRole("button", { name: /smoke_test/ })).toBeVisible();
 
   expect(offOrigin).toEqual([]);

@@ -77,6 +77,22 @@ const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
     // two stops are what make each of them a single step rather than merging
     // with whatever was typed before it.
     editor.pushUndoStop();
+
+    // The model's own line ending wins over the text being written into it —
+    // Monaco rewrites every `\r\n` in an edit to whatever the buffer uses. The
+    // buffer starts on `\n`, so without this a file saved on Windows arrives,
+    // silently loses its carriage returns, and downloads three bytes shorter per
+    // line than it went in. Set first, so the edit below is normalised to the
+    // ending the file actually had.
+    //
+    // What no setting can preserve is a file of mixed endings: one buffer holds
+    // one ending, so the minority is converted either way.
+    model.setEOL(
+      value.includes("\r\n")
+        ? monaco.editor.EndOfLineSequence.CRLF
+        : monaco.editor.EndOfLineSequence.LF,
+    );
+
     editor.executeEdits("host", [
       { range: model.getFullModelRange(), text: value },
     ]);

@@ -22,14 +22,15 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
 }).trim();
 
 function listSourceFiles(): string[] {
+  // Every tracked TypeScript file under `packages/`, rather than a list of the
+  // directories that happened to exist when this was written. That list named
+  // `src` and `extension`, and a browser test added later under `packages/web/e2e`
+  // sat outside it with three translations of a button label inlined in a
+  // selector — the rule broken with nothing to catch it. Naming directories
+  // meant the guard's reach had to be remembered; naming the language does not.
   const output = execFileSync(
     "git",
-    [
-      "ls-files",
-      "packages/*/src/**/*.ts",
-      "packages/*/src/**/*.tsx",
-      "packages/*/extension/**/*.ts",
-    ],
+    ["ls-files", "packages/**/*.ts", "packages/**/*.tsx"],
     { cwd: repoRoot, encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 },
   );
 

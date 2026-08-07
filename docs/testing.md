@@ -51,3 +51,38 @@ that quietly means "passed, except the ones I skipped".
 The two sweeps share their package discovery (`scripts/workspace-packages.js`)
 so that "which packages exist" cannot answer differently for tests than it does
 for types.
+
+## The one browser test, and why it is not in the sweep
+
+`packages/web` has a second suite that `yarn test` does not run:
+
+```bash
+yarn build:web && yarn test:e2e
+```
+
+One Playwright test against the built site. It is the only check here that can
+catch an editor fetched over the network at run time instead of bundled — the
+failure where the types compile, every unit test passes, the container starts,
+and half the page is empty on a closed network. It asserts the editor is really
+there, that typed DBML reaches the diagram, and that no request leaves the
+origin.
+
+It is out of the sweep deliberately, and out of the pre-commit hook with it:
+
+- **It needs a build.** The sweep has no build step, and adding one would put a
+  ~15-second bundle on every commit. A browser test that quietly ran against
+  last week's `dist` would be worse than not running it at all, so the test does
+  not build either — a stale `dist` fails it rather than being repaired by it.
+- **It is `*.spec.ts`, not `*.test.ts`.** `scripts/test.js` discovers the latter,
+  so the trap described above — a package with tests and no `test` script — does
+  not fire for `e2e/`. That is the intended exemption rather than an oversight,
+  and this section is where it is recorded.
+
+Its files _are_ type-checked: `packages/web/tsconfig.json` includes `e2e/**` and
+`playwright.config.ts`, so `yarn typecheck` covers them. The package's `build`
+script uses `tsconfig.build.json` instead, which excludes both — the container
+image should not need Playwright installed to compile the site.
+
+The test's own guard was verified by breaking it: externalising the editor and
+pointing an import map at a CDN made the build succeed and the test fail. See
+the ticket comments in the local tracker for the measurements.

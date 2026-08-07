@@ -16,6 +16,16 @@ import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 //
 // It lived in three places before this: twice in the extension's schema hook
 // (bootstrap and message paths) and once in the web entry point.
+//
+// The stores are named one by one rather than looped over `PER_DOCUMENT_STORES`,
+// because only the first takes the schema and the order of the four is load-
+// bearing — a loop would have to special-case both, and neither would have
+// anywhere left to be explained.
+//
+// So adding a per-document store still means editing two files: this one and
+// `perDocumentStores.ts`. The list does not make that automatic; what it does is
+// leave one place to look for "which stores are keyed by document", instead of
+// two lists that could disagree without either being wrong on its face.
 export const switchDocument = (
   documentKey: string,
   tables: JSONTableTable[],
