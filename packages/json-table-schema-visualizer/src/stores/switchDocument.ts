@@ -5,6 +5,8 @@ import { tableRelationsVisibilityStore } from "./tableRelationsVisibilityStore";
 
 import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 
+import { defaultDetailLevelFor } from "@/utils/defaultDetailLevel";
+
 // Every per-document store, pointed at one document in one call.
 //
 // The sequence is not bookkeeping and the order inside it matters:
@@ -33,6 +35,9 @@ export const switchDocument = (
 ): void => {
   tableCoordsStore.switchTo(documentKey, tables, refs);
   stageStateStore.switchTo(documentKey);
-  detailLevelStore.switchTo(documentKey);
+  // Only a first-open default, and only for this document: a schema too large to
+  // draw at full detail opens with headers instead of stuttering at seven frames
+  // a second. Pressing `D` overrides it and is remembered.
+  detailLevelStore.switchTo(documentKey, defaultDetailLevelFor(tables));
   tableRelationsVisibilityStore.switchTo(documentKey);
 };
