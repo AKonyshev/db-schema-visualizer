@@ -1,21 +1,59 @@
-# The build installs its own dependencies and builds its own output; copying the
-# host's would both slow the context transfer and risk baking in artefacts built
-# against a different platform.
-node_modules
+# Host install and build output. The image runs `yarn install` and the web
+# build itself; copying these from the host both inflates the context
+# (node_modules alone is ~760 MB) and risks baking in artefacts for the
+# wrong platform.
+#
+# `**` is required: a bare `node_modules` only matches at the context root.
+# See https://docs.docker.com/build/concepts/context/#dockerignore-files
 **/node_modules
-packages/*/dist
-packages/*/out
-packages/*/*.vsix
+**/dist
+**/out
+**/*.vsix
 
+# Local tooling and indexes. None of these are read by
+# `yarn workspace web build`.
+#
+# `.vscode-test` is a full VS Code download used only by the extension's
+# integration tests. A bare `.vscode-test` would not match
+# `packages/dbml-vs-code-extension/.vscode-test` (~1.2 GB) — that is what
+# made `docker compose up --build` transfer a gigabyte of context.
 .git
 .github
 .husky
 .scratch
 .claude
+.codegraph
+.superpowers
+.yarn
+.vscode
+**/.vscode-test
 
-# Test output and local tooling, none of which the image needs.
-coverage
-test-results
+# Workspace members the site does not compile against. Yarn still needs
+# each package.json so `workspaces: ["packages/*"]` resolves; the Dockerfile
+# copies those by name before `COPY . .`. Everything else in these trees
+# stays out of the context.
+packages/dbml-vs-code-extension/**
+!packages/dbml-vs-code-extension/package.json
+packages/db-to-dbml/**
+!packages/db-to-dbml/package.json
+packages/extension-shared/**
+!packages/extension-shared/package.json
+packages/schema-diff/**
+!packages/schema-diff/package.json
+
+# Tests, coverage, docs, and editor noise.
+docs
+**/coverage
+**/test-results
 playwright-report
-*.log
-.DS_Store
+**/e2e
+**/__tests__
+**/tests
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/*.stories.ts
+**/*.stories.tsx
+**/*.log
+**/.DS_Store
