@@ -27,7 +27,13 @@ import { stageStateStore } from "@/stores/stagesState";
 import { useScrollDirectionContext } from "@/hooks/scrollDirection";
 import eventEmitter from "@/events-emitter";
 import { tableCoordsStore } from "@/stores/tableCoords";
-import { useTablesInfo, useTablePositionContext } from "@/hooks/table";
+import { useTablePositionContext } from "@/hooks/table";
+import {
+  getHighlightedColumns,
+  getHoveredTableName,
+  setHighlightedColumns,
+  setHoveredTableName,
+} from "@/stores/hoverStore";
 import { exportStageSVG } from "@/export/svg/svg-exporter";
 import { generateAsciiDoc } from "@/utils/exportAsciiDoc";
 import { generateMarkdown } from "@/utils/exportMarkdown";
@@ -63,12 +69,6 @@ const DiagramWrapper = ({
     useCursorChanger("grabbing");
   const themeColors = useThemeColors();
   const stageRef = useRef<null | CoreStage>(null);
-  const {
-    hoveredTableName,
-    setHoveredTableName,
-    highlightedColumns,
-    setHighlightedColumns,
-  } = useTablesInfo();
 
   // repositioning the stage only once
   const { scale: defaultStageScale, position: defaultStagePosition } =
@@ -183,8 +183,11 @@ const DiagramWrapper = ({
   const handleStagePointerDown = (
     e: KonvaEventObject<MouseEvent | TouchEvent>,
   ) => {
+    // Read at the moment of the click rather than subscribed to: this component
+    // has no reason to re-render as the pointer crosses tables.
+    const highlightedColumns = getHighlightedColumns();
     if (
-      hoveredTableName == null &&
+      getHoveredTableName() == null &&
       (highlightedColumns == null || highlightedColumns.length === 0)
     )
       return;

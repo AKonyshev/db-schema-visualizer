@@ -13,7 +13,8 @@ import {
 } from "@/constants/sizing";
 import { useThemeColors } from "@/hooks/theme";
 import { useTableColor } from "@/hooks/tableColor";
-import { useTableWidth, useTablesInfo } from "@/hooks/table";
+import { useTableWidth } from "@/hooks/table";
+import { useIsTableHovered } from "@/hooks/hover";
 import useLocalStorage from "@/hooks/localStorage";
 import { useTableRelationsVisibility } from "@/hooks/tableRelationsVisibility";
 import { shouldShowRelationsIcon } from "@/utils/shouldShowRelationsIcon";
@@ -49,8 +50,7 @@ const TableHeader = ({ title }: TableHeaderProps) => {
   const tablePreferredWidth = useTableWidth();
   const tableMarkerColor = tableColors?.regular ?? "red";
 
-  const { hoveredTableName } = useTablesInfo();
-  const isHovered = hoveredTableName === title;
+  const isHovered = useIsTableHovered(title);
   const { isHidden, toggle } = useTableRelationsVisibility(title);
   const showIcon = shouldShowRelationsIcon(isHovered, isHidden);
 
@@ -83,6 +83,7 @@ const TableHeader = ({ title }: TableHeaderProps) => {
       />
 
       <KonvaText
+        listening={false}
         text={titleDisplay}
         y={TABLE_COLOR_HEIGHT}
         fill={themeColors.tableHeader.fg}

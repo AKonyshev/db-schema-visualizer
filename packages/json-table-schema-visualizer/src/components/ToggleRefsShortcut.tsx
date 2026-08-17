@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
-import { useTablesInfo } from "@/hooks/table";
+import { getHoveredTableName } from "@/stores/hoverStore";
 import { toggleTableRelations } from "@/stores/toggleTableRelations";
 import { matchesToggleRefsShortcut } from "@/utils/matchesToggleRefsShortcut";
 
@@ -18,13 +18,6 @@ import { matchesToggleRefsShortcut } from "@/utils/matchesToggleRefsShortcut";
  * is simply how a hook reaches a context it would otherwise be outside of.
  */
 const ToggleRefsShortcut = (): null => {
-  const { hoveredTableName } = useTablesInfo();
-
-  // Through a ref, so that hovering a table — which changes on every mouse move
-  // across the diagram — does not detach and reattach the listener.
-  const hoveredRef = useRef(hoveredTableName);
-  hoveredRef.current = hoveredTableName;
-
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (!matchesToggleRefsShortcut(event)) {
@@ -34,7 +27,8 @@ const ToggleRefsShortcut = (): null => {
       // preventDefault even when nothing is hovered: on a Mac the chord types
       // "˙" into the editor beside the diagram.
       event.preventDefault();
-      toggleTableRelations(hoveredRef.current ?? "");
+      // Read at the keypress: this component never needs to re-render.
+      toggleTableRelations(getHoveredTableName() ?? "");
     };
 
     // Capturing, because the editor has its own view on Alt-chords and holds

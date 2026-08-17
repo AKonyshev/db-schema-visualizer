@@ -56,6 +56,7 @@ const Column = ({
       {(highlighted) => (
         <>
           <KonvaText
+            listening={false}
             ellipsis
             wrap="none"
             text={colName}
@@ -72,6 +73,7 @@ const Column = ({
           />
 
           <KonvaText
+            listening={false}
             text={type}
             align="right"
             width={tablePreferredWidth}

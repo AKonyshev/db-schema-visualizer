@@ -9,7 +9,10 @@ import { type JSONTableTable } from "shared/types/tableSchema";
 
 import { t } from "@/i18n/t";
 import eventEmitter from "@/events-emitter";
-import { useTablesInfo } from "@/hooks/table";
+import {
+  setHighlightedColumns,
+  setHoveredTableName,
+} from "@/stores/hoverStore";
 import { isTypingTarget, type TypingTarget } from "@/utils/isTypingTarget";
 
 interface SearchResult {
@@ -29,7 +32,6 @@ interface SearchProps {
 const Search = ({ tables }: SearchProps) => {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const { setHoveredTableName, setHighlightedColumns } = useTablesInfo();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 

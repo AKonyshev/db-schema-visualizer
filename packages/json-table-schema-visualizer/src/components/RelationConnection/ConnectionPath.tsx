@@ -14,6 +14,11 @@ import {
 } from "@/constants/sizing";
 import useLocalStorage from "@/hooks/localStorage";
 import { useThemeColors } from "@/hooks/theme";
+import { useIsEitherTableHovered } from "@/hooks/hover";
+import {
+  setHighlightedColumns,
+  setHoveredTableName,
+} from "@/stores/hoverStore";
 import { useTablesInfo } from "@/hooks/table";
 import { useTableColor } from "@/hooks/tableColor";
 import { useTableWidthStoredValue } from "@/hooks/tableWidthStore";
@@ -51,8 +56,10 @@ const ConnectionPath = ({
 }: ConnectionPathProps) => {
   const themeColors = useThemeColors();
   const tablesInfo = useTablesInfo();
-  const { hoveredTableName, setHoveredTableName, setHighlightedColumns } =
-    tablesInfo;
+  const isEitherEndHovered = useIsEitherTableHovered(
+    sourceTableName,
+    targetTableName,
+  );
   const sourceTableColors = useTableColor(relationOwner);
   const srcWidth = useTableWidthStoredValue(sourceTableName);
   const tgtWidth = useTableWidthStoredValue(targetTableName);
@@ -152,20 +159,13 @@ const ConnectionPath = ({
     return normalized < 0 ? normalized + 360 : normalized;
   };
 
-  const highlight =
-    alwaysHover ||
-    hoveredTableName === sourceTableName ||
-    hoveredTableName === targetTableName ||
-    isHovered;
+  const highlight = alwaysHover || isEitherEndHovered || isHovered;
 
   const strokeColor = highlight
     ? sourceTableColors?.regular ?? themeColors.connection.active
     : themeColors.connection.default;
 
-  const isAnimated =
-    animateRelations &&
-    (hoveredTableName === sourceTableName ||
-      hoveredTableName === targetTableName);
+  const isAnimated = animateRelations && isEitherEndHovered;
 
   useEffect(() => {
     const node = dashRef.current;

@@ -18,11 +18,8 @@ import { useThemeColors, useThemeContext } from "@/hooks/theme";
 import { Theme } from "@/types/theme";
 import eventEmitter from "@/events-emitter";
 import { computeTableDragEventName } from "@/utils/eventName";
-import {
-  useTableDefaultPosition,
-  useTablesInfo,
-  useTableWidth,
-} from "@/hooks/table";
+import { useTableDefaultPosition, useTableWidth } from "@/hooks/table";
+import { setHoveredTableName } from "@/stores/hoverStore";
 import { tableCoordsStore } from "@/stores/tableCoords";
 import { useTableRelationsVisibility } from "@/hooks/tableRelationsVisibility";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
@@ -41,7 +38,6 @@ const Table = ({ fields, name }: TableProps) => {
   const tableRef = useRef<null | Konva.Group>(null);
   const highlightRef = useRef<null | Konva.Rect>(null);
   const { theme } = useThemeContext();
-  const { setHoveredTableName } = useTablesInfo();
   const { x: tableX, y: tableY } = useTableDefaultPosition(name);
   const tablePreferredWidth = useTableWidth();
   const visibleFields = useMemo(() => {
