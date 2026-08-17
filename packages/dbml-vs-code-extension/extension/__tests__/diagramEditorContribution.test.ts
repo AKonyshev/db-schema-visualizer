@@ -6,6 +6,7 @@ import { WEB_VIEW_NAME } from "../constants";
 interface Manifest {
   contributes: {
     commands: Array<{ command: string; title: string }>;
+    keybindings: Array<{ command: string; key: string; when?: string }>;
     customEditors?: Array<{
       viewType: string;
       displayName: string;
@@ -52,6 +53,19 @@ describe("custom editor contribution", () => {
     );
     expect(source?.when).toBe(`activeCustomEditorId == '${WEB_VIEW_NAME}'`);
     expect(preview?.alt).toBe("dbml-erd-visualizer.previewDiagramsInPlace");
+  });
+
+  test("Alt+H stands down while the diagram is focused", () => {
+    // The webview forwards its keydowns to the workbench, and the diagram
+    // handles Alt+H itself through ToggleRefsShortcut. Without this guard both
+    // paths post `toggleTableRefs` for one keypress and the two toggles cancel.
+    const binding = manifest().contributes.keybindings.find(
+      (item) => item.command === "dbml-erd-visualizer.toggleTableRefs",
+    );
+
+    expect(binding?.when).toBe(
+      `resourceLangId == dbml && activeCustomEditorId != '${WEB_VIEW_NAME}'`,
+    );
   });
 
   test("every menu command is a contributed command", () => {
