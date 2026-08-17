@@ -16,3 +16,6 @@ playwright-report/
 
 # Personal, machine-specific: permission allowlists and local overrides.
 .claude/settings.local.json
+
+# Downloaded VS Code builds for the extension integration tests (~300 MB).
+.vscode-test/

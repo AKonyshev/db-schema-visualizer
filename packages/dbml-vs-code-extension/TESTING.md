@@ -2,11 +2,15 @@
 
 ## Switching between text and diagram
 
-1. In a `.dbml` text editor exactly one title button shows — **Show diagram**; it opens the diagram beside.
-2. Alt-click the same button — the diagram takes over the current tab.
-3. In the diagram only **Show DBML source** shows; clicking it brings the text back **into the same tab**, not into a second one.
+The tab bookkeeping is covered automatically — `yarn workspace dbml-schema-visualizer test:integration` proves in a real VS Code that switching replaces the tab in both directions, that opening beside keeps the text, and that a plain open still gives text. Run that first; what is left below is what only eyes can check.
+
+1. In a `.dbml` text editor exactly one title button shows — **Show diagram**, with the preview icon.
+2. Alt-click it — the diagram takes over the current tab. (Plain click opens it beside.)
+3. In the diagram the button has become **Show DBML source**, and **Show diagram** is gone.
 4. `Reopen Editor With…` offers both the text editor and **DBML Diagram**.
-5. Open two different `.dbml` diagrams at once: `Alt+H` affects the focused one only, and a syntax error in one leaves the other's Problems entries alone.
+5. Switch a file with unsaved changes both ways — no save prompt should appear, and the dirty marker should stay on the tab.
+6. Open two different `.dbml` diagrams at once: `Alt+H` affects the focused one only, and a syntax error in one leaves the other's Problems entries alone.
+7. With the diagram focused, press `Alt+H` once over a table — exactly one toggle. Two toggles cancelling out would mean the keybinding is firing alongside the diagram's own handler.
 
 ## MetaInfo persistence
 
