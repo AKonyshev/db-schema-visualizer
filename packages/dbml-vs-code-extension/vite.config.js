@@ -44,6 +44,16 @@ function generateWebviewCss() {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [tsconfigPaths(), react(), vscode(), generateWebviewCss()],
+  plugins: [
+    // The plugin discovers tsconfigs by walking the tree, which now includes
+    // `.vscode-test/` — a full VS Code download the integration tests put here —
+    // and it complains about every unparseable tsconfig inside it. Only the
+    // messages are suppressed: narrowing discovery with `projects` instead
+    // breaks `@/*` during the extension build, which then resolves as external.
+    tsconfigPaths({ ignoreConfigErrors: true }),
+    react(),
+    vscode(),
+    generateWebviewCss(),
+  ],
   resolve: workspaceReactResolve,
 });
