@@ -9,6 +9,7 @@ import {
 import { parseDBMLToJSON } from "dbml-to-json-table-schema";
 
 import { DiagramEditorProvider } from "extension-shared/extension/views/diagramEditorProvider";
+import { findTab } from "extension-shared/extension/views/findTab";
 import { EXTENSION_CONFIG_SESSION, WEB_VIEW_NAME } from "@/extension/constants";
 import { importFromDatabase } from "./importFromDatabase";
 import { compareWithDatabase } from "./compareWithDatabase";
@@ -55,6 +56,25 @@ export function activate(context: ExtensionContext): void {
     return undefined;
   };
 
+  // `vscode.openWith` cannot replace an editor: it routes through
+  // editorService.openEditor, and the workbench keeps replaceEditors — the
+  // primitive its own "Reopen Editor With..." uses — to itself. So taking over a
+  // tab means opening the replacement and then closing what it replaced.
+  // Opening first is what avoids a save prompt: the document is still held open
+  // by the new editor, so closing the old tab is not closing its last editor.
+  const closeTabFor = async (uri: Uri, viewType?: string): Promise<void> => {
+    const tab = findTab(
+      window.tabGroups.all.flatMap((group) => group.tabs),
+      uri.toString(),
+      viewType,
+    );
+    if (tab === undefined) {
+      return;
+    }
+
+    await window.tabGroups.close(tab, true);
+  };
+
   const openDiagram = async (viewColumn: ViewColumn): Promise<void> => {
     const uri = resolveDbmlUri();
     if (uri === undefined) {
@@ -64,6 +84,10 @@ export function activate(context: ExtensionContext): void {
     await commands.executeCommand("vscode.openWith", uri, WEB_VIEW_NAME, {
       viewColumn,
     });
+
+    if (viewColumn === ViewColumn.Active) {
+      await closeTabFor(uri);
+    }
   };
 
   context.subscriptions.push(
@@ -88,11 +112,15 @@ export function activate(context: ExtensionContext): void {
         return;
       }
 
-      // `default` is the built-in text editor; opening it in the diagram's own
-      // column is what replaces the tab instead of adding one.
-      void commands.executeCommand("vscode.openWith", view.uri, "default", {
-        viewColumn: view.viewColumn,
-      });
+      const { uri, viewColumn } = view;
+
+      void (async () => {
+        // `default` is the documented viewType of the built-in text editor.
+        await commands.executeCommand("vscode.openWith", uri, "default", {
+          viewColumn,
+        });
+        await closeTabFor(uri, WEB_VIEW_NAME);
+      })();
     }),
     commands.registerCommand("dbml-erd-visualizer.toggleTableRefs", () => {
       provider.postToTargetView(
