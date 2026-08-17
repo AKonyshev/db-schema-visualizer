@@ -11,8 +11,18 @@ import { defineConfig } from "@vscode/test-cli";
 // `window.tabGroups` landed in 1.68.
 export default defineConfig({
   files: "out/extension/test/**/*.test.js",
+  // Mocha's 2s default is shorter than a webview takes to boot and answer, and
+  // the failure it produces looks like a broken feature rather than a harness
+  // that gave up.
+  mocha: { timeout: 60000 },
   // Short, and outside the repo, because VS Code puts its IPC socket in here and
   // a unix socket path cannot exceed 104 bytes on macOS — the default
   // `.vscode-test/user-data` under this package is already over that.
-  launchArgs: ["--user-data-dir", "/tmp/dbml-vscode-test"],
+  launchArgs: [
+    "--user-data-dir",
+    "/tmp/dbml-vscode-test",
+    // Lets the Alt+H integration test dispatch a keydown inside the webview.
+    "--remote-debugging-port=9333",
+    "--disable-site-isolation-trials",
+  ],
 });
