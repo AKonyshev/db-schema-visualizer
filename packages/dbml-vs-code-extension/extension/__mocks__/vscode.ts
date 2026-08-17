@@ -11,6 +11,7 @@ export const window = {
   showInformationMessage: jest.fn(),
   showTextDocument: jest.fn(),
   showSaveDialog: jest.fn(),
+  registerCustomEditorProvider: jest.fn(() => ({ dispose: jest.fn() })),
   withProgress: jest.fn(
     async (_options: unknown, task: (progress: unknown) => Thenable<unknown>) =>
       task({}),
