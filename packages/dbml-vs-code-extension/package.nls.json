@@ -1,6 +1,9 @@
 {
   "viewsContainer.title": "DBML Schema Visualizer",
   "command.previewDiagrams": "Show diagram",
+  "command.previewDiagramsInPlace": "Show diagram in this tab",
+  "command.showSource": "Show DBML source",
+  "customEditor.diagram": "DBML Diagram",
   "command.toggleTableRefs": "Toggle table references visibility in DBML",
   "command.importFromDatabase": "DBML: Import from database",
   "command.compareWithDatabase": "DBML: Compare with database",

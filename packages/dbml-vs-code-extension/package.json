@@ -50,11 +50,32 @@
         }
       }
     ],
+    "customEditors": [
+      {
+        "viewType": "dblm-preview-webview",
+        "displayName": "%customEditor.diagram%",
+        "priority": "option",
+        "selector": [
+          {
+            "filenamePattern": "*.dbml"
+          }
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "dbml-erd-visualizer.previewDiagrams",
         "title": "%command.previewDiagrams%",
         "icon": "$(open-preview)"
+      },
+      {
+        "command": "dbml-erd-visualizer.previewDiagramsInPlace",
+        "title": "%command.previewDiagramsInPlace%"
+      },
+      {
+        "command": "dbml-erd-visualizer.showSource",
+        "title": "%command.showSource%",
+        "icon": "$(go-to-file)"
       },
       {
         "command": "dbml-erd-visualizer.toggleTableRefs",
@@ -98,7 +119,7 @@
       {
         "command": "dbml-erd-visualizer.toggleTableRefs",
         "key": "alt+h",
-        "when": "resourceLangId == dbml && activeWebviewPanelName == 'dblm-preview-webview'"
+        "when": "resourceLangId == dbml"
       }
     ],
     "menus": {
@@ -118,8 +139,14 @@
       ],
       "editor/title": [
         {
-          "when": "resourceLangId == dbml",
           "command": "dbml-erd-visualizer.previewDiagrams",
+          "when": "resourceLangId == dbml && activeCustomEditorId != 'dblm-preview-webview'",
+          "alt": "dbml-erd-visualizer.previewDiagramsInPlace",
+          "group": "navigation"
+        },
+        {
+          "command": "dbml-erd-visualizer.showSource",
+          "when": "activeCustomEditorId == 'dblm-preview-webview'",
           "group": "navigation"
         }
       ],
