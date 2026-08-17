@@ -44,13 +44,16 @@ assets, ready to be served by any static web server.
 ## Running the container image
 
 Built from the repository root, because the site depends on four sibling
-packages by source and the build needs the whole workspace in context:
+packages by source and the build needs the whole workspace in context.
+
+```bash
+docker compose up --build
+```
+
+The equivalent without Compose:
 
 ```bash
 docker build -f packages/web/Dockerfile -t dbml-schema-visualizer-web .
-```
-
-```bash
 docker run --rm -p 8080:8080 dbml-schema-visualizer-web
 ```
 

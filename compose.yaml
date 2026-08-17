@@ -1,0 +1,15 @@
+# Built from the repository root, same as:
+#   docker build -f packages/web/Dockerfile -t dbml-schema-visualizer-web .
+#   docker run --rm -p 8080:8080 dbml-schema-visualizer-web
+#
+#   docker compose up --build
+# The site is then on http://localhost:8080.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+    image: dbml-schema-visualizer-web
+    ports:
+      - "8080:8080"
