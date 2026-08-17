@@ -23,6 +23,12 @@ export const workspace = {
     writeFile: jest.fn(),
   },
   openTextDocument: jest.fn(),
+  getConfiguration: jest.fn(() => ({
+    get: jest.fn(),
+    update: jest.fn(),
+  })),
+  applyEdit: jest.fn(),
+  onDidChangeTextDocument: jest.fn(() => ({ dispose: jest.fn() })),
 };
 
 export const commands = {
@@ -41,6 +47,7 @@ export const l10n = {
 
 export const Uri = {
   joinPath: jest.fn((...parts: unknown[]) => parts.join("/")),
+  parse: jest.fn((value: string) => ({ toString: () => value })),
 };
 
 export const ProgressLocation = {
@@ -48,7 +55,44 @@ export const ProgressLocation = {
 };
 
 export const ViewColumn = {
+  One: 1,
   Beside: 2,
+  Active: -1,
 };
+
+export const env = { language: "en" };
+
+export const languages = {
+  createDiagnosticCollection: jest.fn(() => ({
+    set: jest.fn(),
+    delete: jest.fn(),
+    clear: jest.fn(),
+    dispose: jest.fn(),
+  })),
+};
+
+export class Position {
+  constructor(
+    readonly line: number,
+    readonly character: number,
+  ) {}
+}
+
+export class Range {
+  constructor(
+    readonly start: Position,
+    readonly end: Position,
+  ) {}
+}
+
+export const DiagnosticSeverity = { Error: 0 } as const;
+
+export class Diagnostic {
+  constructor(
+    readonly range: Range,
+    readonly message: string,
+    readonly severity?: number,
+  ) {}
+}
 
 export class ExtensionContext {}
