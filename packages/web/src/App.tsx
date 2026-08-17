@@ -1,11 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { toggleTableRefs } from "dbml-to-json-table-schema";
 import DiagramApp from "json-table-schema-visualizer/src/components/DiagramApp/DiagramApp";
 import { useCreateTheme } from "json-table-schema-visualizer/src/hooks/theme";
 import { switchDocument } from "json-table-schema-visualizer/src/stores/switchDocument";
 import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
 import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDirection";
-import ToggleRefsShortcut from "json-table-schema-visualizer/src/components/ToggleRefsShortcut";
 
 import DocumentBar from "./components/DocumentBar";
 import EditorPane from "./components/EditorPane";
@@ -178,33 +176,6 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
     );
   }, [runTextCommand]);
 
-  const toggleRefs = useCallback(
-    (tableName: string) => {
-      if (tableName === "") {
-        return;
-      }
-      // The same call the extension makes, coordinates included: `toggleTableRefs`
-      // records the table as hidden in the layout block as it comments the
-      // relations out, and without a position to record it would write the table
-      // back at the origin.
-      const coords = tableCoordsStore.getCoords(tableName);
-
-      runTextCommand((text) =>
-        toggleTableRefs(text, tableName, {
-          name: tableName,
-          x: coords.x,
-          y: coords.y,
-        }),
-      );
-    },
-    [runTextCommand],
-  );
-
-  const syncEffects = useCallback(
-    () => <ToggleRefsShortcut onToggle={toggleRefs} />,
-    [toggleRefs],
-  );
-
   return (
     <SplitLayout
       left={
@@ -253,7 +224,6 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
           themeColors={themeColors}
           setTheme={setTheme}
           scrollDirection={ScrollDirection.UpOut}
-          syncEffects={syncEffects}
         />
       }
     />

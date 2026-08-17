@@ -4,7 +4,6 @@
   "command.previewDiagramsInPlace": "在此选项卡中显示关系图",
   "command.showSource": "显示 DBML 源代码",
   "customEditor.diagram": "DBML 关系图",
-  "command.toggleTableRefs": "切换 DBML 中表关系的可见性",
   "command.importFromDatabase": "DBML：从数据库导入",
   "command.compareWithDatabase": "DBML：与数据库比较",
   "command.addConnection": "DBML：添加数据库连接",

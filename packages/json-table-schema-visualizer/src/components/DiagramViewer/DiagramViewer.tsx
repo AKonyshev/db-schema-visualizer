@@ -7,6 +7,7 @@ import { type ReactNode } from "react";
 
 import EmptyTableMessage from "../Messages/EmptyTableMessage";
 import Search from "../Search/Search";
+import ToggleRefsShortcut from "../ToggleRefsShortcut";
 
 import DiagramWrapper from "./DiagramWrapper";
 import RelationsConnections from "./Connections";
@@ -50,6 +51,9 @@ const DiagramViewer = ({
             className={`relative flex h-full w-full flex-col items-center ${theme === Theme.dark ? "dark" : ""}`}
           >
             {syncEffects}
+            {/* Inside the providers because it needs the hovered table; shared
+                by both hosts because hiding relations is now purely a view. */}
+            <ToggleRefsShortcut />
             <Search tables={tables} />
 
             <DiagramWrapper

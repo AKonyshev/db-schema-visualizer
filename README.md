@@ -8,7 +8,7 @@ A VS Code extension to visualize database schemas as ERD diagrams from DBML file
 
 - Create entity-relationship diagrams from DBML code
 - Light and dark themes
-- DBML extension: text/diagram switching in one tab, MetaInfo layout persistence, SVG/AsciiDoc export, per-table relation visibility, Alt+H ref toggling
+- DBML extension: text/diagram switching in one tab, MetaInfo layout persistence, SVG/AsciiDoc export, per-table relation visibility (icon or Alt+H)
 - Colored and animated relations, plus keyboard shortcuts for the view actions with a built-in legend (`?`)
 - **Fork additions (DBML):** import a PostgreSQL schema to DBML, compare an open `.dbml` file with a live database
 

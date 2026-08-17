@@ -7,7 +7,6 @@ import {
 } from "vscode";
 
 import { DiagramView, type DiagramViewDeps } from "./diagramView";
-import { pickTargetView } from "./pickTargetView";
 
 export class DiagramEditorProvider implements CustomTextEditorProvider {
   // Keyed by document uri, which is sound only because registration passes
@@ -49,16 +48,8 @@ export class DiagramEditorProvider implements CustomTextEditorProvider {
     });
   }
 
+  /** The diagram holding focus, if one is. */
   public getActiveView(): DiagramView | undefined {
-    return pickTargetView([...this.views.values()]);
-  }
-
-  public postToTargetView(
-    message: unknown,
-    activeTextDocumentUri?: string,
-  ): void {
-    pickTargetView([...this.views.values()], activeTextDocumentUri)?.post(
-      message,
-    );
+    return [...this.views.values()].find((view) => view.isActive);
   }
 }

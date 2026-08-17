@@ -6,7 +6,7 @@ import { WEB_VIEW_NAME } from "../constants";
 interface Manifest {
   contributes: {
     commands: Array<{ command: string; title: string }>;
-    keybindings: Array<{ command: string; key: string; when?: string }>;
+    keybindings?: Array<{ command: string; key: string; when?: string }>;
     customEditors?: Array<{
       viewType: string;
       displayName: string;
@@ -55,38 +55,10 @@ describe("custom editor contribution", () => {
     expect(preview?.alt).toBe("dbml-erd-visualizer.previewDiagramsInPlace");
   });
 
-  test("Alt+H on the diagram is owned by the webview, not the workbench", () => {
-    // A workbench binding that matches while the webview is focused steals the
-    // chord: VS Code consumes it, the page never toggles, and the host command
-    // has no hovered table to act on. `editorTextFocus` keeps the binding for
-    // the text editor (diagram beside) without intercepting the webview.
-    const binding = manifest().contributes.keybindings.find(
-      (item) => item.command === "dbml-erd-visualizer.toggleTableRefs",
-    );
-
-    expect(binding?.when).toBe("editorTextFocus && resourceLangId == dbml");
-  });
-
-  test("the diagram toggles refs directly from Alt+H", () => {
-    // The web host calls toggleTableRefs from ToggleRefsShortcut. The extension
-    // must do the same: posting `toggleTableRefs` to `window` from inside a
-    // VS Code webview does not reach the React handler, so the key appears dead.
-    const source = fs.readFileSync(
-      path.join(
-        __dirname,
-        "..",
-        "..",
-        "..",
-        "extension-shared",
-        "src",
-        "components",
-        "DbmlFileSyncEffects.tsx",
-      ),
-      "utf8",
-    );
-
-    expect(source).toContain("ToggleRefsShortcut");
-    expect(source).not.toContain("window.postMessage");
+  test("the workbench contributes no Alt+H binding", () => {
+    // Hiding a table's relations is a view preference the diagram owns; a
+    // workbench binding would only steal the chord from the page that handles it.
+    expect(manifest().contributes.keybindings ?? []).toEqual([]);
   });
 
   test("every menu command is a contributed command", () => {

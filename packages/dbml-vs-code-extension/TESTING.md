@@ -9,8 +9,7 @@ The tab bookkeeping is covered automatically — `yarn workspace dbml-schema-vis
 3. In the diagram the button has become **Show DBML source**, and **Show diagram** is gone.
 4. `Reopen Editor With…` offers both the text editor and **DBML Diagram**.
 5. Switch a file with unsaved changes both ways — no save prompt should appear, and the dirty marker should stay on the tab.
-6. Open two different `.dbml` diagrams at once: `Alt+H` affects the focused one only, and a syntax error in one leaves the other's Problems entries alone.
-7. With the diagram focused, press `Alt+H` once over a table — exactly one toggle. Two toggles cancelling out would mean the keybinding is firing alongside the diagram's own handler.
+6. Open two different `.dbml` diagrams at once: a syntax error in one leaves the other's Problems entries alone.
 
 ## MetaInfo persistence
 
@@ -22,9 +21,13 @@ The tab bookkeeping is covered automatically — `yarn workspace dbml-schema-vis
 
 ## Relation visibility
 
-1. Hover a table that has relations; click the link icon in the **table header**; relations for that table should hide on the canvas.
-2. Click again; relations should reappear.
-3. Press **Alt+H** with the webview focused and a table hovered; related `Ref` lines in DBML should be commented/uncommented.
+One state, two ways in — the header icon and `Alt+H` — and **neither writes to the file**.
+
+1. Hover a table that has relations; click the link icon in the **table header**. Its relations hide on the canvas, the icon gains a strike-through, and the table gets a dashed outline.
+2. Click again; relations reappear and the outline goes.
+3. Hover a table and press **Alt+H**: exactly the same as clicking the icon, outline included.
+4. Watch the editor text through both — nothing is written to it, and no `Ref` line is commented out.
+5. Reload the diagram; whatever you hid is still hidden. It is remembered per document, in the browser, not in the `.dbml`.
 
 ## Colored relations
 
@@ -132,10 +135,10 @@ than the dev server, so what is tested is what would be deployed.
    open the file on the site — again, where you left them. This is the whole
    point of the shared metadata format, and it is the one thing no automated
    check in this repository covers.
-8. **Alt+H.** Hover a table on the diagram and press Alt+H. Its relations are
-   commented out in the editor text and the lines it drew disappear. Press it
-   again over the same table to bring them back. Each press is a single
-   Ctrl/Cmd+Z.
+8. **Alt+H.** Hover a table on the diagram and press Alt+H. The lines it drew
+   disappear and the table gets a dashed outline — the same as clicking the link
+   icon in its header. The editor text does not change: this is a view
+   preference, kept per document, and Ctrl/Cmd+Z has nothing to undo.
 9. **Ctrl/Cmd+F belongs to whatever has focus.** With the caret in the editor, it
    opens the editor's own find. With focus anywhere else on the page, it puts the
    caret in the diagram's table search.

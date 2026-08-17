@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 
 import { tableRelationsVisibilityStore } from "@/stores/tableRelationsVisibilityStore";
+import {
+  RELATIONS_TOGGLE_EVENT,
+  toggleTableRelations,
+} from "@/stores/toggleTableRelations";
 import eventEmitter from "@/events-emitter";
-
-const RELATIONS_TOGGLE_EVENT = "on:table:relations:toggle";
 
 export function useTableRelationsVisibility(tableName: string): {
   isHidden: boolean;
@@ -29,12 +31,11 @@ export function useTableRelationsVisibility(tableName: string): {
     };
   }, [tableName]);
 
+  // The shared toggle, so the button and Alt+H cannot diverge. The event it
+  // emits is what the effect above is listening for, which is also how a table
+  // learns that the keyboard toggled it rather than its own icon.
   const toggle = (): void => {
-    tableRelationsVisibilityStore.toggleTableRelations(tableName);
-    eventEmitter.emit(RELATIONS_TOGGLE_EVENT, tableName);
-    setIsHidden(
-      tableRelationsVisibilityStore.areTableRelationsHidden(tableName),
-    );
+    toggleTableRelations(tableName);
   };
 
   return { isHidden, toggle };

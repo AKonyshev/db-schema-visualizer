@@ -55,5 +55,4 @@ export interface JSONTableTable
   x: number;
   y: number;
   fromMetaInfo?: boolean;
-  hasHiddenRefs?: boolean;
 }

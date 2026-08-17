@@ -7,7 +7,7 @@ import { validateSchema } from "./validators";
 
 import type { JSONTableSchema } from "shared/types/tableSchema";
 
-export { toggleTableRefs, upsertMetaInfoInDbml } from "./utils/metainfo";
+export { upsertMetaInfoInDbml } from "./utils/metainfo";
 // The delimiters are part of the format, not an implementation detail: the web
 // editor's grammar highlights the block and has to agree with the writer about
 // where it begins and ends.

@@ -54,14 +54,8 @@ const App = () => {
       scrollDirection={scrollDirection}
       syncEffects={
         supportsDbmlFileSync
-          ? (schema) => (
-              <DbmlFileSyncEffects
-                rawContent={rawContent}
-                documentKey={key}
-                singleTableName={
-                  schema.tables.length === 1 ? schema.tables[0].name : undefined
-                }
-              />
+          ? () => (
+              <DbmlFileSyncEffects rawContent={rawContent} documentKey={key} />
             )
           : undefined
       }

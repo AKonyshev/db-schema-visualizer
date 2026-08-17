@@ -122,12 +122,6 @@ export function activate(context: ExtensionContext): void {
         await closeTabFor(uri, WEB_VIEW_NAME);
       })();
     }),
-    commands.registerCommand("dbml-erd-visualizer.toggleTableRefs", () => {
-      provider.postToTargetView(
-        { type: "toggleTableRefs" },
-        window.activeTextEditor?.document.uri.toString(),
-      );
-    }),
     commands.registerCommand("dbml-erd-visualizer.importFromDatabase", () => {
       void importFromDatabase(context);
     }),

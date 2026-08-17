@@ -67,58 +67,6 @@ describe("DiagramEditorProvider", () => {
     );
   });
 
-  test("routes a message to the focused diagram", () => {
-    const provider = new DiagramEditorProvider(deps());
-    const idle = makePanel(false);
-    const focused = makePanel(true);
-
-    provider.resolveCustomTextEditor(
-      makeDocument("file:///a.dbml") as never,
-      idle as never,
-    );
-    provider.resolveCustomTextEditor(
-      makeDocument("file:///b.dbml") as never,
-      focused as never,
-    );
-    idle.listeners.message({ command: "WEBVIEW_READY" });
-    focused.listeners.message({ command: "WEBVIEW_READY" });
-
-    provider.postToTargetView({ type: "toggleTableRefs" });
-
-    expect(focused.webview.postMessage).toHaveBeenCalledWith({
-      type: "toggleTableRefs",
-    });
-    expect(idle.webview.postMessage).not.toHaveBeenCalledWith({
-      type: "toggleTableRefs",
-    });
-  });
-
-  test("routes to the diagram of the active text document when none is focused", () => {
-    const provider = new DiagramEditorProvider(deps());
-    const wanted = makePanel(false);
-    const other = makePanel(false);
-
-    provider.resolveCustomTextEditor(
-      makeDocument("file:///a.dbml") as never,
-      wanted as never,
-    );
-    provider.resolveCustomTextEditor(
-      makeDocument("file:///b.dbml") as never,
-      other as never,
-    );
-    wanted.listeners.message({ command: "WEBVIEW_READY" });
-    other.listeners.message({ command: "WEBVIEW_READY" });
-
-    provider.postToTargetView({ type: "toggleTableRefs" }, "file:///a.dbml");
-
-    expect(wanted.webview.postMessage).toHaveBeenCalledWith({
-      type: "toggleTableRefs",
-    });
-    expect(other.webview.postMessage).not.toHaveBeenCalledWith({
-      type: "toggleTableRefs",
-    });
-  });
-
   test("forgets a view once its panel is gone", () => {
     const provider = new DiagramEditorProvider(deps());
     const panel = makePanel(true);

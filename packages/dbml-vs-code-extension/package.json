@@ -78,10 +78,6 @@
         "icon": "$(go-to-file)"
       },
       {
-        "command": "dbml-erd-visualizer.toggleTableRefs",
-        "title": "%command.toggleTableRefs%"
-      },
-      {
         "command": "dbml-erd-visualizer.importFromDatabase",
         "title": "%command.importFromDatabase%"
       },
@@ -113,13 +109,6 @@
         "command": "dbml-erd-visualizer.compareWithConnection",
         "title": "%command.compareWithConnection%",
         "icon": "$(diff)"
-      }
-    ],
-    "keybindings": [
-      {
-        "command": "dbml-erd-visualizer.toggleTableRefs",
-        "key": "alt+h",
-        "when": "editorTextFocus && resourceLangId == dbml"
       }
     ],
     "menus": {

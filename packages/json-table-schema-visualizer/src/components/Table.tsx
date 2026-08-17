@@ -24,6 +24,7 @@ import {
   useTableWidth,
 } from "@/hooks/table";
 import { tableCoordsStore } from "@/stores/tableCoords";
+import { useTableRelationsVisibility } from "@/hooks/tableRelationsVisibility";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
@@ -31,8 +32,11 @@ import computeFieldDisplayTypeName from "@/utils/getFieldType";
 
 interface TableProps extends JSONTableTable {}
 
-const Table = ({ fields, name, hasHiddenRefs }: TableProps) => {
+const Table = ({ fields, name }: TableProps) => {
   const themeColors = useThemeColors();
+  // The dashed outline marks a table whose relations are hidden — the same
+  // state the header icon toggles, so the two always agree.
+  const { isHidden: hasHiddenRefs } = useTableRelationsVisibility(name);
   const { detailLevel } = useTableDetailLevel();
   const tableRef = useRef<null | Konva.Group>(null);
   const highlightRef = useRef<null | Konva.Rect>(null);
@@ -149,7 +153,7 @@ const Table = ({ fields, name, hasHiddenRefs }: TableProps) => {
         fill={themeColors.table.bg}
         cornerRadius={PADDINGS.sm}
       />
-      {hasHiddenRefs === true && (
+      {hasHiddenRefs && (
         <Rect
           x={-3}
           y={-3}

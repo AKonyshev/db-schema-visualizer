@@ -1,28 +1,20 @@
-import ToggleRefsShortcut from "json-table-schema-visualizer/src/components/ToggleRefsShortcut";
-
 import { useDbmlMetaInfoSync } from "../hooks/dbmlMetaInfoSync";
-import { useToggleTableRefsCommand } from "../hooks/toggleTableRefsCommand";
 
 interface DbmlFileSyncEffectsProps {
   rawContent: string | null;
   documentKey: string | null;
-  singleTableName?: string;
 }
 
+// Writes table positions back into the open file. Hiding a table's relations is
+// deliberately not here: that is a view preference, kept per document by the
+// viewer, and it never touches the schema text.
 const DbmlFileSyncEffects = ({
   rawContent,
   documentKey,
-  singleTableName,
 }: DbmlFileSyncEffectsProps) => {
   useDbmlMetaInfoSync(true, rawContent, documentKey);
-  const onToggle = useToggleTableRefsCommand(
-    true,
-    rawContent,
-    documentKey,
-    singleTableName,
-  );
 
-  return <ToggleRefsShortcut onToggle={onToggle} />;
+  return null;
 };
 
 export default DbmlFileSyncEffects;
