@@ -142,6 +142,8 @@ const Table = ({ fields, name, hasHiddenRefs }: TableProps) => {
         shadowBlur={PADDINGS.xs}
         shadowOpacity={0.2}
         shadowColor={themeColors.table.shadow}
+        shadowForStrokeEnabled={false}
+        perfectDrawEnabled={false}
         height={tableHeight}
         width={tablePreferredWidth}
         fill={themeColors.table.bg}

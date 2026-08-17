@@ -52,13 +52,17 @@ const DiagramViewer = ({
             {syncEffects}
             <Search tables={tables} />
 
-            <DiagramWrapper tables={tables} refs={refs}>
-              <RelationsConnections
-                refs={refs}
-                documentKey={documentKey ?? undefined}
-              />
-              <Tables tables={tables} />
-            </DiagramWrapper>
+            <DiagramWrapper
+              tablesMeta={tables}
+              refs={refs}
+              connections={
+                <RelationsConnections
+                  refs={refs}
+                  documentKey={documentKey ?? undefined}
+                />
+              }
+              tables={<Tables tables={tables} />}
+            />
           </main>
         </MainProviders>
       </TablesPositionsProvider>

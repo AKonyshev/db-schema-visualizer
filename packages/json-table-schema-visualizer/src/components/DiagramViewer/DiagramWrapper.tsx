@@ -1,5 +1,11 @@
 import { Group, Layer, Stage } from "react-konva";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   type JSONTableRef,
   type JSONTableTable,
@@ -19,7 +25,6 @@ import { useThemeColors } from "@/hooks/theme";
 import { useStageStartingState } from "@/hooks/stage";
 import { stageStateStore } from "@/stores/stagesState";
 import { useScrollDirectionContext } from "@/hooks/scrollDirection";
-import { ScrollDirection } from "@/types/scrollDirection";
 import eventEmitter from "@/events-emitter";
 import { tableCoordsStore } from "@/stores/tableCoords";
 import { useTablesInfo, useTablePositionContext } from "@/hooks/table";
@@ -29,15 +34,28 @@ import { generateMarkdown } from "@/utils/exportMarkdown";
 import useLocalStorage from "@/hooks/localStorage";
 import { useKeyboardShortcuts } from "@/hooks/keyboardShortcuts";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
+import { computeWheelZoom } from "@/utils/computeWheelZoom";
 
 interface DiagramWrapperProps {
-  children: ReactNode;
-  tables: JSONTableTable[];
+  connections: ReactNode;
+  tables: ReactNode;
+  tablesMeta: JSONTableTable[];
   refs: JSONTableRef[];
 }
 
-const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
-  const scaleBy = 1.02;
+interface PendingWheelEvent {
+  deltaY: number;
+  ctrlKey: boolean;
+  pointerX: number;
+  pointerY: number;
+}
+
+const DiagramWrapper = ({
+  connections,
+  tables,
+  tablesMeta,
+  refs,
+}: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { height: viewHeight, width: viewWidth } = useElementSize(containerRef);
   const { scrollDirection } = useScrollDirectionContext();
@@ -79,42 +97,70 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
     hasPositionedStage.current = true;
   }, [defaultStageScale, defaultStagePosition, viewWidth, viewHeight]);
 
+  const pendingWheelRef = useRef<PendingWheelEvent | null>(null);
+  const wheelFrameRef = useRef<number | null>(null);
+
+  const applyPendingWheelZoom = useCallback((): void => {
+    wheelFrameRef.current = null;
+    const pending = pendingWheelRef.current;
+    pendingWheelRef.current = null;
+    const stage = stageRef.current;
+    if (pending === null || stage === null) {
+      return;
+    }
+
+    const { scale, position } = computeWheelZoom({
+      oldScale: stage.scaleX(),
+      deltaY: pending.deltaY,
+      ctrlKey: pending.ctrlKey,
+      scrollDirection,
+      pointerX: pending.pointerX,
+      pointerY: pending.pointerY,
+      stageX: stage.x(),
+      stageY: stage.y(),
+    });
+
+    stage.scale({ x: scale, y: scale });
+    stage.position(position);
+    stage.batchDraw();
+    stageStateStore.set({ scale, position });
+  }, [scrollDirection]);
+
+  useEffect(
+    () => () => {
+      if (wheelFrameRef.current !== null) {
+        cancelAnimationFrame(wheelFrameRef.current);
+      }
+    },
+    [],
+  );
+
   const handleZooming = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     const stage = e.currentTarget as CoreStage;
-    const oldScale = stage.scaleX();
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const pointer = stage.getPointerPosition()!;
-
-    const mousePointTo = {
-      x: (pointer.x - stage.x()) / oldScale,
-      y: (pointer.y - stage.y()) / oldScale,
-    };
-
-    // how to scale? Zoom in? Or zoom out?
-    let direction = 0;
-    if (scrollDirection === ScrollDirection.UpOut) {
-      direction = e.evt.deltaY > 0 ? 1 : -1;
-    } else if (scrollDirection === ScrollDirection.UpIn) {
-      direction = e.evt.deltaY > 0 ? -1 : 1;
+    const pointer = stage.getPointerPosition();
+    if (pointer === null) {
+      return;
     }
 
-    // when we zoom on trackpad, e.evt.ctrlKey is true
-    // in that case lets revert direction
-    if (e.evt.ctrlKey) {
-      direction = -direction;
+    const pending = pendingWheelRef.current;
+    if (pending === null) {
+      pendingWheelRef.current = {
+        deltaY: e.evt.deltaY,
+        ctrlKey: e.evt.ctrlKey,
+        pointerX: pointer.x,
+        pointerY: pointer.y,
+      };
+    } else {
+      pending.deltaY += e.evt.deltaY;
+      pending.ctrlKey = e.evt.ctrlKey;
+      pending.pointerX = pointer.x;
+      pending.pointerY = pointer.y;
     }
 
-    const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-
-    stage.scale({ x: newScale, y: newScale });
-
-    const newPos = {
-      x: pointer.x - mousePointTo.x * newScale,
-      y: pointer.y - mousePointTo.y * newScale,
-    };
-    stage.position(newPos);
-    stageStateStore.set({ scale: newScale, position: newPos });
+    if (wheelFrameRef.current === null) {
+      wheelFrameRef.current = requestAnimationFrame(applyPendingWheelZoom);
+    }
   };
 
   const nodeBelongsToTable = (node: any): boolean => {
@@ -362,13 +408,13 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   };
 
   const onDownloadMarkdown = () => {
-    const markdown = generateMarkdown(tables, refs);
+    const markdown = generateMarkdown(tablesMeta, refs);
     const blob = new Blob([markdown], { type: "text/markdown" });
     downloadBlob(blob, `diagram-${Date.now()}.md`);
   };
 
   const onDownloadAdoc = () => {
-    const asciiDoc = generateAsciiDoc(tables, refs);
+    const asciiDoc = generateAsciiDoc(tablesMeta, refs);
     const blob = new Blob([asciiDoc], { type: "text/plain" });
     downloadBlob(blob, `diagram-${Date.now()}.adoc`);
   };
@@ -393,7 +439,12 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
       >
         <Layer>
           <Group offsetX={-DIAGRAM_PADDING} offsetY={-DIAGRAM_PADDING}>
-            {children}
+            {connections}
+          </Group>
+        </Layer>
+        <Layer>
+          <Group offsetX={-DIAGRAM_PADDING} offsetY={-DIAGRAM_PADDING}>
+            {tables}
           </Group>
         </Layer>
       </Stage>
