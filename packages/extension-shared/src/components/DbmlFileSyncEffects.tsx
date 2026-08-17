@@ -1,3 +1,5 @@
+import ToggleRefsShortcut from "json-table-schema-visualizer/src/components/ToggleRefsShortcut";
+
 import { useDbmlMetaInfoSync } from "../hooks/dbmlMetaInfoSync";
 import { useToggleTableRefsCommand } from "../hooks/toggleTableRefsCommand";
 
@@ -15,7 +17,13 @@ const DbmlFileSyncEffects = ({
   useDbmlMetaInfoSync(true, rawContent, documentKey);
   useToggleTableRefsCommand(true, rawContent, documentKey, singleTableName);
 
-  return null;
+  return (
+    <ToggleRefsShortcut
+      onToggle={() => {
+        window.postMessage({ type: "toggleTableRefs" }, "*");
+      }}
+    />
+  );
 };
 
 export default DbmlFileSyncEffects;

@@ -5,12 +5,12 @@ import { useCreateTheme } from "json-table-schema-visualizer/src/hooks/theme";
 import { switchDocument } from "json-table-schema-visualizer/src/stores/switchDocument";
 import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
 import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDirection";
+import ToggleRefsShortcut from "json-table-schema-visualizer/src/components/ToggleRefsShortcut";
 
 import DocumentBar from "./components/DocumentBar";
 import EditorPane from "./components/EditorPane";
 import SplitLayout from "./components/SplitLayout";
 import TabBar from "./components/TabBar";
-import ToggleRefsShortcut from "./components/ToggleRefsShortcut";
 import { toDbmlFilename } from "./document/dbmlFilename";
 import { downloadTextFile } from "./document/downloadTextFile";
 import { parseDbmlText } from "./document/parseDbmlText";

@@ -80,4 +80,27 @@ MetaInfo*/`;
     });
     expect(visible).not.toMatch(/^\s*\/\/\s*Ref:/m);
   });
+
+  test("toggleTableRefs matches schema-qualified ref syntax", () => {
+    const dbml = `
+Table "well_design.well" {
+  "id" uuid [pk]
+}
+
+Table "well_design.bore" {
+  "well_id" uuid
+}
+
+Ref "bore_well_id_fkey":"well_design.well"."id" < "well_design.bore"."well_id"
+`;
+
+    const hidden = toggleTableRefs(dbml, "well_design.well", {
+      name: "well_design.well",
+      x: 0,
+      y: 0,
+    });
+    expect(hidden).toContain(
+      '// Ref "bore_well_id_fkey":"well_design.well"."id"',
+    );
+  });
 });
