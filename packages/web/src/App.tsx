@@ -180,6 +180,9 @@ const App = ({ initialWorkspace }: AppProps): JSX.Element => {
 
   const toggleRefs = useCallback(
     (tableName: string) => {
+      if (tableName === "") {
+        return;
+      }
       // The same call the extension makes, coordinates included: `toggleTableRefs`
       // records the table as hidden in the layout block as it comments the
       // relations out, and without a position to record it would write the table

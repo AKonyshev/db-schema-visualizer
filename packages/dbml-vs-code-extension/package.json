@@ -119,7 +119,7 @@
       {
         "command": "dbml-erd-visualizer.toggleTableRefs",
         "key": "alt+h",
-        "when": "resourceLangId == dbml && activeCustomEditorId != 'dblm-preview-webview'"
+        "when": "editorTextFocus && resourceLangId == dbml"
       }
     ],
     "menus": {

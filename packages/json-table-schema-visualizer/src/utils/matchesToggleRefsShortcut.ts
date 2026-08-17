@@ -1,6 +1,11 @@
 /**
  * Whether a keydown event is Alt+H (layout-independent).
+ *
+ * Option+H on a Mac types "˙". VS Code webviews sometimes omit `code` and
+ * sometimes drop `altKey` on that composed keydown; either still counts.
  */
+const MAC_OPTION_H = "˙";
+
 export const matchesToggleRefsShortcut = (event: {
   altKey: boolean;
   ctrlKey: boolean;
@@ -8,9 +13,18 @@ export const matchesToggleRefsShortcut = (event: {
   code: string;
   key: string;
 }): boolean => {
-  if (!event.altKey || event.ctrlKey || event.metaKey) {
+  if (event.ctrlKey || event.metaKey) {
     return false;
   }
 
-  return event.code === "KeyH" || event.key.toLowerCase() === "h";
+  const isH =
+    event.code === "KeyH" ||
+    event.key.toLowerCase() === "h" ||
+    event.key === MAC_OPTION_H;
+
+  if (!isH) {
+    return false;
+  }
+
+  return event.altKey || event.key === MAC_OPTION_H;
 };

@@ -20,7 +20,7 @@ export const useToggleTableRefsCommand = (
   rawContent: string | null,
   documentKey: string | null,
   singleTableName?: string,
-): void => {
+): ((tableName: string) => void) => {
   const tablesInfo: TablesInfoProviderValue = useTablesInfo();
   const rawContentRef = useRef(rawContent);
   const documentKeyRef = useRef(documentKey);
@@ -32,34 +32,49 @@ export const useToggleTableRefsCommand = (
   hoveredTableRef.current = tablesInfo.hoveredTableName;
   singleTableRef.current = singleTableName;
 
+  const runToggle = (tableName: string): void => {
+    const content = rawContentRef.current;
+    const uri = documentKeyRef.current;
+    if (content == null || uri == null) return;
+
+    const resolved =
+      tableName !== ""
+        ? tableName
+        : hoveredTableRef.current ?? singleTableRef.current ?? "";
+    if (resolved === "") return;
+
+    const coords = tableCoordsStore.getCoords(resolved);
+    const updated = toggleTableRefs(content, resolved, {
+      name: resolved,
+      x: coords.x,
+      y: coords.y,
+    });
+
+    if (updated === content) return;
+
+    const postMessage: WebviewPostMessage = {
+      command: WebviewCommand.UPDATE_DBML_CONTENT,
+      content: updated,
+      documentUri: uri,
+    };
+
+    postToExtension(postMessage);
+  };
+
+  const runToggleRef = useRef(runToggle);
+  runToggleRef.current = runToggle;
+
   useEffect(() => {
     if (!enabled) return;
 
     const handler = (event: MessageEvent): void => {
       const message = event.data as ToggleTableRefsHostMessage;
-      if (message.type !== "toggleTableRefs") return;
-
-      const content = rawContentRef.current;
-      const uri = documentKeyRef.current;
-      if (content == null || uri == null) return;
+      if (message?.type !== "toggleTableRefs") return;
 
       const tableName = hoveredTableRef.current ?? singleTableRef.current;
       if (tableName == null || tableName === "") return;
 
-      const coords = tableCoordsStore.getCoords(tableName);
-      const updated = toggleTableRefs(content, tableName, {
-        name: tableName,
-        x: coords.x,
-        y: coords.y,
-      });
-
-      const postMessage: WebviewPostMessage = {
-        command: WebviewCommand.UPDATE_DBML_CONTENT,
-        content: updated,
-        documentUri: uri,
-      };
-
-      postToExtension(postMessage);
+      runToggleRef.current(tableName);
     };
 
     window.addEventListener("message", handler);
@@ -67,4 +82,8 @@ export const useToggleTableRefsCommand = (
       window.removeEventListener("message", handler);
     };
   }, [enabled]);
+
+  return (tableName: string): void => {
+    runToggleRef.current(tableName);
+  };
 };

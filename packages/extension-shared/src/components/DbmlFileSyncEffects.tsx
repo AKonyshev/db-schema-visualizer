@@ -15,15 +15,14 @@ const DbmlFileSyncEffects = ({
   singleTableName,
 }: DbmlFileSyncEffectsProps) => {
   useDbmlMetaInfoSync(true, rawContent, documentKey);
-  useToggleTableRefsCommand(true, rawContent, documentKey, singleTableName);
-
-  return (
-    <ToggleRefsShortcut
-      onToggle={() => {
-        window.postMessage({ type: "toggleTableRefs" }, "*");
-      }}
-    />
+  const onToggle = useToggleTableRefsCommand(
+    true,
+    rawContent,
+    documentKey,
+    singleTableName,
   );
+
+  return <ToggleRefsShortcut onToggle={onToggle} />;
 };
 
 export default DbmlFileSyncEffects;

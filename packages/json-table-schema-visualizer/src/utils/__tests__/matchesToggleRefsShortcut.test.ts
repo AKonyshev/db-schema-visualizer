@@ -25,6 +25,18 @@ describe("matchesToggleRefsShortcut", () => {
     );
   });
 
+  test("matches Alt+˙ when the webview omits code", () => {
+    expect(matchesToggleRefsShortcut({ ...altH, code: "", key: "˙" })).toBe(
+      true,
+    );
+  });
+
+  test("matches Mac Option+H when altKey is dropped on the composed key", () => {
+    expect(
+      matchesToggleRefsShortcut({ ...altH, altKey: false, code: "", key: "˙" }),
+    ).toBe(true);
+  });
+
   test("rejects plain H", () => {
     expect(matchesToggleRefsShortcut({ ...altH, altKey: false })).toBe(false);
   });

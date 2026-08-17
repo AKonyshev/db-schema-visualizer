@@ -12,8 +12,11 @@ export interface ToggleRefsShortcutProps {
  *
  * Rendered through the viewer's `syncEffects` slot rather than from the page
  * around it, because that slot is inside the providers and this needs the one
- * thing only they know: which table is hovered. The extension reads the same
- * value for the same command.
+ * thing only they know: which table is hovered. The web host uses this
+ * listener; the extension uses this same component and calls toggle directly,
+ * the way the site does. A workbench keybinding that matches while the
+ * webview is focused steals the chord; posting `toggleTableRefs` to `window`
+ * from inside a VS Code webview does not reach the React handler.
  *
  * It renders nothing. What it contributes is a window listener, and a component
  * is simply how a hook reaches a context it would otherwise be outside of.
@@ -34,19 +37,11 @@ const ToggleRefsShortcut = ({ onToggle }: ToggleRefsShortcutProps): null => {
         return;
       }
 
-      const tableName = hoveredRef.current;
-      // Nothing under the pointer is not an error, it is the ordinary case of
-      // pressing the key while looking at empty canvas.
-      if (tableName === null || tableName === "") {
-        return;
-      }
-
-      // When a table is hovered, Alt+H toggles its refs even if the caret is
-      // still in the DBML editor beside the diagram — the usual layout in the
-      // web site and in VS Code. preventDefault keeps the editor from also
-      // receiving the chord (for example "˙" on a Mac).
+      // preventDefault even when nothing is hovered: on a Mac the chord types
+      // "˙" into the editor beside the diagram. The host decides whether an
+      // empty name is a no-op or a single-table fallback.
       event.preventDefault();
-      onToggleRef.current(tableName);
+      onToggleRef.current(hoveredRef.current ?? "");
     };
 
     // Capturing, because the editor has its own view on Alt-chords and holds
