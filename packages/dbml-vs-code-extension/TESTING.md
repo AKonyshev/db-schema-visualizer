@@ -1,5 +1,13 @@
 # Manual test plan (DBML extension)
 
+## Switching between text and diagram
+
+1. In a `.dbml` text editor exactly one title button shows — **Show diagram**; it opens the diagram beside.
+2. Alt-click the same button — the diagram takes over the current tab.
+3. In the diagram only **Show DBML source** shows; clicking it brings the text back **into the same tab**, not into a second one.
+4. `Reopen Editor With…` offers both the text editor and **DBML Diagram**.
+5. Open two different `.dbml` diagrams at once: `Alt+H` affects the focused one only, and a syntax error in one leaves the other's Problems entries alone.
+
 ## MetaInfo persistence
 
 1. Open a `.dbml` file and launch **Show diagram**.

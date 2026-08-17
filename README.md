@@ -8,7 +8,7 @@ A VS Code extension to visualize database schemas as ERD diagrams from DBML file
 
 - Create entity-relationship diagrams from DBML code
 - Light and dark themes
-- DBML extension: MetaInfo layout persistence, SVG/AsciiDoc export, per-table relation visibility, Alt+H ref toggling
+- DBML extension: text/diagram switching in one tab, MetaInfo layout persistence, SVG/AsciiDoc export, per-table relation visibility, Alt+H ref toggling
 - Colored and animated relations, plus keyboard shortcuts for the view actions with a built-in legend (`?`)
 - **Fork additions (DBML):** import a PostgreSQL schema to DBML, compare an open `.dbml` file with a live database
 
@@ -37,9 +37,7 @@ someone sent them. It has no backend: nothing you open leaves the browser, which
 is what lets it be deployed inside a closed network.
 
 ```bash
-yarn build:web
-docker build -f packages/web/Dockerfile -t dbml-schema-visualizer-web .
-docker run --rm -p 8080:8080 dbml-schema-visualizer-web
+docker compose up --build
 ```
 
 See [packages/web/README.md](./packages/web/README.md) for local development,
