@@ -1,4 +1,11 @@
-import { layoutAroundHubs, type LayoutBox, type PlacedBox } from "../hubLayout";
+import {
+  gapsFor,
+  layoutAroundHubs,
+  type LayoutBox,
+  type PlacedBox,
+} from "../hubLayout";
+
+import { TABLES_GAP_X, TABLES_GAP_Y } from "@/constants/sizing";
 
 const box = (name: string, w = 300, h = 200): LayoutBox => ({ name, w, h });
 
@@ -137,5 +144,33 @@ describe("layoutAroundHubs", () => {
     );
 
     expect(placed).toHaveLength(2);
+  });
+});
+
+describe("gapsFor", () => {
+  test("leaves a fixed minimum for small tables", () => {
+    const gaps = gapsFor([
+      { name: "a", w: 40, h: 40 },
+      { name: "b", w: 40, h: 40 },
+    ]);
+
+    expect(gaps.x).toBe(TABLES_GAP_X);
+    expect(gaps.y).toBe(TABLES_GAP_Y);
+  });
+
+  // At full detail a table is around 450 wide and over a thousand tall; a fixed
+  // 50px between them left the relation lines nowhere to be seen going.
+  test("opens up once the tables are large", () => {
+    const gaps = gapsFor([
+      { name: "a", w: 450, h: 1340 },
+      { name: "b", w: 450, h: 1340 },
+    ]);
+
+    expect(gaps.x).toBeGreaterThan(TABLES_GAP_X * 3);
+    expect(gaps.y).toBeGreaterThan(TABLES_GAP_Y * 3);
+  });
+
+  test("has something to say about no tables at all", () => {
+    expect(gapsFor([])).toEqual({ x: TABLES_GAP_X, y: TABLES_GAP_Y });
   });
 });

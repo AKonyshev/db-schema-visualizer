@@ -20,6 +20,37 @@ interface Group {
   level: number;
 }
 
+interface Gaps {
+  x: number;
+  y: number;
+}
+
+/**
+ * How much room to leave between tables.
+ *
+ * A fixed 50px was most of a table when tables were small and a rounding error
+ * when they are 450 wide and over a thousand tall — at full detail the diagram
+ * became a wall of blocks with the relation lines lost somewhere behind it. The
+ * gaps track the tables instead, so there is always somewhere for a line to be
+ * seen going.
+ */
+export const gapsFor = (boxes: LayoutBox[]): Gaps => {
+  if (boxes.length === 0) {
+    return { x: TABLES_GAP_X, y: TABLES_GAP_Y };
+  }
+
+  const median = (values: number[]): number => {
+    const sorted = [...values].sort((a, b) => a - b);
+
+    return sorted[Math.floor(sorted.length / 2)];
+  };
+
+  return {
+    x: Math.max(TABLES_GAP_X, Math.round(median(boxes.map((b) => b.w)) * 0.75)),
+    y: Math.max(TABLES_GAP_Y, Math.round(median(boxes.map((b) => b.h)) * 0.2)),
+  };
+};
+
 const buildAdjacency = (
   names: Set<string>,
   edges: Array<[string, string]>,
@@ -72,13 +103,14 @@ const componentFrom = (
 const intoColumns = (
   boxes: LayoutBox[],
   heightBudget: number,
+  gaps: Gaps,
 ): LayoutBox[][] => {
   const columns: LayoutBox[][] = [];
   let column: LayoutBox[] = [];
   let height = 0;
 
   boxes.forEach((box) => {
-    const next = height === 0 ? box.h : height + TABLES_GAP_Y + box.h;
+    const next = height === 0 ? box.h : height + gaps.y + box.h;
     if (column.length > 0 && next > heightBudget) {
       columns.push(column);
       column = [box];
@@ -96,9 +128,9 @@ const intoColumns = (
   return columns;
 };
 
-const columnHeight = (column: LayoutBox[]): number =>
+const columnHeight = (column: LayoutBox[], gaps: Gaps): number =>
   column.reduce(
-    (total, box, index) => total + box.h + (index > 0 ? TABLES_GAP_Y : 0),
+    (total, box, index) => total + box.h + (index > 0 ? gaps.y : 0),
     0,
   );
 
@@ -119,6 +151,7 @@ const layoutComponent = (
   sizeOf: Map<string, LayoutBox>,
   adjacency: Map<string, Set<string>>,
   heightBudget: number,
+  gaps: Gaps,
 ): PlacedBox[] => {
   const hub = names.reduce((best, name) =>
     (adjacency.get(name)?.size ?? 0) > (adjacency.get(best)?.size ?? 0)
@@ -192,22 +225,22 @@ const layoutComponent = (
       .sort((a, b) => a.level - b.level);
 
     // Start beyond the hub and walk outwards, one level of columns at a time.
-    let edge = hubBox.w / 2 + TABLES_GAP_X;
+    let edge = hubBox.w / 2 + gaps.x;
 
     levels.forEach((group) => {
-      const columns = intoColumns(group.boxes, heightBudget);
+      const columns = intoColumns(group.boxes, heightBudget, gaps);
 
       columns.forEach((column) => {
         const width = columnWidth(column);
         const x = side === 1 ? edge : -edge - width;
-        let y = -columnHeight(column) / 2;
+        let y = -columnHeight(column, gaps) / 2;
 
         column.forEach((box) => {
           placed.push({ ...box, x, y });
-          y += box.h + TABLES_GAP_Y;
+          y += box.h + gaps.y;
         });
 
-        edge += width + TABLES_GAP_X;
+        edge += width + gaps.x;
       });
     });
   });
@@ -230,7 +263,11 @@ const shift = (placed: PlacedBox[], dx: number, dy: number): PlacedBox[] =>
   placed.map((box) => ({ ...box, x: box.x + dx, y: box.y + dy }));
 
 /** Rows of boxes, wrapping at `width`. */
-const intoRows = (boxes: LayoutBox[], width: number): PlacedBox[] => {
+const intoRows = (
+  boxes: LayoutBox[],
+  width: number,
+  gaps: Gaps,
+): PlacedBox[] => {
   const placed: PlacedBox[] = [];
   let x = 0;
   let y = 0;
@@ -239,11 +276,11 @@ const intoRows = (boxes: LayoutBox[], width: number): PlacedBox[] => {
   boxes.forEach((box) => {
     if (x > 0 && x + box.w > width) {
       x = 0;
-      y += rowHeight + TABLES_GAP_Y;
+      y += rowHeight + gaps.y;
       rowHeight = 0;
     }
     placed.push({ ...box, x, y });
-    x += box.w + TABLES_GAP_X;
+    x += box.w + gaps.x;
     rowHeight = Math.max(rowHeight, box.h);
   });
 
@@ -269,6 +306,7 @@ export const layoutAroundHubs = (
   const sizeOf = new Map(boxes.map((box) => [box.name, box]));
   const names = new Set(sizeOf.keys());
   const adjacency = buildAdjacency(names, edges);
+  const gaps = gapsFor(boxes);
 
   const area = boxes.reduce((total, box) => total + box.w * box.h, 0);
   const widest = boxes.reduce((max, box) => Math.max(max, box.w), 0);
@@ -299,7 +337,13 @@ export const layoutAroundHubs = (
     let bottom = 0;
 
     components.forEach((component) => {
-      const laid = layoutComponent(component, sizeOf, adjacency, heightBudget);
+      const laid = layoutComponent(
+        component,
+        sizeOf,
+        adjacency,
+        heightBudget,
+        gaps,
+      );
       if (laid.length === 0) {
         return;
       }
@@ -308,15 +352,15 @@ export const layoutAroundHubs = (
       placed = placed.concat(
         shift(laid, -componentBounds.x, bottom - componentBounds.y),
       );
-      bottom += componentBounds.h + TABLES_GAP_Y * 2;
+      bottom += componentBounds.h + gaps.y * 2;
     });
 
     if (isolated.length > 0) {
       // As wide as the diagram it sits under, so the whole thing reads as one
       // block rather than a wide picture with a long tail beneath it.
       const mainWidth = placed.length > 0 ? boundsOf(placed).w : targetWidth;
-      const rows = intoRows(isolated, Math.max(mainWidth, widest));
-      const gap = placed.length > 0 ? TABLES_GAP_Y * 3 : 0;
+      const rows = intoRows(isolated, Math.max(mainWidth, widest), gaps);
+      const gap = placed.length > 0 ? gaps.y * 3 : 0;
       placed = placed.concat(shift(rows, 0, bottom + gap));
     }
 
@@ -331,7 +375,7 @@ export const layoutAroundHubs = (
   // arithmetic does not close. What is true is that the shape moves one way
   // only — a taller budget means fewer, longer columns, so a narrower diagram —
   // and that is enough to search for the budget that lands nearest the target.
-  const totalHeight = boxes.reduce((sum, box) => sum + box.h + TABLES_GAP_Y, 0);
+  const totalHeight = boxes.reduce((sum, box) => sum + box.h + gaps.y, 0);
   const aspectOf = (placed: PlacedBox[]): number => {
     const bounds = boundsOf(placed);
 
