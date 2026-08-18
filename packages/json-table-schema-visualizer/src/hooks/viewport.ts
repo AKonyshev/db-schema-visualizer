@@ -17,27 +17,36 @@ import {
 } from "@/stores/viewportStore";
 
 /**
- * Below this many screen pixels a column row carries no readable text, so
- * drawing 5,676 of them is work nobody can see. Two glyph heights is generous;
- * the row is unreadable well before it.
+ * How tall a column row must be on screen before the rows are drawn at all.
+ *
+ * Not a legibility threshold, which is what it was first set to: long before a
+ * name can be read, the rows still say how big a table is, where its keys sit
+ * and which of them a relation arrives at, and a reader zooming out wants to
+ * keep that for as long as the machine can afford it. Six pixels is about two
+ * rows to a table's worth of banding — enough to read structure from, well
+ * before a name resolves.
+ *
+ * Affordable because of culling: at this zoom the viewport holds a fraction of
+ * the schema, so the rows drawn are a fraction of its columns — on a
+ * 5,676-column schema, thousands rather than all of them.
  */
-const LEGIBLE_ROW_PX = 8;
+const ROW_WORTH_DRAWING_PX = 6;
 
 /** How much beyond the viewport stays mounted, in viewports per side. */
 const CULLING_MARGIN = 0.5;
 
 /**
- * Whether a column row is currently big enough to read.
+ * Whether the columns are currently worth drawing.
  *
  * The table's footprint deliberately does not depend on this: heights that
  * changed with zoom would move every connection anchor and shift the bounds
  * that fit-to-view is computed from, which can oscillate around the threshold.
  * Only whether the rows are drawn depends on it.
  */
-export const useIsRowTextLegible = (): boolean =>
+export const useAreRowsWorthDrawing = (): boolean =>
   useSyncExternalStore(
     viewportStore.subscribe,
-    () => viewportStore.get().scale * COLUMN_HEIGHT >= LEGIBLE_ROW_PX,
+    () => viewportStore.get().scale * COLUMN_HEIGHT >= ROW_WORTH_DRAWING_PX,
     () => true,
   );
 
@@ -84,7 +93,7 @@ const sameTables = (a: JSONTableTable[], b: JSONTableTable[]): boolean =>
  * The tables worth mounting right now.
  *
  * At an overview zoom this is all of them and the saving comes from
- * `useIsRowTextLegible` instead; zoomed in far enough to read a column, it is a
+ * `useAreRowsWorthDrawing` instead; zoomed in far enough to read a column, it is a
  * handful. Between them the work stays bounded at every scale, which is what a
  * 117-table schema needs and what no amount of memoising could give.
  */
