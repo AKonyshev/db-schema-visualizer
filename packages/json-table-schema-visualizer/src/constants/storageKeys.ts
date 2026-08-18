@@ -12,4 +12,5 @@ export const STORAGE_KEYS = {
   COLOR_RELATIONS: "enableAlwaysHover",
   ANIMATE_RELATIONS: "animateRelations",
   SHORT_TABLE_NAME: "shortTableNameSetting",
+  RELATION_STYLE: "relationStyle",
 } as const;

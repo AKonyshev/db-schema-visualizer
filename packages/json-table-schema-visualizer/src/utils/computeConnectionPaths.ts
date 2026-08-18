@@ -1,40 +1,47 @@
+import { getBezierPath } from "./computeEgde/computeBezierEdge";
 import { getOrthogonalPath } from "./computeEgde/computeOrthogonalEdge";
 import { getRelationSymbol } from "./getRelationSymbol";
 
 import { type Position, type XYPosition } from "@/types/positions";
+import { RelationStyle } from "@/types/relationStyle";
 
 interface LineProps {
   sourceXY: XYPosition;
   sourcePosition: Position;
   targetXY: XYPosition;
   targetPosition: Position;
+  style?: RelationStyle;
 }
 
 // The line without cardinality symbols: needed for the animated overlay, where
 // the dashes must not tear the relation symbols apart.
 //
-// Right angles rather than a curve. On a small schema the curve was prettier;
-// on a large one it is the difference between a diagram and a bowl of
-// spaghetti, because a line that runs in corridors and turns squarely can be
-// followed by eye and ninety diagonals cannot.
+// Right angles or a curve, as the reader chose. The curve is the prettier of
+// the two and reads well while there are few relations; past a few dozen it is
+// the difference between a diagram and a bowl of spaghetti, because a line that
+// runs in corridors and turns squarely can be followed by eye and ninety
+// diagonals cannot. Which is why the default is right angles and the choice is
+// offered rather than assumed.
 export const computeConnectionLinePath = ({
   sourceXY,
   sourcePosition,
   targetXY,
   targetPosition,
-}: LineProps): string =>
-  getOrthogonalPath({
+  style = RelationStyle.Orthogonal,
+}: LineProps): string => {
+  const geometry = {
     sourcePosition,
     targetPosition,
     source: sourceXY,
     target: targetXY,
-  });
+  };
 
-interface Props {
-  sourceXY: XYPosition;
-  sourcePosition: Position;
-  targetXY: XYPosition;
-  targetPosition: Position;
+  return style === RelationStyle.Bezier
+    ? getBezierPath(geometry)
+    : getOrthogonalPath(geometry);
+};
+
+interface Props extends LineProps {
   relationSource: string;
   relationTarget: string;
 }
@@ -57,12 +64,14 @@ export const computeConnectionPaths = ({
   targetXY,
   sourcePosition,
   targetPosition,
+  style,
 }: Props): ConnectionPaths => {
   const line = computeConnectionLinePath({
     sourceXY,
     sourcePosition,
     targetXY,
     targetPosition,
+    style,
   });
 
   const sourceSymbolPath = getRelationSymbol(

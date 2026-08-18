@@ -9,6 +9,7 @@ import ExportMenu from "./Export/ExportMenu";
 import ShortTableNameSetting from "./ShortTableNameSetting/ShortTableNameSetting";
 import EnableAlwaysHover from "./EnableAlwaysHover/EnableAlwaysHover";
 import AnimateRelations from "./AnimateRelations/AnimateRelations";
+import RelationStyleToggle from "./RelationStyleToggle/RelationStyleToggle";
 import ToolbarButton from "./Button";
 
 import { shortcutKeyFor } from "@/constants/shortcuts";
@@ -53,6 +54,7 @@ const Toolbar = ({
       <ShortTableNameSetting />
       <EnableAlwaysHover />
       <AnimateRelations />
+      <RelationStyleToggle />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
       <ToolbarButton
         label={t("legend.title")}

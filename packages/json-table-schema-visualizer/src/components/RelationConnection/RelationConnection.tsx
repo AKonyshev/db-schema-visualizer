@@ -6,6 +6,10 @@ import type { RelationItem } from "@/types/relation";
 
 import { useRelationsCoords } from "@/hooks/relationConnection";
 import { computeConnectionPaths } from "@/utils/computeConnectionPaths";
+import { STORAGE_KEYS } from "@/constants/storageKeys";
+import useLocalStorage from "@/hooks/localStorage";
+import { DEFAULT_RELATION_STYLE } from "@/stores/relationStyle";
+import { type RelationStyle } from "@/types/relationStyle";
 
 interface RelationConnectionProps {
   source: RelationItem;
@@ -18,9 +22,13 @@ const RelationConnection = ({ source, target }: RelationConnectionProps) => {
 
   const { x: sourceX, y: sourceY } = sourceXY;
   const { x: targetX, y: targetY } = targetXY;
+  const [style] = useLocalStorage<RelationStyle>(
+    STORAGE_KEYS.RELATION_STYLE,
+    DEFAULT_RELATION_STYLE,
+  );
 
   // One memo, not two: the connection and its animated overlay share the same
-  // bezier, so computing them apart would run it twice on every render.
+  // path, so computing them apart would run it twice on every render.
   const { line, withSymbols } = useMemo(() => {
     return computeConnectionPaths({
       targetXY,
@@ -29,8 +37,17 @@ const RelationConnection = ({ source, target }: RelationConnectionProps) => {
       targetPosition,
       relationSource: source.relation,
       relationTarget: target.relation,
+      style,
     });
-  }, [sourcePosition, targetPosition, sourceX, targetX, sourceY, targetY]);
+  }, [
+    sourcePosition,
+    targetPosition,
+    sourceX,
+    targetX,
+    sourceY,
+    targetY,
+    style,
+  ]);
 
   const relationOwner =
     source.relation === "1" ? source.tableName : target.tableName;
