@@ -5,8 +5,7 @@ import ToolbarButton from "../Button";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { t } from "@/i18n/t";
 import useLocalStorage from "@/hooks/localStorage";
-import { DEFAULT_RELATION_STYLE } from "@/stores/relationStyle";
-import { RelationStyle } from "@/types/relationStyle";
+import { DEFAULT_RELATION_STYLE, RelationStyle } from "@/types/relationStyle";
 
 /**
  * Right angles or curves.

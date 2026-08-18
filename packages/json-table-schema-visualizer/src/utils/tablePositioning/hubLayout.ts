@@ -1,5 +1,5 @@
 import { TABLES_GAP_X, TABLES_GAP_Y } from "@/constants/sizing";
-import { RelationStyle } from "@/types/relationStyle";
+import { DEFAULT_RELATION_STYLE, RelationStyle } from "@/types/relationStyle";
 
 export interface LayoutBox {
   name: string;
@@ -42,7 +42,7 @@ interface Gaps {
  */
 export const gapsFor = (
   boxes: LayoutBox[],
-  style: RelationStyle = RelationStyle.Orthogonal,
+  style: RelationStyle = DEFAULT_RELATION_STYLE,
 ): Gaps => {
   if (boxes.length === 0) {
     return { x: TABLES_GAP_X, y: TABLES_GAP_Y };
@@ -312,7 +312,7 @@ export const layoutAroundHubs = (
   boxes: LayoutBox[],
   edges: Array<[string, string]>,
   targetAspect: number = TARGET_ASPECT,
-  style: RelationStyle = RelationStyle.Orthogonal,
+  style: RelationStyle = DEFAULT_RELATION_STYLE,
 ): PlacedBox[] => {
   if (boxes.length === 0) {
     return [];

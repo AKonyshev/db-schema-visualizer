@@ -8,8 +8,10 @@ import { useRelationsCoords } from "@/hooks/relationConnection";
 import { computeConnectionPaths } from "@/utils/computeConnectionPaths";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import useLocalStorage from "@/hooks/localStorage";
-import { DEFAULT_RELATION_STYLE } from "@/stores/relationStyle";
-import { type RelationStyle } from "@/types/relationStyle";
+import {
+  DEFAULT_RELATION_STYLE,
+  type RelationStyle,
+} from "@/types/relationStyle";
 
 interface RelationConnectionProps {
   source: RelationItem;

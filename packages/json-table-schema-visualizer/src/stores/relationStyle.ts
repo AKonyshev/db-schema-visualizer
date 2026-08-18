@@ -1,7 +1,9 @@
 import { STORAGE_KEYS } from "@/constants/storageKeys";
-import { RelationStyle, isRelationStyle } from "@/types/relationStyle";
-
-export const DEFAULT_RELATION_STYLE = RelationStyle.Orthogonal;
+import {
+  DEFAULT_RELATION_STYLE,
+  type RelationStyle,
+  isRelationStyle,
+} from "@/types/relationStyle";
 
 /**
  * The chosen relation style, read outside React.

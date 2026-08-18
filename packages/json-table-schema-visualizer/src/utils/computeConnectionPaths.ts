@@ -3,7 +3,7 @@ import { getOrthogonalPath } from "./computeEgde/computeOrthogonalEdge";
 import { getRelationSymbol } from "./getRelationSymbol";
 
 import { type Position, type XYPosition } from "@/types/positions";
-import { RelationStyle } from "@/types/relationStyle";
+import { DEFAULT_RELATION_STYLE, RelationStyle } from "@/types/relationStyle";
 
 interface LineProps {
   sourceXY: XYPosition;
@@ -27,7 +27,7 @@ export const computeConnectionLinePath = ({
   sourcePosition,
   targetXY,
   targetPosition,
-  style = RelationStyle.Orthogonal,
+  style = DEFAULT_RELATION_STYLE,
 }: LineProps): string => {
   const geometry = {
     sourcePosition,

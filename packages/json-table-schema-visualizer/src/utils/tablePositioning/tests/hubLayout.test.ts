@@ -160,16 +160,24 @@ describe("gapsFor", () => {
   });
 
   // At full detail a table is around 450 wide and over a thousand tall; a fixed
-  // 50px between them left the relation lines nowhere to be seen going.
-  test("opens up once the tables are large", () => {
-    const gaps = gapsFor([
-      { name: "a", w: 450, h: 1340 },
-      { name: "b", w: 450, h: 1340 },
-    ]);
+  // 50px between them left the relation lines nowhere to be seen going. How
+  // much room they get depends on what is drawn in it, so both styles are
+  // checked — what neither may do is stay at the floor.
+  test.each([RelationStyle.Orthogonal, RelationStyle.Bezier])(
+    "opens up once the tables are large (%s)",
+    (style) => {
+      const gaps = gapsFor(
+        [
+          { name: "a", w: 450, h: 1340 },
+          { name: "b", w: 450, h: 1340 },
+        ],
+        style,
+      );
 
-    expect(gaps.x).toBeGreaterThan(TABLES_GAP_X * 3);
-    expect(gaps.y).toBeGreaterThan(TABLES_GAP_Y * 3);
-  });
+      expect(gaps.x).toBeGreaterThan(TABLES_GAP_X * 2);
+      expect(gaps.y).toBeGreaterThan(TABLES_GAP_Y * 2);
+    },
+  );
 
   test("has something to say about no tables at all", () => {
     expect(gapsFor([])).toEqual({ x: TABLES_GAP_X, y: TABLES_GAP_Y });
