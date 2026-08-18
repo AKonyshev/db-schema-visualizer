@@ -19,3 +19,8 @@ playwright-report/
 
 # Downloaded VS Code builds for the extension integration tests (~300 MB).
 .vscode-test/
+
+# Yarn's own leavings: a crash log from a failed install, and a Berry install
+# cache that this Yarn 1 repository never reads. Both arrived from upstream.
+yarn-error.log
+.yarn/
