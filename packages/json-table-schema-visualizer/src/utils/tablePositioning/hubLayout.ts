@@ -317,11 +317,70 @@ const intoRows = (
 };
 
 /**
+ * Unrelated tables tucked into the space either side of the diagram.
+ *
+ * The columns beside a hub-and-spoke diagram are free: it is taller than it is
+ * wide, nothing has to reach a table with no relations, and nothing is hidden
+ * by putting one there. Underneath, the same tables cost their full height —
+ * on a real schema of eighteen tables the four unrelated ones were the largest
+ * in the file and added 3,767px of it, which fit-to-view answered by halving
+ * the scale of everything.
+ *
+ * What they may not do is make the diagram taller than it already is, so a
+ * table is taken only while the side it would join still has room within the
+ * diagram's own height. Tallest first, onto whichever side is shorter; the
+ * rest fall through to the block underneath, which is where they all used to
+ * go.
+ */
+const besideDiagram = (
+  boxes: LayoutBox[],
+  height: number,
+  gaps: Gaps,
+): { left: LayoutBox[]; right: LayoutBox[]; leftover: LayoutBox[] } => {
+  const left: LayoutBox[] = [];
+  const right: LayoutBox[] = [];
+  const leftover: LayoutBox[] = [];
+  const used = [0, 0];
+
+  [...boxes]
+    .sort((a, b) => b.h - a.h)
+    .forEach((box) => {
+      const side = used[0] <= used[1] ? 0 : 1;
+      const column = side === 0 ? left : right;
+      const next = used[side] + (column.length > 0 ? gaps.y : 0) + box.h;
+
+      // The shorter side had no room, so neither has the other one.
+      if (next > height) {
+        leftover.push(box);
+
+        return;
+      }
+
+      column.push(box);
+      used[side] = next;
+    });
+
+  return { left, right, leftover };
+};
+
+/** A column of boxes stacked downward from `y = 0` at the given x. */
+const stackAt = (column: LayoutBox[], x: number, gaps: Gaps): PlacedBox[] => {
+  let y = 0;
+
+  return column.map((box) => {
+    const placed = { ...box, x, y };
+    y += box.h + gaps.y;
+
+    return placed;
+  });
+};
+
+/**
  * Place every table: hubs with their relations around them, and everything with
- * no relations gathered underneath.
+ * no relations either side of them or, failing that, gathered underneath.
  *
  * A table whose relations the reader has hidden arrives here with no edges, so
- * it joins the block below — which is what "hidden" should mean to a layout.
+ * it is placed as one — which is what "hidden" should mean to a layout.
  */
 export const layoutAroundHubs = (
   boxes: LayoutBox[],
@@ -385,11 +444,28 @@ export const layoutAroundHubs = (
       bottom += componentBounds.h + gaps.y * 2;
     });
 
-    if (isolated.length > 0) {
+    let remaining = isolated;
+
+    if (isolated.length > 0 && placed.length > 0) {
+      const main = boundsOf(placed);
+      const { left, right, leftover } = besideDiagram(isolated, main.h, gaps);
+      remaining = leftover;
+
+      if (left.length > 0) {
+        const x = main.x - gaps.x - columnWidth(left);
+        placed = placed.concat(shift(stackAt(left, x, gaps), 0, main.y));
+      }
+      if (right.length > 0) {
+        const x = main.x + main.w + gaps.x;
+        placed = placed.concat(shift(stackAt(right, x, gaps), 0, main.y));
+      }
+    }
+
+    if (remaining.length > 0) {
       // As wide as the diagram it sits under, so the whole thing reads as one
       // block rather than a wide picture with a long tail beneath it.
       const mainWidth = placed.length > 0 ? boundsOf(placed).w : targetWidth;
-      const rows = intoRows(isolated, Math.max(mainWidth, widest), gaps);
+      const rows = intoRows(remaining, Math.max(mainWidth, widest), gaps);
       const gap = placed.length > 0 ? gaps.y * 3 : 0;
       placed = placed.concat(shift(rows, 0, bottom + gap));
     }

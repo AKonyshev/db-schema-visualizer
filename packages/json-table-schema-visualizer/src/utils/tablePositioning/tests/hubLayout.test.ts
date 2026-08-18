@@ -77,7 +77,11 @@ describe("layoutAroundHubs", () => {
     expect(Math.sign(child.x - hub.x)).toBe(Math.sign(grandchild.x - hub.x));
   });
 
-  test("gathers tables with no relations underneath the rest", () => {
+  // These used to be gathered underneath, which cost their full height on a
+  // diagram that is taller than it is wide and has room going spare either
+  // side of it. Nothing has to reach a table with no relations, so beside the
+  // diagram is free where underneath it is not.
+  test("tucks tables with no relations in beside the rest", () => {
     const boxes = ["hub", "a", "b", "lonely1", "lonely2"].map((n) => box(n));
     const placed = layoutAroundHubs(boxes, [
       ["hub", "a"],
@@ -87,8 +91,32 @@ describe("layoutAroundHubs", () => {
     const related = ["hub", "a", "b"].map((n) => at(placed, n));
     const relatedBottom = Math.max(...related.map((b) => b.y + b.h));
 
-    expect(at(placed, "lonely1").y).toBeGreaterThanOrEqual(relatedBottom);
-    expect(at(placed, "lonely2").y).toBeGreaterThanOrEqual(relatedBottom);
+    ["lonely1", "lonely2"].forEach((name) => {
+      const lonely = at(placed, name);
+
+      expect(lonely.y).toBeLessThan(relatedBottom);
+    });
+  });
+
+  test("never makes the diagram taller to fit an unrelated table beside it", () => {
+    const related = ["hub", "a", "b"].map((n) => box(n));
+    const edges: Array<[string, string]> = [
+      ["hub", "a"],
+      ["hub", "b"],
+    ];
+    const bottomOf = (placed: PlacedBox[], names: string[]): number =>
+      Math.max(...names.map((n) => at(placed, n)).map((b) => b.y + b.h));
+
+    // A table far taller than the diagram has no side to fit in, so it falls
+    // through to the block underneath rather than stretching one.
+    const placed = layoutAroundHubs(
+      [...related, box("giant", 300, 9000)],
+      edges,
+    );
+
+    expect(at(placed, "giant").y).toBeGreaterThanOrEqual(
+      bottomOf(placed, ["hub", "a", "b"]),
+    );
   });
 
   test("lays unrelated tables in rows, not one long column", () => {
