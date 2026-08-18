@@ -12,7 +12,16 @@ export interface PlacedBox extends LayoutBox {
   y: number;
 }
 
-/** Five wide to four tall: about the shape of the space a diagram is read in. */
+/**
+ * The shape auto-arrange aims the whole diagram at.
+ *
+ * A wider target does fit a screen better, and it was tried: on a real
+ * eighteen-table schema, three halves scaled to 0.271 against five quarters'
+ * 0.241. It was not kept. The same change put a fifth of every relation
+ * underneath a table — 10% to 18% for right angles, 8% to 12% for curves —
+ * because a wider budget packs the columns closer together, and a diagram
+ * whose relations cannot be followed is not one worth fitting on a screen.
+ */
 export const TARGET_ASPECT = 5 / 4;
 
 interface Group {
@@ -423,26 +432,45 @@ export const layoutAroundHubs = (
 
   const layoutWith = (heightBudget: number): PlacedBox[] => {
     let placed: PlacedBox[] = [];
-    let bottom = 0;
 
-    components.forEach((component) => {
-      const laid = layoutComponent(
-        component,
-        sizeOf,
-        adjacency,
-        heightBudget,
-        gaps,
-      );
-      if (laid.length === 0) {
-        return;
-      }
+    // Each component drawn on its own, then the drawings arranged as a group.
+    // Stacking them one under another was what made a schema of five small
+    // components into a ribbon: none of them was taller than 1,214px and the
+    // stack came to 4,485px, all of it height that fit-to-view had to pay for
+    // while the space either side went unused.
+    const drawings = components
+      .map((component) =>
+        layoutComponent(component, sizeOf, adjacency, heightBudget, gaps),
+      )
+      .filter((laid) => laid.length > 0)
+      .map((laid) => ({ laid, bounds: boundsOf(laid) }));
 
-      const componentBounds = boundsOf(laid);
+    const shelfGaps = { x: gaps.x * 2, y: gaps.y * 2 };
+    const shelfWidth = Math.max(
+      Math.sqrt(
+        drawings.reduce((sum, d) => sum + d.bounds.w * d.bounds.h, 0) *
+          targetAspect,
+      ),
+      ...drawings.map((d) => d.bounds.w),
+    );
+    const shelves = intoRows(
+      drawings.map((d, index) => ({
+        name: String(index),
+        w: d.bounds.w,
+        h: d.bounds.h,
+      })),
+      shelfWidth,
+      shelfGaps,
+    );
+
+    shelves.forEach((shelf, index) => {
+      const { laid, bounds } = drawings[index];
       placed = placed.concat(
-        shift(laid, -componentBounds.x, bottom - componentBounds.y),
+        shift(laid, shelf.x - bounds.x, shelf.y - bounds.y),
       );
-      bottom += componentBounds.h + gaps.y * 2;
     });
+
+    const bottom = placed.length > 0 ? boundsOf(placed).h + gaps.y * 2 : 0;
 
     let remaining = isolated;
 
@@ -488,12 +516,25 @@ export const layoutAroundHubs = (
     return bounds.h > 0 ? bounds.w / bounds.h : targetAspect;
   };
 
-  let low = tallest;
+  // The floor is the tallest table that actually goes into a column, which is
+  // not the tallest table there is. Unrelated tables are placed beside the
+  // diagram or beneath it and never enter a column, so letting one set the
+  // floor stops the columns wrapping at all: on a real schema the largest table
+  // was unrelated at 2,744px, the busiest level came to 2,732px, and every
+  // target aspect from 1.25 to 6 returned the identical arrangement because no
+  // budget the search was allowed to try could split that level in two.
+  const tallestConnected = connected.reduce(
+    (max, box) => Math.max(max, box.h),
+    0,
+  );
+  const tallestInColumn = tallestConnected > 0 ? tallestConnected : tallest;
+
+  let low = tallestInColumn;
   let high = Math.max(totalHeight, tallest * 2);
   let best = layoutWith(low);
   let bestMiss = Math.abs(Math.log(aspectOf(best) / targetAspect));
 
-  for (let pass = 0; pass < 24 && high - low > tallest / 4; pass++) {
+  for (let pass = 0; pass < 24 && high - low > tallestInColumn / 4; pass++) {
     const budget = (low + high) / 2;
     const candidate = layoutWith(budget);
     const aspect = aspectOf(candidate);
