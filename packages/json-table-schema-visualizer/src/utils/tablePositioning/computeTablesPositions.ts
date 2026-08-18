@@ -3,6 +3,7 @@ import dagre from "@dagrejs/dagre";
 import { computeTableDimension } from "../computeTableDimension";
 
 import { getLayoutEdges } from "./getLayoutEdges";
+import { isDegenerateShape, shelfPack } from "./shelfPack";
 
 import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 
@@ -50,17 +51,60 @@ const computeTablesPositions = (
     return new Map<string, XYWHPosition>();
   }
 
-  const minX = Math.min(...rawPositions.map((pos) => pos.x));
-  const minY = Math.min(...rawPositions.map((pos) => pos.y));
+  const dimensionOf = (name: string): { width: number; height: number } => {
+    const table = tables.find((t) => t.name === name);
+
+    return table != null
+      ? computeTableDimension(table)
+      : { width: 0, height: 0 };
+  };
+
+  // Dagre packs a rank along one axis only, so a schema whose tables mostly
+  // share a rank comes out as a strip: this one was 1,650 wide and 146,586
+  // tall, which fit-to-view can only answer by shrinking everything to nothing.
+  // A strip is never the shape a diagram wants, so when it happens the tables
+  // are re-laid in rows — keeping dagre's order, which is what puts related
+  // tables beside each other, and discarding only its placement.
+  const spread = (positions: typeof rawPositions): { w: number; h: number } => {
+    const xs = positions.map((pos) => pos.x);
+    const ys = positions.map((pos) => pos.y);
+    const rights = positions.map((pos) => pos.x + dimensionOf(pos.name).width);
+    const bottoms = positions.map(
+      (pos) => pos.y + dimensionOf(pos.name).height,
+    );
+
+    return {
+      w: Math.max(...rights) - Math.min(...xs),
+      h: Math.max(...bottoms) - Math.min(...ys),
+    };
+  };
+
+  const { w: laidOutWidth, h: laidOutHeight } = spread(rawPositions);
+
+  let positions = rawPositions;
+  if (isDegenerateShape(laidOutWidth, laidOutHeight)) {
+    const inReadingOrder = [...rawPositions].sort((a, b) =>
+      a.y === b.y ? a.x - b.x : a.y - b.y,
+    );
+
+    positions = shelfPack(
+      inReadingOrder.map((pos) => {
+        const { width, height } = dimensionOf(pos.name);
+
+        return { name: pos.name, w: width, h: height };
+      }),
+    ).map((box) => ({ name: box.name, x: box.x, y: box.y }));
+  }
+
+  const minX = Math.min(...positions.map((pos) => pos.x));
+  const minY = Math.min(...positions.map((pos) => pos.y));
 
   const paddingX = TABLES_GAP_X;
   const paddingY = TABLES_GAP_Y;
 
   const tablesPositions = new Map<string, XYWHPosition>();
-  rawPositions.forEach((pos) => {
-    const table = tables.find((t) => t.name === pos.name);
-    const { width, height } =
-      table != null ? computeTableDimension(table) : { width: 0, height: 0 };
+  positions.forEach((pos) => {
+    const { width, height } = dimensionOf(pos.name);
     tablesPositions.set(pos.name, {
       x: pos.x - minX + paddingX,
       y: pos.y - minY + paddingY,
