@@ -5,6 +5,7 @@ import type { XYPosition, XYWHPosition } from "@/types/positions";
 
 import computeTablesPositions from "@/utils/tablePositioning/computeTablesPositions";
 import { tableRelationsVisibilityStore } from "@/stores/tableRelationsVisibilityStore";
+import { getRelationStyle } from "@/stores/relationStyle";
 import eventEmitter from "@/events-emitter";
 import { defaultTableCoord } from "@/constants/tableCoords";
 
@@ -47,7 +48,14 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
           tableRelationsVisibilityStore.areTableRelationsHidden(name),
         ),
     );
-    const tablesPos = computeTablesPositions(tables, refs, hidden);
+    // The relation style decides how much room the lines need between tables,
+    // so an arrangement made for curves is tighter than one made for corners.
+    const tablesPos = computeTablesPositions(
+      tables,
+      refs,
+      hidden,
+      getRelationStyle(),
+    );
 
     if (options?.force !== true) {
       const recoveredStore = this.retrieve(this.currentStoreKey) as Array<

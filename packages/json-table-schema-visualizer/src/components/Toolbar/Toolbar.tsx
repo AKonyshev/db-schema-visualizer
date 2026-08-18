@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import { KeyboardIcon } from "lucide-react";
 
 import AutoArrangeTableButton from "./AutoArrage/AutoArrangeTables";
+import RelationStyleToggle from "./RelationStyleToggle/RelationStyleToggle";
 import ThemeToggler from "./ThemeToggler/ThemeToggler";
 import DetailLevelToggle from "./DetailLevelToggle/DetailLevelToggle";
 import FitToViewButton from "./FitToView/FitToView";
@@ -40,6 +41,9 @@ const Toolbar = ({
     // toolbar's own box rather than letting it run past the diagram.
     <div className="absolute bottom-14 left-1/2 flex w-max max-w-full -translate-x-1/2 flex-wrap items-center gap-2 rounded-2xl bg-gray-100 px-6 py-1 text-sm shadow-lg dark:bg-gray-700 [&_svg]:h-5 [&_svg]:w-5">
       <AutoArrangeTableButton />
+      {/* Beside auto-arrange because it shapes the arrangement, not only the
+          look: right angles need corridors and curves do not. */}
+      <RelationStyleToggle />
       <DetailLevelToggle />
       <FitToViewButton onClick={onFitToView} />
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />

@@ -1,4 +1,5 @@
 import { TABLES_GAP_X, TABLES_GAP_Y } from "@/constants/sizing";
+import { DEFAULT_RELATION_STYLE, RelationStyle } from "@/types/relationStyle";
 
 export interface LayoutBox {
   name: string;
@@ -33,11 +34,21 @@ interface Gaps {
  * became a wall of blocks with the relation lines lost somewhere behind it. The
  * gaps track the tables instead, so there is always somewhere for a line to be
  * seen going.
+ *
+ * How much room depends on what is drawn in it. Right angles need a corridor
+ * wide enough to run a line down and still be told apart from the tables either
+ * side. A curve sweeps through whatever space there is and needs far less, so a
+ * diagram drawn for curves is the more compact of the two.
  */
-export const gapsFor = (boxes: LayoutBox[]): Gaps => {
+export const gapsFor = (
+  boxes: LayoutBox[],
+  style: RelationStyle = DEFAULT_RELATION_STYLE,
+): Gaps => {
   if (boxes.length === 0) {
     return { x: TABLES_GAP_X, y: TABLES_GAP_Y };
   }
+
+  const room = style === RelationStyle.Bezier ? 0.3 : 0.75;
 
   const median = (values: number[]): number => {
     const sorted = [...values].sort((a, b) => a - b);
@@ -46,8 +57,11 @@ export const gapsFor = (boxes: LayoutBox[]): Gaps => {
   };
 
   return {
-    x: Math.max(TABLES_GAP_X, Math.round(median(boxes.map((b) => b.w)) * 0.75)),
-    y: Math.max(TABLES_GAP_Y, Math.round(median(boxes.map((b) => b.h)) * 0.2)),
+    x: Math.max(TABLES_GAP_X, Math.round(median(boxes.map((b) => b.w)) * room)),
+    y: Math.max(
+      TABLES_GAP_Y,
+      Math.round(median(boxes.map((b) => b.h)) * room * 0.27),
+    ),
   };
 };
 
@@ -298,6 +312,7 @@ export const layoutAroundHubs = (
   boxes: LayoutBox[],
   edges: Array<[string, string]>,
   targetAspect: number = TARGET_ASPECT,
+  style: RelationStyle = DEFAULT_RELATION_STYLE,
 ): PlacedBox[] => {
   if (boxes.length === 0) {
     return [];
@@ -306,7 +321,7 @@ export const layoutAroundHubs = (
   const sizeOf = new Map(boxes.map((box) => [box.name, box]));
   const names = new Set(sizeOf.keys());
   const adjacency = buildAdjacency(names, edges);
-  const gaps = gapsFor(boxes);
+  const gaps = gapsFor(boxes, style);
 
   const area = boxes.reduce((total, box) => total + box.w * box.h, 0);
   const widest = boxes.reduce((max, box) => Math.max(max, box.w), 0);

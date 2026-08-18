@@ -23,7 +23,7 @@ import { setHoveredTableName } from "@/stores/hoverStore";
 import { tableCoordsStore } from "@/stores/tableCoords";
 import { useTableRelationsVisibility } from "@/hooks/tableRelationsVisibility";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
-import { useIsRowTextLegible } from "@/hooks/viewport";
+import { useAreRowsWorthDrawing } from "@/hooks/viewport";
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
 import computeFieldDisplayTypeName from "@/utils/getFieldType";
@@ -48,7 +48,7 @@ const Table = ({ fields, name }: TableProps) => {
   // that changed height with zoom would move every connection anchor and shift
   // the bounds fit-to-view works from, which oscillates around the threshold.
   // Only whether the rows are drawn depends on how far out the reader is.
-  const rowsAreLegible = useIsRowTextLegible();
+  const rowsAreWorthDrawing = useAreRowsWorthDrawing();
   useEffect(() => {
     if (tableRef.current != null) {
       tableRef.current.x(tableX);
@@ -171,7 +171,7 @@ const Table = ({ fields, name }: TableProps) => {
       )}
 
       <TableHeader title={name} />
-      {detailLevel !== TableDetailLevel.HeaderOnly && rowsAreLegible ? (
+      {detailLevel !== TableDetailLevel.HeaderOnly && rowsAreWorthDrawing ? (
         <Group y={TABLE_HEADER_HEIGHT}>
           {visibleFields.map((field, index) => (
             <Column

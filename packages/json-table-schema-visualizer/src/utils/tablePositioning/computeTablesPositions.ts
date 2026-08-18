@@ -7,6 +7,7 @@ import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 
 import { TABLES_GAP_X, TABLES_GAP_Y } from "@/constants/sizing";
 import { type XYWHPosition } from "@/types/positions";
+import { type RelationStyle } from "@/types/relationStyle";
 
 /**
  * Where the tables go when the diagram is arranged for the reader.
@@ -19,11 +20,15 @@ import { type XYWHPosition } from "@/types/positions";
  *
  * `hiddenRelations` names the tables whose relations the reader has hidden.
  * They are laid out as though they had none, which is what hiding them means.
+ *
+ * `style` is what the relations will be drawn as, which decides how much room
+ * they need between the tables: right angles want corridors, curves do not.
  */
 const computeTablesPositions = (
   tables: JSONTableTable[],
   refs: JSONTableRef[],
   hiddenRelations?: ReadonlySet<string>,
+  style?: RelationStyle,
 ): Map<string, XYWHPosition> => {
   if (tables.length === 0) {
     return new Map<string, XYWHPosition>();
@@ -41,7 +46,7 @@ const computeTablesPositions = (
       (!hiddenRelations.has(source) && !hiddenRelations.has(target)),
   );
 
-  const placed = layoutAroundHubs(boxes, edges);
+  const placed = layoutAroundHubs(boxes, edges, undefined, style);
 
   const positions = new Map<string, XYWHPosition>();
   placed.forEach((box) => {

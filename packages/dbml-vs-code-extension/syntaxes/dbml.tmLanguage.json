@@ -1,0 +1,104 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "DBML",
+  "scopeName": "source.dbml",
+  "patterns": [
+    { "include": "#metainfo" },
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#settings" },
+    { "include": "#keywords" },
+    { "include": "#numbers" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "metainfo": {
+      "comment": "The layout block the extension writes into the file. Matched before the block comment, which would otherwise claim it, and scoped as a comment so every theme dims it: it is bookkeeping, not schema.",
+      "name": "comment.block.metainfo.dbml",
+      "begin": "/\\*MetaInfo",
+      "end": "MetaInfo\\*/"
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.dbml",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.dbml",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "comment": "DBML's multi-line string, used for notes.",
+          "name": "string.quoted.triple.dbml",
+          "begin": "'''",
+          "end": "'''"
+        },
+        {
+          "name": "string.quoted.double.dbml",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            { "name": "constant.character.escape.dbml", "match": "\\\\." }
+          ]
+        },
+        {
+          "name": "string.quoted.single.dbml",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            { "name": "constant.character.escape.dbml", "match": "\\\\." }
+          ]
+        }
+      ]
+    },
+    "settings": {
+      "comment": "`[pk]`, `[ref: > users.id]`, `[note: '…']`. One scope for the whole bracket so settings read as metadata rather than competing with the column beside them; strings inside keep their own.",
+      "name": "meta.brackets.dbml",
+      "begin": "\\[",
+      "end": "\\]",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.settings.begin.dbml" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.settings.end.dbml" }
+      },
+      "patterns": [
+        { "include": "#strings" },
+        {
+          "name": "entity.other.attribute-name.dbml",
+          "match": "\\b(pk|primary key|unique|not null|null|increment|note|default|ref|delete|update|cascade|restrict|set null|set default|no action)\\b"
+        },
+        { "include": "#numbers" },
+        { "include": "#operators" }
+      ]
+    },
+    "keywords": {
+      "comment": "Column types are deliberately absent: DBML does not close that set, so listing the common ones would leave every other type looking like a mistake.",
+      "patterns": [
+        {
+          "name": "keyword.control.dbml",
+          "match": "(?i)\\b(Table|Ref|Enum|Project|TableGroup|Note|indexes)\\b"
+        },
+        {
+          "name": "keyword.other.as.dbml",
+          "match": "(?i)\\bas\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "name": "constant.numeric.dbml",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    },
+    "operators": {
+      "comment": "The cardinality of a relation: one-to-many, many-to-one, one-to-one, many-to-many.",
+      "name": "keyword.operator.relation.dbml",
+      "match": "<>|[<>-]"
+    }
+  }
+}

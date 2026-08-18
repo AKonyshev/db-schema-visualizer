@@ -6,6 +6,7 @@ import {
 } from "../hubLayout";
 
 import { TABLES_GAP_X, TABLES_GAP_Y } from "@/constants/sizing";
+import { RelationStyle } from "@/types/relationStyle";
 
 const box = (name: string, w = 300, h = 200): LayoutBox => ({ name, w, h });
 
@@ -159,18 +160,75 @@ describe("gapsFor", () => {
   });
 
   // At full detail a table is around 450 wide and over a thousand tall; a fixed
-  // 50px between them left the relation lines nowhere to be seen going.
-  test("opens up once the tables are large", () => {
-    const gaps = gapsFor([
-      { name: "a", w: 450, h: 1340 },
-      { name: "b", w: 450, h: 1340 },
-    ]);
+  // 50px between them left the relation lines nowhere to be seen going. How
+  // much room they get depends on what is drawn in it, so both styles are
+  // checked — what neither may do is stay at the floor.
+  test.each([RelationStyle.Orthogonal, RelationStyle.Bezier])(
+    "opens up once the tables are large (%s)",
+    (style) => {
+      const gaps = gapsFor(
+        [
+          { name: "a", w: 450, h: 1340 },
+          { name: "b", w: 450, h: 1340 },
+        ],
+        style,
+      );
 
-    expect(gaps.x).toBeGreaterThan(TABLES_GAP_X * 3);
-    expect(gaps.y).toBeGreaterThan(TABLES_GAP_Y * 3);
-  });
+      expect(gaps.x).toBeGreaterThan(TABLES_GAP_X * 2);
+      expect(gaps.y).toBeGreaterThan(TABLES_GAP_Y * 2);
+    },
+  );
 
   test("has something to say about no tables at all", () => {
     expect(gapsFor([])).toEqual({ x: TABLES_GAP_X, y: TABLES_GAP_Y });
+  });
+});
+
+describe("gapsFor and the relation style", () => {
+  const tables = [
+    { name: "a", w: 450, h: 1340 },
+    { name: "b", w: 450, h: 1340 },
+  ];
+
+  test("leaves corridors for right angles", () => {
+    const gaps = gapsFor(tables, RelationStyle.Orthogonal);
+
+    expect(gaps.x).toBeGreaterThan(TABLES_GAP_X * 3);
+  });
+
+  // A curve sweeps through whatever space there is, so a diagram drawn for
+  // curves can be the tighter of the two.
+  test("packs tighter for curves", () => {
+    const angles = gapsFor(tables, RelationStyle.Orthogonal);
+    const curves = gapsFor(tables, RelationStyle.Bezier);
+
+    expect(curves.x).toBeLessThan(angles.x);
+    expect(curves.y).toBeLessThan(angles.y);
+    expect(curves.x).toBeGreaterThanOrEqual(TABLES_GAP_X);
+    expect(curves.y).toBeGreaterThanOrEqual(TABLES_GAP_Y);
+  });
+
+  test("a diagram drawn for curves comes out smaller", () => {
+    const boxes = Array.from({ length: 40 }, (_, i) => ({
+      name: `t${i}`,
+      w: 450,
+      h: 1340,
+    }));
+    const edges: Array<[string, string]> = Array.from(
+      { length: 20 },
+      (_, i) => ["t0", `t${i + 1}`],
+    );
+
+    const areaOf = (style: RelationStyle): number => {
+      const placed = layoutAroundHubs(boxes, edges, undefined, style);
+      const w = Math.max(...placed.map((b) => b.x + b.w));
+      const h = Math.max(...placed.map((b) => b.y + b.h));
+
+      return w * h;
+    };
+
+    expect(areaOf(RelationStyle.Bezier)).toBeLessThan(
+      areaOf(RelationStyle.Orthogonal),
+    );
   });
 });
