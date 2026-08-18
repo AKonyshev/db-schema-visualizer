@@ -50,6 +50,18 @@
         }
       }
     ],
+    "customEditors": [
+      {
+        "viewType": "dblm-preview-webview",
+        "displayName": "%customEditor.diagram%",
+        "priority": "option",
+        "selector": [
+          {
+            "filenamePattern": "*.dbml"
+          }
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "dbml-erd-visualizer.previewDiagrams",
@@ -57,8 +69,13 @@
         "icon": "$(open-preview)"
       },
       {
-        "command": "dbml-erd-visualizer.toggleTableRefs",
-        "title": "%command.toggleTableRefs%"
+        "command": "dbml-erd-visualizer.previewDiagramsInPlace",
+        "title": "%command.previewDiagramsInPlace%"
+      },
+      {
+        "command": "dbml-erd-visualizer.showSource",
+        "title": "%command.showSource%",
+        "icon": "$(go-to-file)"
       },
       {
         "command": "dbml-erd-visualizer.importFromDatabase",
@@ -94,13 +111,6 @@
         "icon": "$(diff)"
       }
     ],
-    "keybindings": [
-      {
-        "command": "dbml-erd-visualizer.toggleTableRefs",
-        "key": "alt+h",
-        "when": "resourceLangId == dbml && activeWebviewPanelName == 'dblm-preview-webview'"
-      }
-    ],
     "menus": {
       "commandPalette": [
         {
@@ -118,8 +128,14 @@
       ],
       "editor/title": [
         {
-          "when": "resourceLangId == dbml",
           "command": "dbml-erd-visualizer.previewDiagrams",
+          "when": "resourceLangId == dbml && activeCustomEditorId != 'dblm-preview-webview'",
+          "alt": "dbml-erd-visualizer.previewDiagramsInPlace",
+          "group": "navigation"
+        },
+        {
+          "command": "dbml-erd-visualizer.showSource",
+          "when": "activeCustomEditorId == 'dblm-preview-webview'",
           "group": "navigation"
         }
       ],
@@ -190,6 +206,7 @@
     "pretest": "yarn run lint",
     "lint": "eslint extension --ext ts",
     "test": "jest",
+    "test:integration": "yarn build && yarn compile-tests && vscode-test",
     "build": "npx vite build",
     "dev": "npx vite build --watch",
     "package": "yarn run build",
@@ -208,8 +225,8 @@
     "@typescript-eslint/eslint-plugin": "^7.4.0",
     "@typescript-eslint/parser": "^7.4.0",
     "@vitejs/plugin-react-swc": "^3.6.0",
-    "@vscode/test-cli": "^0.0.8",
-    "@vscode/test-electron": "^2.3.9",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
     "eslint": "^8.57.0",
     "ts-loader": "^9.5.1",
     "vite": "^5.2.8",

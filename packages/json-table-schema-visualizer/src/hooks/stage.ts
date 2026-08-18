@@ -1,8 +1,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 
-import { useWindowSize } from "./window";
-
 import { DIAGRAM_PADDING, STAGE_SCALE_FACTOR } from "@/constants/sizing";
+import { type Dimension } from "@/types/dimension";
 import { type StageState } from "@/types/stage";
 import { stageStateStore } from "@/stores/stagesState";
 import { tableCoordsStore } from "@/stores/tableCoords";
@@ -10,8 +9,12 @@ import eventEmitter from "@/events-emitter";
 
 const TABLE_COORDS_RESET_EVENT = "tableCoords:resetTablesPositions";
 
-export const useStageStartingState = (): StageState => {
-  const { height: windowHeight, width: windowWidth } = useWindowSize();
+// Takes the size it should fit into rather than reading the window, so the
+// initial fit is computed against the box the diagram was actually given.
+export const useStageStartingState = ({
+  width: viewWidth,
+  height: viewHeight,
+}: Dimension): StageState => {
   const coordsRevision = useSyncExternalStore(
     (onStoreChange) => {
       const handler = (): void => {
@@ -52,8 +55,8 @@ export const useStageStartingState = (): StageState => {
         position: { x: DIAGRAM_PADDING, y: DIAGRAM_PADDING },
       };
     }
-    const scaleX = (windowWidth - DIAGRAM_PADDING) / contentW;
-    const scaleY = (windowHeight - DIAGRAM_PADDING) / contentH;
+    const scaleX = (viewWidth - DIAGRAM_PADDING) / contentW;
+    const scaleY = (viewHeight - DIAGRAM_PADDING) / contentH;
     const scale =
       Math.min(scaleX, scaleY, 1 /* scale must not ne higher than 1 */) *
       STAGE_SCALE_FACTOR;
@@ -61,8 +64,8 @@ export const useStageStartingState = (): StageState => {
     const scaledW = contentW * scale;
     const scaledH = contentH * scale;
 
-    const centerPositionX = -minX * scale + (windowWidth - scaledW) / 4;
-    const centerPositionY = -minY * scale + (windowHeight - scaledH) / 4;
+    const centerPositionX = -minX * scale + (viewWidth - scaledW) / 4;
+    const centerPositionY = -minY * scale + (viewHeight - scaledH) / 4;
 
     const state = {
       scale,
@@ -70,7 +73,7 @@ export const useStageStartingState = (): StageState => {
     };
 
     return state;
-  }, [coordsRevision, windowHeight, windowWidth]);
+  }, [coordsRevision, viewHeight, viewWidth]);
 
   return state;
 };

@@ -5,6 +5,9 @@
     "outDir": "out",
     "rootDir": "."
   },
+  // Only the VS Code integration tests are compiled here; `index.ts` and the
+  // jest suites reach into `extension-shared`, whose sources sit outside
+  // `rootDir` and are typechecked by the repo-wide `yarn typecheck` instead.
   "include": ["extension/**/*.ts"],
-  "exclude": ["extension/index.ts"]
+  "exclude": ["extension/index.ts", "extension/__tests__"]
 }

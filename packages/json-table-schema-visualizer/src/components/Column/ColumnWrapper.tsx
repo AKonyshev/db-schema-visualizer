@@ -2,8 +2,8 @@ import { type ReactNode, useState } from "react";
 import { Group, Rect } from "react-konva";
 
 import { COLUMN_HEIGHT } from "@/constants/sizing";
-import { useTablesInfo, useTableWidth } from "@/hooks/table";
-import { shouldHighLightCol } from "@/utils/shouldHighLightCol";
+import { useTableWidth } from "@/hooks/table";
+import { useIsColumnHighlighted } from "@/hooks/hover";
 
 interface ColumnWrapperProps {
   children: (highlighted: boolean) => ReactNode;
@@ -22,7 +22,6 @@ const ColumnWrapper = ({
   highlightColor,
   columnName,
 }: ColumnWrapperProps) => {
-  const { hoveredTableName, highlightedColumns } = useTablesInfo();
   const [hovered, setHovered] = useState(false);
   const tablePreferredWidth = useTableWidth();
 
@@ -34,14 +33,14 @@ const ColumnWrapper = ({
     setHovered(false);
   };
 
-  const highlighted = shouldHighLightCol(
-    hovered,
+  // Its own pointer wins outright — the same short-circuit shouldHighLightCol
+  // starts with — and the rest is one boolean this column alone subscribes to.
+  const highlightedByHover = useIsColumnHighlighted({
     tableName,
-    hoveredTableName,
-    highlightedColumns,
     columnName,
     relationalTables,
-  );
+  });
+  const highlighted = hovered || highlightedByHover;
 
   return (
     <Group onMouseOver={handleOnHover} onMouseLeave={handleOnLeave} y={offsetY}>

@@ -1,5 +1,11 @@
 import { Group, Layer, Stage } from "react-konva";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   type JSONTableRef,
   type JSONTableTable,
@@ -12,94 +18,175 @@ import ShortcutsLegend from "../ShortcutsLegend/ShortcutsLegend";
 import type { Stage as CoreStage } from "konva/lib/Stage";
 
 import { STORAGE_KEYS } from "@/constants/storageKeys";
-import { useWindowSize } from "@/hooks/window";
+import { useElementSize } from "@/hooks/elementSize";
 import { useCursorChanger } from "@/hooks/cursor";
 import { DIAGRAM_PADDING } from "@/constants/sizing";
 import { useThemeColors } from "@/hooks/theme";
 import { useStageStartingState } from "@/hooks/stage";
 import { stageStateStore } from "@/stores/stagesState";
 import { useScrollDirectionContext } from "@/hooks/scrollDirection";
-import { ScrollDirection } from "@/types/scrollDirection";
 import eventEmitter from "@/events-emitter";
 import { tableCoordsStore } from "@/stores/tableCoords";
-import { useTablesInfo, useTablePositionContext } from "@/hooks/table";
+import { useTablePositionContext } from "@/hooks/table";
+import {
+  getHighlightedColumns,
+  getHoveredTableName,
+  setHighlightedColumns,
+  setHoveredTableName,
+} from "@/stores/hoverStore";
 import { exportStageSVG } from "@/export/svg/svg-exporter";
 import { generateAsciiDoc } from "@/utils/exportAsciiDoc";
 import { generateMarkdown } from "@/utils/exportMarkdown";
 import useLocalStorage from "@/hooks/localStorage";
 import { useKeyboardShortcuts } from "@/hooks/keyboardShortcuts";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
+import { computeWheelZoom } from "@/utils/computeWheelZoom";
+import { viewportStore } from "@/stores/viewportStore";
 
 interface DiagramWrapperProps {
-  children: ReactNode;
-  tables: JSONTableTable[];
+  connections: ReactNode;
+  tables: ReactNode;
+  tablesMeta: JSONTableTable[];
   refs: JSONTableRef[];
 }
 
-const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
-  const scaleBy = 1.02;
-  const { height: windowHeight, width: windowWidth } = useWindowSize();
+interface PendingWheelEvent {
+  deltaY: number;
+  ctrlKey: boolean;
+  pointerX: number;
+  pointerY: number;
+}
+
+const DiagramWrapper = ({
+  connections,
+  tables,
+  tablesMeta,
+  refs,
+}: DiagramWrapperProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<null | CoreStage>(null);
+  const { height: viewHeight, width: viewWidth } = useElementSize(containerRef);
   const { scrollDirection } = useScrollDirectionContext();
+  // Konva is written to directly on pan and zoom, so this is the only thing
+  // that can tell the rest of the app the view moved.
+  const publishViewport = useCallback((): void => {
+    const stage = stageRef.current;
+    if (stage === null) {
+      return;
+    }
+
+    viewportStore.set({
+      scale: stage.scaleX(),
+      x: stage.x(),
+      y: stage.y(),
+      width: stage.width(),
+      height: stage.height(),
+    });
+  }, []);
+
   const { onChange: onGrabbing, onRestore: onGrabRelease } =
     useCursorChanger("grabbing");
   const themeColors = useThemeColors();
-  const stageRef = useRef<null | CoreStage>(null);
-  const {
-    hoveredTableName,
-    setHoveredTableName,
-    highlightedColumns,
-    setHighlightedColumns,
-  } = useTablesInfo();
 
   // repositioning the stage only once
   const { scale: defaultStageScale, position: defaultStagePosition } =
-    useStageStartingState();
+    useStageStartingState({ width: viewWidth, height: viewHeight });
+  const hasPositionedStage = useRef(false);
   useEffect(() => {
-    if (stageRef.current != null) {
-      stageRef.current.scale({
-        x: defaultStageScale,
-        y: defaultStageScale,
-      });
-      stageRef.current.position(defaultStagePosition);
+    // Once, and only after there is a real size to fit into. The starting state
+    // now depends on the container's dimensions, so without this guard every
+    // resize — a dragged divider most of all — would re-fit the diagram and
+    // throw away the reader's pan. Panning is not persisted, so there would be
+    // nothing to restore it from.
+    if (
+      hasPositionedStage.current ||
+      stageRef.current === null ||
+      viewWidth === 0 ||
+      viewHeight === 0
+    ) {
+      return;
     }
-  }, [defaultStageScale, defaultStagePosition]);
+
+    stageRef.current.scale({
+      x: defaultStageScale,
+      y: defaultStageScale,
+    });
+    stageRef.current.position(defaultStagePosition);
+    hasPositionedStage.current = true;
+    publishViewport();
+  }, [
+    defaultStageScale,
+    defaultStagePosition,
+    viewWidth,
+    viewHeight,
+    publishViewport,
+  ]);
+
+  const pendingWheelRef = useRef<PendingWheelEvent | null>(null);
+  const wheelFrameRef = useRef<number | null>(null);
+
+  const applyPendingWheelZoom = useCallback((): void => {
+    wheelFrameRef.current = null;
+    const pending = pendingWheelRef.current;
+    pendingWheelRef.current = null;
+    const stage = stageRef.current;
+    if (pending === null || stage === null) {
+      return;
+    }
+
+    const { scale, position } = computeWheelZoom({
+      oldScale: stage.scaleX(),
+      deltaY: pending.deltaY,
+      ctrlKey: pending.ctrlKey,
+      scrollDirection,
+      pointerX: pending.pointerX,
+      pointerY: pending.pointerY,
+      stageX: stage.x(),
+      stageY: stage.y(),
+    });
+
+    stage.scale({ x: scale, y: scale });
+    stage.position(position);
+    stage.batchDraw();
+    stageStateStore.set({ scale, position });
+    publishViewport();
+  }, [scrollDirection, publishViewport]);
+
+  useEffect(
+    () => () => {
+      if (wheelFrameRef.current !== null) {
+        cancelAnimationFrame(wheelFrameRef.current);
+      }
+    },
+    [],
+  );
 
   const handleZooming = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     const stage = e.currentTarget as CoreStage;
-    const oldScale = stage.scaleX();
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const pointer = stage.getPointerPosition()!;
-
-    const mousePointTo = {
-      x: (pointer.x - stage.x()) / oldScale,
-      y: (pointer.y - stage.y()) / oldScale,
-    };
-
-    // how to scale? Zoom in? Or zoom out?
-    let direction = 0;
-    if (scrollDirection === ScrollDirection.UpOut) {
-      direction = e.evt.deltaY > 0 ? 1 : -1;
-    } else if (scrollDirection === ScrollDirection.UpIn) {
-      direction = e.evt.deltaY > 0 ? -1 : 1;
+    const pointer = stage.getPointerPosition();
+    if (pointer === null) {
+      return;
     }
 
-    // when we zoom on trackpad, e.evt.ctrlKey is true
-    // in that case lets revert direction
-    if (e.evt.ctrlKey) {
-      direction = -direction;
+    const pending = pendingWheelRef.current;
+    if (pending === null) {
+      pendingWheelRef.current = {
+        deltaY: e.evt.deltaY,
+        ctrlKey: e.evt.ctrlKey,
+        pointerX: pointer.x,
+        pointerY: pointer.y,
+      };
+    } else {
+      pending.deltaY += e.evt.deltaY;
+      pending.ctrlKey = e.evt.ctrlKey;
+      pending.pointerX = pointer.x;
+      pending.pointerY = pointer.y;
     }
 
-    const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-
-    stage.scale({ x: newScale, y: newScale });
-
-    const newPos = {
-      x: pointer.x - mousePointTo.x * newScale,
-      y: pointer.y - mousePointTo.y * newScale,
-    };
-    stage.position(newPos);
-    stageStateStore.set({ scale: newScale, position: newPos });
+    if (wheelFrameRef.current === null) {
+      wheelFrameRef.current = requestAnimationFrame(applyPendingWheelZoom);
+    }
   };
 
   const nodeBelongsToTable = (node: any): boolean => {
@@ -122,14 +209,39 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   const handleStagePointerDown = (
     e: KonvaEventObject<MouseEvent | TouchEvent>,
   ) => {
+    // Read at the moment of the click rather than subscribed to: this component
+    // has no reason to re-render as the pointer crosses tables.
+    const highlightedColumns = getHighlightedColumns();
     if (
-      hoveredTableName == null &&
+      getHoveredTableName() == null &&
       (highlightedColumns == null || highlightedColumns.length === 0)
     )
       return;
     if (nodeBelongsToTable(e.target)) return;
     setHoveredTableName(null);
     setHighlightedColumns([]);
+  };
+
+  /** Every table's box, drawn or not, in stage coordinates. */
+  const diagramBounds = (): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null => {
+    const coords = [...tableCoordsStore.getCurrentStoreValue().values()].filter(
+      (coord) => coord.w > 0 && coord.h > 0,
+    );
+    if (coords.length === 0) {
+      return null;
+    }
+
+    const left = Math.min(...coords.map((c) => c.x)) + DIAGRAM_PADDING;
+    const top = Math.min(...coords.map((c) => c.y)) + DIAGRAM_PADDING;
+    const right = Math.max(...coords.map((c) => c.x + c.w)) + DIAGRAM_PADDING;
+    const bottom = Math.max(...coords.map((c) => c.y + c.h)) + DIAGRAM_PADDING;
+
+    return { x: left, y: top, width: right - left, height: bottom - top };
   };
 
   const fitToView = () => {
@@ -139,7 +251,12 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
       const containerWidth = container.offsetWidth;
       const containerHeight = container.offsetHeight;
 
-      const contentBounds = stage.getClientRect({ relativeTo: stage });
+      // Measured from the stored coordinates rather than from the stage: with
+      // off-screen tables unmounted, the stage only knows about the ones it is
+      // already showing, and fitting to those would frame a fraction of the
+      // diagram and call it the whole.
+      const contentBounds =
+        diagramBounds() ?? stage.getClientRect({ relativeTo: stage });
       contentBounds.x = contentBounds.x - DIAGRAM_PADDING;
       contentBounds.y = contentBounds.y - DIAGRAM_PADDING;
       contentBounds.width = contentBounds.width + 2 * DIAGRAM_PADDING;
@@ -159,8 +276,44 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
       });
       stage.batchDraw();
       stageStateStore.set({ scale, position: stage.position() });
+      // After the position, never between it and the scale: a viewport
+      // published half-updated culls against a rectangle that never existed,
+      // and every table disappears.
+      publishViewport();
     }
   };
+
+  /**
+   * A fresh arrangement gets a fresh view.
+   *
+   * Auto-arrange moves every table at once, so the framing the reader had was
+   * framing a layout that no longer exists — press `L` on a diagram you have
+   * zoomed into and the result can land entirely off-screen, with nothing on
+   * screen changing to say why.
+   *
+   * This is deliberately *not* the `hasPositionedStage` path above. That one
+   * answers "where does the stage start", once, and must keep refusing to run
+   * again — a re-fit on every recomputation would take the reader's pan away
+   * whenever the split divider moved. This one answers a different question:
+   * the coordinates were replaced, so frame what replaced them.
+   *
+   * The same event covers opening a file and switching to a document with no
+   * stored layout, which are the other two ways a whole arrangement is computed
+   * at once. Framing those is right for the same reason.
+   */
+  useEffect(() => {
+    return tableCoordsStore.subscribeToReset(() => {
+      // Next frame, not now. The store emits before React has re-rendered the
+      // tables at their new coordinates, so measuring the stage here would frame
+      // the arrangement that has just been replaced — the old view, computed
+      // twice.
+      requestAnimationFrame(() => {
+        fitToView();
+      });
+    });
+    // `fitToView` reads nothing but `stageRef` and constants, so the copy
+    // captured here stays correct for the life of the component.
+  }, []);
 
   const [, setColorRelations] = useLocalStorage<boolean>(
     STORAGE_KEYS.COLOR_RELATIONS,
@@ -315,34 +468,44 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
   };
 
   const onDownloadMarkdown = () => {
-    const markdown = generateMarkdown(tables, refs);
+    const markdown = generateMarkdown(tablesMeta, refs);
     const blob = new Blob([markdown], { type: "text/markdown" });
     downloadBlob(blob, `diagram-${Date.now()}.md`);
   };
 
   const onDownloadAdoc = () => {
-    const asciiDoc = generateAsciiDoc(tables, refs);
+    const asciiDoc = generateAsciiDoc(tablesMeta, refs);
     const blob = new Blob([asciiDoc], { type: "text/plain" });
     downloadBlob(blob, `diagram-${Date.now()}.adoc`);
   };
 
   return (
-    <>
+    // `relative` so the toolbar below anchors to this box rather than to the
+    // page, and `overflow-hidden` so a stage mid-resize cannot widen the
+    // document. Both matter only once the diagram shares a page with something
+    // else, which is exactly when they stop being cosmetic.
+    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
       <Stage
         draggable
         ref={stageRef}
         onDragStart={onGrabbing}
+        onDragMove={publishViewport}
         onDragEnd={onGrabRelease}
         onWheel={handleZooming}
         onMouseDown={handleStagePointerDown}
         onTouchStart={handleStagePointerDown}
-        width={windowWidth}
-        height={windowHeight}
-        style={{ width: "fit-content", backgroundColor: themeColors.bg }}
+        width={viewWidth}
+        height={viewHeight}
+        style={{ backgroundColor: themeColors.bg }}
       >
         <Layer>
           <Group offsetX={-DIAGRAM_PADDING} offsetY={-DIAGRAM_PADDING}>
-            {children}
+            {connections}
+          </Group>
+        </Layer>
+        <Layer>
+          <Group offsetX={-DIAGRAM_PADDING} offsetY={-DIAGRAM_PADDING}>
+            {tables}
           </Group>
         </Layer>
       </Stage>
@@ -367,7 +530,7 @@ const DiagramWrapper = ({ children, tables, refs }: DiagramWrapperProps) => {
           }}
         />
       )}
-    </>
+    </div>
   );
 };
 

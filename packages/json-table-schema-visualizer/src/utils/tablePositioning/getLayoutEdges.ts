@@ -1,8 +1,8 @@
 import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 
-// The layout edges for dagre: only edges between two REAL table nodes, no
-// self-loops. Refs to a table outside the schema (or a self-ref) must not be
-// fed to dagre — a phantom/self node skews the layout.
+// The edges the layout works from: only those between two real tables, and no
+// self-loops. A ref to a table outside the schema, or a table to itself, would
+// otherwise invent a node or a cycle that skews where everything else lands.
 export function getLayoutEdges(
   tables: JSONTableTable[],
   refs: JSONTableRef[],

@@ -7,12 +7,9 @@ import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
+import { workspaceReactResolve } from "../../vite.workspace-react.js";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const workspaceReact = path.resolve(__dirname, "../../node_modules/react");
-const workspaceReactDom = path.resolve(
-  __dirname,
-  "../../node_modules/react-dom",
-);
 
 // The webview HTML references dist/webview/assets/index.css, but Vite/tomjs
 // empties the webview outDir on every build (including watch rebuilds), so a
@@ -47,14 +44,16 @@ function generateWebviewCss() {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [tsconfigPaths(), react(), vscode(), generateWebviewCss()],
-  resolve: {
-    dedupe: ["react", "react-dom", "react/jsx-runtime", "react-konva", "konva"],
-    alias: {
-      react: workspaceReact,
-      "react-dom": workspaceReactDom,
-      "react/jsx-runtime": path.join(workspaceReact, "jsx-runtime.js"),
-      "react/jsx-dev-runtime": path.join(workspaceReact, "jsx-dev-runtime.js"),
-    },
-  },
+  plugins: [
+    // The plugin discovers tsconfigs by walking the tree, which now includes
+    // `.vscode-test/` — a full VS Code download the integration tests put here —
+    // and it complains about every unparseable tsconfig inside it. Only the
+    // messages are suppressed: narrowing discovery with `projects` instead
+    // breaks `@/*` during the extension build, which then resolves as external.
+    tsconfigPaths({ ignoreConfigErrors: true }),
+    react(),
+    vscode(),
+    generateWebviewCss(),
+  ],
+  resolve: workspaceReactResolve,
 });

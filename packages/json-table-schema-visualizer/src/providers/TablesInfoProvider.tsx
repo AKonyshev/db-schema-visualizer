@@ -1,4 +1,4 @@
-import { createContext, useState, type ReactNode } from "react";
+import { createContext, useMemo, type ReactNode } from "react";
 
 import type { TablesInfoProviderValue } from "@/types/tablesInfoProviderValue";
 import type { JSONTableTable } from "shared/types/tableSchema";
@@ -16,21 +16,20 @@ interface TablesInfoProviderProps {
 }
 
 const TablesInfoProvider = ({ children, tables }: TablesInfoProviderProps) => {
-  const [hoveredTableName, setHoveredTableName] = useState<string | null>(null);
-  const [highlightedColumns, setHighlightedColumns] = useState<string[]>([]);
   const { detailLevel } = useTableDetailLevel();
-  const colsIndexes = computeColIndexes(tables, detailLevel);
+
+  // Depends on the schema and the detail level, and on nothing else. Recomputed
+  // inline it was rebuilt on every hover: ~100 ms per mouse move on a
+  // 5,676-column schema.
+  const colsIndexes = useMemo(
+    () => computeColIndexes(tables, detailLevel),
+    [tables, detailLevel],
+  );
+
+  const value = useMemo(() => ({ colsIndexes }), [colsIndexes]);
 
   return (
-    <TablesInfoContext.Provider
-      value={{
-        colsIndexes,
-        hoveredTableName,
-        setHoveredTableName,
-        highlightedColumns,
-        setHighlightedColumns,
-      }}
-    >
+    <TablesInfoContext.Provider value={value}>
       {children}
     </TablesInfoContext.Provider>
   );

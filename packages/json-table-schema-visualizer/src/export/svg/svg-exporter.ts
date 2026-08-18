@@ -1,4 +1,3 @@
-// @ts-expect-error svgcanvas has no types
 import { type Stage } from "konva/lib/Stage";
 
 import { Context } from "./svgcanvas.esm.js";
@@ -30,17 +29,27 @@ export async function exportStageSVG(
   });
   stage.scale({ x: scaleFactor, y: scaleFactor });
 
-  const c2s = (layer.canvas.context._context = new Context({
+  const c2s = new Context({
     height: (xywhCoords.h + DIAGRAM_PADDING * 2) * scaleFactor,
     width: (xywhCoords.w + DIAGRAM_PADDING * 2) * scaleFactor,
     ctx: oldContext,
-  }));
+  });
+
+  // Konva's layer wants a real CanvasRenderingContext2D here. The shim covers
+  // the older 2D surface Konva actually calls and nothing beyond it, so this
+  // asserts a compatibility the type system cannot check. Keeping the assertion
+  // at this one line is the point: declaring the shim as a full
+  // CanvasRenderingContext2D instead would hand the same false promise to every
+  // future caller. See svgcanvas.esm.d.ts.
+  layer.canvas.context._context = c2s as unknown as CanvasRenderingContext2D;
 
   stage.draw();
 
-  let out = c2s.getSerializedSvg();
+  const svg = c2s.getSerializedSvg();
 
-  out = blob ? new Blob([out], { type: "image/svg+xml;charset=utf-8" }) : out;
+  const out: string | Blob = blob
+    ? new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
+    : svg;
 
   layer.canvas.context._context = oldContext;
   stage.position(oldPosition);

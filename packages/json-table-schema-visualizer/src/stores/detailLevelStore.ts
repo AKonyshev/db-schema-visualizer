@@ -23,11 +23,18 @@ class DetailLevelStore extends PersistableStore<TableDetailLevel> {
     }
   }
 
-  public switchTo(newStoreKey: string): void {
+  /**
+   * `fallback` applies only when this document has nothing stored — a reader who
+   * has chosen a level for it keeps that choice, however large the schema is.
+   */
+  public switchTo(
+    newStoreKey: string,
+    fallback: TableDetailLevel = TableDetailLevel.FullDetails,
+  ): void {
     this.currentStoreKey = newStoreKey;
     const recoveredStore = this.retrieve(this.currentStoreKey);
     if (recoveredStore === null) {
-      this.detailLevel = TableDetailLevel.FullDetails;
+      this.detailLevel = fallback;
     }
     for (const val of Object.values(TableDetailLevel)) {
       if (val.toString() === String(recoveredStore)) {

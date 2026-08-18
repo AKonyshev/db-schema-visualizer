@@ -7,6 +7,7 @@ import { type ReactNode } from "react";
 
 import EmptyTableMessage from "../Messages/EmptyTableMessage";
 import Search from "../Search/Search";
+import ToggleRefsShortcut from "../ToggleRefsShortcut";
 
 import DiagramWrapper from "./DiagramWrapper";
 import RelationsConnections from "./Connections";
@@ -44,18 +45,28 @@ const DiagramViewer = ({
       <TablesPositionsProvider tables={tables} refs={refs}>
         <MainProviders tables={tables} enums={enums}>
           <main
-            className={`relative flex flex-col items-center ${theme === Theme.dark ? "dark" : ""}`}
+            // `h-full w-full` so the diagram below can measure a real box. This
+            // element had no height of its own and did not need one while the
+            // stage sized itself to the viewport regardless of its container.
+            className={`relative flex h-full w-full flex-col items-center ${theme === Theme.dark ? "dark" : ""}`}
           >
             {syncEffects}
+            {/* Inside the providers because it needs the hovered table; shared
+                by both hosts because hiding relations is now purely a view. */}
+            <ToggleRefsShortcut />
             <Search tables={tables} />
 
-            <DiagramWrapper tables={tables} refs={refs}>
-              <RelationsConnections
-                refs={refs}
-                documentKey={documentKey ?? undefined}
-              />
-              <Tables tables={tables} />
-            </DiagramWrapper>
+            <DiagramWrapper
+              tablesMeta={tables}
+              refs={refs}
+              connections={
+                <RelationsConnections
+                  refs={refs}
+                  documentKey={documentKey ?? undefined}
+                />
+              }
+              tables={<Tables tables={tables} />}
+            />
           </main>
         </MainProviders>
       </TablesPositionsProvider>

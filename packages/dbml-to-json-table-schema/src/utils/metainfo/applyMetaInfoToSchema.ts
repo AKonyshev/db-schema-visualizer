@@ -11,7 +11,10 @@ export const applyMetaInfoToSchema = (
       table.x = item.x;
       table.y = item.y;
       table.fromMetaInfo = true;
-      if (item.hidden === true) table.hasHiddenRefs = true;
+      // `hidden` is still read off the file and written back by
+      // `upsertMetaInfoInDbml`, so a block written by an older version survives
+      // untouched. Nothing acts on it any more: which tables have their
+      // relations hidden is a view preference now, not a property of the schema.
     }
   });
 };

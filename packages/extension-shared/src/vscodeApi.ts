@@ -1,10 +1,11 @@
-interface VsCodeWebviewApi {
-  postMessage: (message: unknown) => void;
-}
+// The canonical shape, shared with the `window.vsCodeWebviewAPI` global. A
+// narrower local copy used to live here, which made the API impossible to cache
+// back onto `window` without a type error.
+import { type WebviewApi } from "../globals";
 
-let cachedApi: VsCodeWebviewApi | undefined;
+let cachedApi: WebviewApi | undefined;
 
-export const getVsCodeWebviewApi = (): VsCodeWebviewApi | undefined => {
+export const getVsCodeWebviewApi = (): WebviewApi | undefined => {
   if (cachedApi !== undefined) {
     return cachedApi;
   }

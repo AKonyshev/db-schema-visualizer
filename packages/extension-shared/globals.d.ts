@@ -1,5 +1,7 @@
 // Relative, not the `@/` alias: this package defines no `paths` mapping, so the
 // alias silently resolved to `any` and degraded every global declared below.
+import { type ExtensionContext, type Webview } from "vscode";
+
 import { type DefaultPageConfig } from "./extension/types/defaultPageConfig";
 import { type SetSchemaCommandPayload } from "./extension/types/webviewCommand";
 
@@ -9,8 +11,9 @@ export interface WebviewApi<StateType = unknown> {
   setState: <T extends StateType | undefined>(newState: T) => T;
 }
 
-declare function acquireVsCodeApi<StateType>(): WebviewApi<StateType>;
-
+// This file has top-level imports, so it is a module: anything declared outside
+// `declare global` is scoped to the module and is NOT ambient. `acquireVsCodeApi`
+// used to sit outside and so was never actually visible to consumers.
 declare global {
   interface Window {
     EXTENSION_DEFAULT_CONFIG?: DefaultPageConfig;
@@ -18,11 +21,17 @@ declare global {
     __SCHEMA_BOOTSTRAP__?: SetSchemaCommandPayload | null;
     __SCHEMA_ERROR_BOOTSTRAP__?: SetSchemaCommandPayload | null;
   }
-}
 
-declare module NodeJS {
-  interface Global {
-    __getWebviewHtml__: (webview: Webview, context: ExtensionContext) => string;
-    __getWebviewHtml__: (url: string) => string;
-  }
+  function acquireVsCodeApi<StateType = unknown>(): WebviewApi<StateType>;
+
+  // Injected at build time by @tomjs/vscode-extension-webview: the dev-server
+  // form takes a URL, the packaged form resolves the bundled assets. The
+  // dunder name is fixed by that tool, so it cannot satisfy naming-convention.
+  /* eslint-disable @typescript-eslint/naming-convention */
+  function __getWebviewHtml__(url: string): string;
+  function __getWebviewHtml__(
+    webview: Webview,
+    context: ExtensionContext,
+  ): string;
+  /* eslint-enable @typescript-eslint/naming-convention */
 }

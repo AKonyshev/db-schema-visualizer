@@ -18,31 +18,37 @@ import { useThemeColors, useThemeContext } from "@/hooks/theme";
 import { Theme } from "@/types/theme";
 import eventEmitter from "@/events-emitter";
 import { computeTableDragEventName } from "@/utils/eventName";
-import {
-  useTableDefaultPosition,
-  useTablesInfo,
-  useTableWidth,
-} from "@/hooks/table";
+import { useTableDefaultPosition, useTableWidth } from "@/hooks/table";
+import { setHoveredTableName } from "@/stores/hoverStore";
 import { tableCoordsStore } from "@/stores/tableCoords";
+import { useTableRelationsVisibility } from "@/hooks/tableRelationsVisibility";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
+import { useIsRowTextLegible } from "@/hooks/viewport";
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
 import computeFieldDisplayTypeName from "@/utils/getFieldType";
 
 interface TableProps extends JSONTableTable {}
 
-const Table = ({ fields, name, hasHiddenRefs }: TableProps) => {
+const Table = ({ fields, name }: TableProps) => {
   const themeColors = useThemeColors();
+  // The dashed outline marks a table whose relations are hidden — the same
+  // state the header icon toggles, so the two always agree.
+  const { isHidden: hasHiddenRefs } = useTableRelationsVisibility(name);
   const { detailLevel } = useTableDetailLevel();
   const tableRef = useRef<null | Konva.Group>(null);
   const highlightRef = useRef<null | Konva.Rect>(null);
   const { theme } = useThemeContext();
-  const { setHoveredTableName } = useTablesInfo();
   const { x: tableX, y: tableY } = useTableDefaultPosition(name);
   const tablePreferredWidth = useTableWidth();
   const visibleFields = useMemo(() => {
     return filterByDetailLevel(fields, detailLevel);
   }, [detailLevel, fields]);
+  // The footprint below is computed from `visibleFields` either way: a table
+  // that changed height with zoom would move every connection anchor and shift
+  // the bounds fit-to-view works from, which oscillates around the threshold.
+  // Only whether the rows are drawn depends on how far out the reader is.
+  const rowsAreLegible = useIsRowTextLegible();
   useEffect(() => {
     if (tableRef.current != null) {
       tableRef.current.x(tableX);
@@ -142,12 +148,14 @@ const Table = ({ fields, name, hasHiddenRefs }: TableProps) => {
         shadowBlur={PADDINGS.xs}
         shadowOpacity={0.2}
         shadowColor={themeColors.table.shadow}
+        shadowForStrokeEnabled={false}
+        perfectDrawEnabled={false}
         height={tableHeight}
         width={tablePreferredWidth}
         fill={themeColors.table.bg}
         cornerRadius={PADDINGS.sm}
       />
-      {hasHiddenRefs === true && (
+      {hasHiddenRefs && (
         <Rect
           x={-3}
           y={-3}
@@ -163,7 +171,7 @@ const Table = ({ fields, name, hasHiddenRefs }: TableProps) => {
       )}
 
       <TableHeader title={name} />
-      {detailLevel !== TableDetailLevel.HeaderOnly ? (
+      {detailLevel !== TableDetailLevel.HeaderOnly && rowsAreLegible ? (
         <Group y={TABLE_HEADER_HEIGHT}>
           {visibleFields.map((field, index) => (
             <Column

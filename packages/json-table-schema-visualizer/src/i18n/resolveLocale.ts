@@ -1,6 +1,13 @@
 export type SupportedLocale = "en" | "ru" | "zh-cn";
 
-const SUPPORTED: SupportedLocale[] = ["en", "ru", "zh-cn"];
+// Exported so a host can test membership against it instead of keeping its own
+// copy of the list. A second copy is a second thing to forget when a locale is
+// added.
+export const SUPPORTED_LOCALES: readonly SupportedLocale[] = [
+  "en",
+  "ru",
+  "zh-cn",
+];
 
 // Matching is exact, never by prefix: `zh-tw` must not fall into `zh-cn`.
 // Mainland and Taiwan technical terminology differ, and the zh-cn translation
@@ -14,7 +21,7 @@ export const resolveLocale = (
   }
 
   const normalized = language.toLowerCase();
-  const match = SUPPORTED.find((locale) => locale === normalized);
+  const match = SUPPORTED_LOCALES.find((locale) => locale === normalized);
 
   return match ?? "en";
 };

@@ -1,5 +1,16 @@
 # Manual test plan (DBML extension)
 
+## Switching between text and diagram
+
+The tab bookkeeping is covered automatically — `yarn workspace dbml-schema-visualizer test:integration` proves in a real VS Code that switching replaces the tab in both directions, that opening beside keeps the text, and that a plain open still gives text. Run that first; what is left below is what only eyes can check.
+
+1. In a `.dbml` text editor exactly one title button shows — **Show diagram**, with the preview icon.
+2. Alt-click it — the diagram takes over the current tab. (Plain click opens it beside.)
+3. In the diagram the button has become **Show DBML source**, and **Show diagram** is gone.
+4. `Reopen Editor With…` offers both the text editor and **DBML Diagram**.
+5. Switch a file with unsaved changes both ways — no save prompt should appear, and the dirty marker should stay on the tab.
+6. Open two different `.dbml` diagrams at once: a syntax error in one leaves the other's Problems entries alone.
+
 ## MetaInfo persistence
 
 1. Open a `.dbml` file and launch **Show diagram**.
@@ -10,9 +21,13 @@
 
 ## Relation visibility
 
-1. Hover a table that has relations; click the link icon in the **table header**; relations for that table should hide on the canvas.
-2. Click again; relations should reappear.
-3. Press **Alt+H** with the webview focused and a table hovered; related `Ref` lines in DBML should be commented/uncommented.
+One state, two ways in — the header icon and `Alt+H` — and **neither writes to the file**.
+
+1. Hover a table that has relations; click the link icon in the **table header**. Its relations hide on the canvas, the icon gains a strike-through, and the table gets a dashed outline.
+2. Click again; relations reappear and the outline goes.
+3. Hover a table and press **Alt+H**: exactly the same as clicking the icon, outline included.
+4. Watch the editor text through both — nothing is written to it, and no `Ref` line is commented out.
+5. Reload the diagram; whatever you hid is still hidden. It is remembered per document, in the browser, not in the `.dbml`.
 
 ## Colored relations
 
@@ -88,3 +103,46 @@
 4. On a connection, use the inline **Import** / **Compare** icons — the flow runs against that connection without asking to pick one.
 5. Use the inline **Delete** icon — confirm the modal; the connection disappears. Click **⟳** to refresh.
 6. With a non-English display language, the group names and the three action labels are translated, and so is "No saved connections" when there are none. A saved connection's own name is user data and must stay exactly as typed, untranslated.
+
+## The site
+
+Everything below is `packages/web`, not the extension. Build and serve it first —
+`yarn build:web`, then either `yarn workspace web preview` or the container image
+from [packages/web/README.md](../web/README.md) — and use the built output rather
+than the dev server, so what is tested is what would be deployed.
+
+1. **Live parsing.** Type a table into the editor; the diagram grows a table
+   without any button being pressed. Delete it again; the table goes.
+2. **A syntax error does not blank the page.** Delete a closing brace. The
+   diagram is replaced by a readable parser message, the editor keeps every
+   character you typed, and restoring the brace brings the diagram back.
+3. **Opening a file.** Use **Open** to pick a `.dbml` file, then drag a different
+   one anywhere onto the page. Both replace the editor's contents, and the
+   browser never navigates away from the page or opens the file itself.
+4. **Dragging tables.** Move a few tables around. The editor text does not change
+   while you drag. Press Ctrl/Cmd+Z in the editor: it takes back what you typed,
+   not where you dropped a table.
+5. **Downloading.** Press **Download**. The file is named after the tab, keeps
+   the `.dbml` extension without doubling it, and its contents match the editor
+   exactly. A file opened and downloaded again without edits is unchanged.
+6. **Tabs hold independent layouts.** Open two tabs with the same schema. Arrange
+   the tables differently in each, switch back and forth, and both arrangements
+   survive. Reload the page: the tabs, the selected one, and both layouts are
+   still there.
+7. **The layout round trip, both directions.** On the site, arrange a schema,
+   press **Save layout**, and download it. Open that file in the extension: the
+   tables are where you left them. Then move them in the extension, save, and
+   open the file on the site — again, where you left them. This is the whole
+   point of the shared metadata format, and it is the one thing no automated
+   check in this repository covers.
+8. **Alt+H.** Hover a table on the diagram and press Alt+H. The lines it drew
+   disappear and the table gets a dashed outline — the same as clicking the link
+   icon in its header. The editor text does not change: this is a view
+   preference, kept per document, and Ctrl/Cmd+Z has nothing to undo.
+9. **Ctrl/Cmd+F belongs to whatever has focus.** With the caret in the editor, it
+   opens the editor's own find. With focus anywhere else on the page, it puts the
+   caret in the diagram's table search.
+10. **Nothing leaves the browser.** With the browser's network panel open and
+    recording, load the page and use it: open a file, type, download. Every
+    request is to the site's own origin. Then disconnect the machine from the
+    network entirely and reload — the page still works.

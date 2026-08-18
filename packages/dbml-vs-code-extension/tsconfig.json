@@ -10,7 +10,7 @@
     "strict": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*", "../json-table-schema-visualizer/src/*"]
     },
     "skipLibCheck": true
   },

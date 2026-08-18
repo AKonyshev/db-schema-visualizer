@@ -7,9 +7,7 @@ import {
 } from "react";
 import { type JSONTableSchema } from "shared/types/tableSchema";
 import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
-import { stageStateStore } from "json-table-schema-visualizer/src/stores/stagesState";
-import { detailLevelStore } from "json-table-schema-visualizer/src/stores/detailLevelStore";
-import { tableRelationsVisibilityStore } from "json-table-schema-visualizer/src/stores/tableRelationsVisibilityStore";
+import { switchDocument } from "json-table-schema-visualizer/src/stores/switchDocument";
 
 import {
   WebviewCommand,
@@ -88,14 +86,7 @@ const applySchemaMessage = (
 
   const currentKey = schemaKeyRef.current;
   if (message.key !== currentKey) {
-    tableCoordsStore.switchTo(
-      message.key,
-      message.payload.tables,
-      message.payload.refs,
-    );
-    stageStateStore.switchTo(message.key);
-    detailLevelStore.switchTo(message.key);
-    tableRelationsVisibilityStore.switchTo(message.key);
+    switchDocument(message.key, message.payload.tables, message.payload.refs);
     schemaKeyRef.current = message.key;
     setters.setSchemaKey(message.key);
   }
@@ -128,14 +119,11 @@ export const useSchema = (): {
 
   useLayoutEffect(() => {
     if (bootstrap.schema != null && bootstrap.key != null) {
-      tableCoordsStore.switchTo(
+      switchDocument(
         bootstrap.key,
         bootstrap.schema.tables,
         bootstrap.schema.refs,
       );
-      stageStateStore.switchTo(bootstrap.key);
-      detailLevelStore.switchTo(bootstrap.key);
-      tableRelationsVisibilityStore.switchTo(bootstrap.key);
     }
   }, []);
 

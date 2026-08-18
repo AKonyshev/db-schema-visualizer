@@ -59,10 +59,8 @@ export class WebviewHelper {
     defaultConfig: DefaultPageConfig,
   ): string {
     const html: string = process.env.VITE_DEV_SERVER_URL
-      ? /* @ts-ignore */
-        __getWebviewHtml__(process.env.VITE_DEV_SERVER_URL)
-      : /* @ts-ignore */
-        __getWebviewHtml__(webview, context);
+      ? __getWebviewHtml__(process.env.VITE_DEV_SERVER_URL)
+      : __getWebviewHtml__(webview, context);
 
     return WebviewHelper.injectScripts(html, defaultConfig);
   }

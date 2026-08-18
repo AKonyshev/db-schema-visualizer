@@ -18,9 +18,12 @@ type Story = StoryObj<typeof DiagramWrapper>;
 export const DiagramWrapperWrapper: Story = {
   render: (props) => <DiagramWrapper {...props} />,
   args: {
-    children: (
+    tablesMeta: [],
+    refs: [],
+    connections: (
       <Text text="Incididunt ad veniam do est nisi eu incididunt eiusmod nulla veniam cillum reprehenderit cupidatat." />
     ),
+    tables: null,
   },
   decorators: [
     (Story) => (

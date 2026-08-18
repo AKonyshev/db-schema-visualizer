@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 // English is the source language of this repository. Anything else in the
@@ -22,14 +22,15 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
 }).trim();
 
 function listSourceFiles(): string[] {
+  // Every tracked TypeScript file under `packages/`, rather than a list of the
+  // directories that happened to exist when this was written. That list named
+  // `src` and `extension`, and a browser test added later under `packages/web/e2e`
+  // sat outside it with three translations of a button label inlined in a
+  // selector — the rule broken with nothing to catch it. Naming directories
+  // meant the guard's reach had to be remembered; naming the language does not.
   const output = execFileSync(
     "git",
-    [
-      "ls-files",
-      "packages/*/src/**/*.ts",
-      "packages/*/src/**/*.tsx",
-      "packages/*/extension/**/*.ts",
-    ],
+    ["ls-files", "packages/**/*.ts", "packages/**/*.tsx"],
     { cwd: repoRoot, encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 },
   );
 
@@ -44,7 +45,17 @@ describe("source language", () => {
     const offenders: string[] = [];
 
     for (const file of listSourceFiles()) {
-      const contents = readFileSync(path.join(repoRoot, file), "utf-8");
+      const absolute = path.join(repoRoot, file);
+
+      // `git ls-files` reads the index, so a file deleted but not yet staged is
+      // still listed while being gone from disk. That is an ordinary working
+      // state; reading it threw ENOENT and took the whole guard down with a
+      // message about the wrong thing entirely.
+      if (!existsSync(absolute)) {
+        continue;
+      }
+
+      const contents = readFileSync(absolute, "utf-8");
       contents.split("\n").forEach((line, index) => {
         if (NON_ENGLISH.test(line)) {
           offenders.push(`${file}:${index + 1}: ${line.trim()}`);

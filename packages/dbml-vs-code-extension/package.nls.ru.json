@@ -1,7 +1,9 @@
 {
   "viewsContainer.title": "DBML Schema Visualizer",
   "command.previewDiagrams": "Показать диаграмму",
-  "command.toggleTableRefs": "Переключить видимость связей таблицы в DBML",
+  "command.previewDiagramsInPlace": "Показать диаграмму в этой вкладке",
+  "command.showSource": "Показать исходник DBML",
+  "customEditor.diagram": "Диаграмма DBML",
   "command.importFromDatabase": "DBML: Импорт из базы данных",
   "command.compareWithDatabase": "DBML: Сравнить с базой данных",
   "command.addConnection": "DBML: Добавить подключение к базе данных",

@@ -1,17 +1,7 @@
-import DiagramViewer from "json-table-schema-visualizer/src/components/DiagramViewer/DiagramViewer";
+import DiagramApp from "json-table-schema-visualizer/src/components/DiagramApp/DiagramApp";
 import { useCreateTheme } from "json-table-schema-visualizer/src/hooks/theme";
-import ThemeProvider from "json-table-schema-visualizer/src/providers/ThemeProvider";
-import NoSchemaMessage from "json-table-schema-visualizer/src/components/Messages/NoSchemaMessage";
-import ErrorMessage from "json-table-schema-visualizer/src/components/Messages/ErrorMessage";
 import { type Theme } from "json-table-schema-visualizer/src/types/theme";
-import ScrollDirectionProvider from "json-table-schema-visualizer/src/providers/ScrollDirectionProvider";
-import { MESSAGES_RU } from "json-table-schema-visualizer/src/i18n/locales/ru";
-import { MESSAGES_ZH_CN } from "json-table-schema-visualizer/src/i18n/locales/zh-cn";
-import { resolveLocale } from "json-table-schema-visualizer/src/i18n/resolveLocale";
-import {
-  registerCatalog,
-  setLocale,
-} from "json-table-schema-visualizer/src/i18n/t";
+import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDirection";
 
 import {
   WebviewCommand,
@@ -22,12 +12,10 @@ import { useSchema } from "./hooks/schema";
 import DbmlFileSyncEffects from "./components/DbmlFileSyncEffects";
 import { postToExtension } from "./vscodeApi";
 
-// Resolved once at module load: the locale cannot change without a window
-// reload, which recreates the webview.
-registerCatalog("ru", MESSAGES_RU);
-registerCatalog("zh-cn", MESSAGES_ZH_CN);
-setLocale(resolveLocale(window.EXTENSION_DEFAULT_CONFIG?.locale));
-
+// The VS Code adapter over the shared diagram core: it owns everything the
+// core deliberately does not know about — the config the host injects onto the
+// window, the schema arriving as a message, the theme preference travelling
+// back, and writing layout metadata into the open file.
 const App = () => {
   const { setTheme, theme, themeColors } = useCreateTheme(
     window.EXTENSION_DEFAULT_CONFIG?.theme,
@@ -35,14 +23,14 @@ const App = () => {
   const { schema, key, schemaErrorMessage, rawContent } = useSchema();
   const supportsDbmlFileSync =
     window.EXTENSION_DEFAULT_CONFIG?.supportsDbmlFileSync === true;
-
-  if (schemaErrorMessage !== null && schema === null) {
-    return <ErrorMessage message={schemaErrorMessage} />;
-  }
-
-  if (schema === null) {
-    return <NoSchemaMessage />;
-  }
+  // In practice the config is always injected — `setupHtml` runs `injectScripts`
+  // on both the dev-server and the packaged HTML, and `index.html` carries the
+  // marker — so this fallback should never fire. It is here because the failure
+  // it prevents is silent and nasty: the wheel handler in DiagramWrapper is an
+  // `if`/`else if` with no `else`, so an undefined direction leaves its delta at
+  // zero and the wheel zooms *out* whichever way you scroll.
+  const scrollDirection =
+    window.EXTENSION_DEFAULT_CONFIG?.scrollDirection ?? ScrollDirection.UpOut;
 
   // update the preference in the extension settings
   const saveThemePreference = (theme: Theme) => {
@@ -56,32 +44,22 @@ const App = () => {
   };
 
   return (
-    <ThemeProvider
+    <DiagramApp
+      schema={schema}
+      schemaErrorMessage={schemaErrorMessage}
+      documentKey={key}
       theme={theme}
-      setTheme={saveThemePreference}
       themeColors={themeColors}
-    >
-      <ScrollDirectionProvider
-        scrollDirection={window.EXTENSION_DEFAULT_CONFIG?.scrollDirection}
-      >
-        <DiagramViewer
-          key={key}
-          documentKey={key}
-          {...schema}
-          syncEffects={
-            supportsDbmlFileSync ? (
-              <DbmlFileSyncEffects
-                rawContent={rawContent}
-                documentKey={key}
-                singleTableName={
-                  schema.tables.length === 1 ? schema.tables[0].name : undefined
-                }
-              />
-            ) : null
-          }
-        />
-      </ScrollDirectionProvider>
-    </ThemeProvider>
+      setTheme={saveThemePreference}
+      scrollDirection={scrollDirection}
+      syncEffects={
+        supportsDbmlFileSync
+          ? () => (
+              <DbmlFileSyncEffects rawContent={rawContent} documentKey={key} />
+            )
+          : undefined
+      }
+    />
   );
 };
 

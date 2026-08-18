@@ -13,8 +13,13 @@ const geometry = {
 };
 
 describe("computeConnectionLinePath", () => {
-  test("returns a bezier path", () => {
-    expect(computeConnectionLinePath(geometry)).toMatch(/^M/);
+  test("returns a path made of right angles", () => {
+    const line = computeConnectionLinePath(geometry);
+
+    expect(line).toMatch(/^M/);
+    // Quadratics round the corners; a cubic would mean the old curve is back.
+    expect(line).not.toContain("C");
+    expect(line).toContain("Q");
   });
 
   test("returns only the line, and the combined path starts with it", () => {

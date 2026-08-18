@@ -15,4 +15,8 @@ export class AppLocalStorage<T> extends Storage<T> {
   removeItem(key: string): void {
     localStorage.removeItem(key);
   }
+
+  keys(): string[] {
+    return Object.keys(localStorage);
+  }
 }

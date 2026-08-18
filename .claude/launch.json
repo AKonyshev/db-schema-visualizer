@@ -1,0 +1,30 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "web", "dev", "--port", "5173"],
+      "port": 5173
+    },
+    {
+      "name": "web-built",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "web", "preview", "--port", "5175"],
+      "port": 5175
+    },
+    {
+      "name": "extension-webview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--outDir",
+        "packages/dbml-vs-code-extension/dist/webview",
+        "--port",
+        "5174"
+      ],
+      "port": 5174
+    }
+  ]
+}

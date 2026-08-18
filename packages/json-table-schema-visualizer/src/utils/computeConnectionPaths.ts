@@ -1,4 +1,4 @@
-import { getBezierPath } from "./computeEgde/computeBezierEdge";
+import { getOrthogonalPath } from "./computeEgde/computeOrthogonalEdge";
 import { getRelationSymbol } from "./getRelationSymbol";
 
 import { type Position, type XYPosition } from "@/types/positions";
@@ -12,13 +12,18 @@ interface LineProps {
 
 // The line without cardinality symbols: needed for the animated overlay, where
 // the dashes must not tear the relation symbols apart.
+//
+// Right angles rather than a curve. On a small schema the curve was prettier;
+// on a large one it is the difference between a diagram and a bowl of
+// spaghetti, because a line that runs in corridors and turns squarely can be
+// followed by eye and ninety diagonals cannot.
 export const computeConnectionLinePath = ({
   sourceXY,
   sourcePosition,
   targetXY,
   targetPosition,
 }: LineProps): string =>
-  getBezierPath({
+  getOrthogonalPath({
     sourcePosition,
     targetPosition,
     source: sourceXY,

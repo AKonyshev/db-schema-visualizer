@@ -11,6 +11,7 @@
     "lerna": "^8.1.2"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "@types/jest": "^29.5.12",
     "@typescript-eslint/eslint-plugin": "^6.4.0",
     "eslint": "^8.0.1",
@@ -25,12 +26,15 @@
     "lint-staged": "^15.2.2",
     "prettier": "3.2.5",
     "ts-jest": "^29.1.2",
-    "tsc-files": "^1.1.4",
     "typescript": "^5.4.3"
   },
   "scripts": {
     "prepare": "husky",
+    "typecheck": "node scripts/typecheck.js",
+    "test": "node scripts/test.js",
     "publish:dbml": "bash scripts/publish-extension.sh dbml",
-    "package:dbml": "bash scripts/publish-extension.sh dbml --package"
+    "package:dbml": "bash scripts/publish-extension.sh dbml --package",
+    "build:web": "yarn workspace web build",
+    "test:e2e": "yarn workspace web test:e2e"
   }
 }

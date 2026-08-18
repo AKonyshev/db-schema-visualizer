@@ -1,0 +1,216 @@
+import {
+  Diagnostic,
+  type DiagnosticCollection,
+  DiagnosticSeverity,
+  type Disposable,
+  type ExtensionContext,
+  Position,
+  Range,
+  type TextDocument,
+  Uri,
+  type ViewColumn,
+  type WebviewPanel,
+  window,
+  workspace,
+} from "vscode";
+import { type JSONTableSchema } from "shared/types/tableSchema";
+import { DiagnosticError } from "shared/types/diagnostic";
+
+import { DIAGRAM_UPDATER_DEBOUNCE_TIME } from "../constants";
+import { ExtensionConfig } from "../helper/extensionConfigs";
+
+import { WebviewHelper } from "./helper";
+
+/** What a host extension declares about itself, once, in `activate`. */
+export interface DiagramHostConfig {
+  extensionConfigSession: string;
+  parser: (code: string) => JSONTableSchema;
+  fileExt: string;
+  supportsDbmlFileSync?: boolean;
+}
+
+export interface DiagramViewDeps extends DiagramHostConfig {
+  context: ExtensionContext;
+  diagnostics: DiagnosticCollection;
+}
+
+/**
+ * One diagram, bound to one document and to the panel VS Code handed us.
+ *
+ * The panel is a constructor argument rather than something built here, because
+ * a custom editor never creates its own: that is also what makes this class
+ * testable without VS Code.
+ */
+export class DiagramView implements Disposable {
+  public readonly documentUri: string;
+  public readonly uri: Uri;
+  private readonly disposables: Disposable[] = [];
+  private ready = false;
+  private outbound: unknown[] = [];
+  private updateTimeout: NodeJS.Timeout | null = null;
+  private applyingOwnEdit = false;
+
+  constructor(
+    private readonly panel: WebviewPanel,
+    private readonly document: TextDocument,
+    private readonly deps: DiagramViewDeps,
+  ) {
+    this.documentUri = document.uri.toString();
+    this.uri = document.uri;
+
+    // Registration options carry WebviewPanelOptions only, so these two have to
+    // be set on the panel itself.
+    panel.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [
+        Uri.joinPath(deps.context.extensionUri, "dist", "webview"),
+      ],
+    };
+
+    // Built per view rather than once in activate: WorkspaceConfiguration reads
+    // its values when asked, so a long-lived instance would hand a new tab the
+    // theme that was current when the extension started.
+    const extensionConfig = new ExtensionConfig(deps.extensionConfigSession);
+    const supportsDbmlFileSync = deps.supportsDbmlFileSync === true;
+
+    panel.webview.html = WebviewHelper.setupHtml(panel.webview, deps.context, {
+      ...extensionConfig.getDefaultPageConfig(),
+      supportsDbmlFileSync,
+    });
+
+    WebviewHelper.setupWebviewHooks(
+      panel.webview,
+      extensionConfig,
+      this.disposables,
+      {
+        fileExt: deps.fileExt,
+        supportsDbmlFileSync,
+        onApplyingDbmlEdit: (applying) => {
+          this.applyingOwnEdit = applying;
+        },
+        onWebviewReady: () => {
+          this.markReady();
+        },
+      },
+    );
+
+    panel.onDidChangeViewState(
+      () => {
+        if (panel.visible) {
+          this.refresh();
+        }
+      },
+      null,
+      this.disposables,
+    );
+
+    workspace.onDidChangeTextDocument(
+      (event) => {
+        if (event.document.uri.toString() !== this.documentUri) return;
+        // The diagram's own MetaInfo write-back would otherwise loop.
+        if (this.applyingOwnEdit) return;
+        this.scheduleRefresh();
+      },
+      null,
+      this.disposables,
+    );
+
+    this.refresh();
+  }
+
+  public get isActive(): boolean {
+    return this.panel.active;
+  }
+
+  public get viewColumn(): ViewColumn | undefined {
+    return this.panel.viewColumn;
+  }
+
+  public post(message: unknown): void {
+    if (!this.ready) {
+      this.outbound.push(message);
+      return;
+    }
+
+    void this.panel.webview.postMessage(message);
+  }
+
+  public refresh(): void {
+    const code = this.document.getText();
+
+    try {
+      const payload = this.deps.parser(code);
+
+      this.post({
+        type: "setSchema",
+        payload,
+        key: this.documentUri,
+        rawContent: code,
+      });
+      // Addressed, not `clear()`: another open diagram's errors are not ours.
+      this.deps.diagnostics.delete(this.document.uri);
+    } catch (error) {
+      this.reportParseFailure(error);
+    }
+  }
+
+  private scheduleRefresh(): void {
+    if (this.updateTimeout !== null) {
+      clearTimeout(this.updateTimeout);
+    }
+
+    this.updateTimeout = setTimeout(() => {
+      this.updateTimeout = null;
+      this.refresh();
+    }, DIAGRAM_UPDATER_DEBOUNCE_TIME);
+  }
+
+  private markReady(): void {
+    this.ready = true;
+
+    for (const message of this.outbound) {
+      void this.panel.webview.postMessage(message);
+    }
+    this.outbound = [];
+  }
+
+  private reportParseFailure(error: unknown): void {
+    if (!(error instanceof DiagnosticError)) {
+      void window.showErrorMessage(String(error));
+      return;
+    }
+
+    const { start, end } = error.location;
+
+    this.post({
+      type: "setSchemaErrorMessage",
+      message: `${error.message}\n Line : ${start.line}:${start.column}`,
+      key: this.documentUri,
+    });
+
+    this.deps.diagnostics.set(this.document.uri, [
+      new Diagnostic(
+        new Range(
+          new Position(start.line, start.column),
+          new Position(end.line, end.column),
+        ),
+        error.message,
+        DiagnosticSeverity.Error,
+      ),
+    ]);
+  }
+
+  /** Drops our own subscriptions. The panel belongs to VS Code — leave it be. */
+  public dispose(): void {
+    if (this.updateTimeout !== null) {
+      clearTimeout(this.updateTimeout);
+      this.updateTimeout = null;
+    }
+    this.outbound = [];
+    this.ready = false;
+
+    while (this.disposables.length > 0) {
+      this.disposables.pop()?.dispose();
+    }
+  }
+}

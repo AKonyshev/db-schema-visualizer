@@ -1,8 +1,4 @@
-import {
-  extractMetaInfo,
-  toggleTableRefs,
-  upsertMetaInfoInDbml,
-} from "./index";
+import { extractMetaInfo, upsertMetaInfoInDbml } from "./index";
 
 import { parseDBMLToJSON } from "@/index";
 
@@ -39,7 +35,6 @@ MetaInfo*/`;
     expect(users?.x).toBe(100);
     expect(users?.y).toBe(200);
     expect(users?.fromMetaInfo).toBe(true);
-    expect(users?.hasHiddenRefs).toBe(true);
   });
 
   test("upsertMetaInfoInDbml inserts block when missing", () => {
@@ -65,19 +60,18 @@ MetaInfo*/`;
     expect(result.match(/\/\*MetaInfo/g)?.length).toBe(1);
   });
 
-  test("toggleTableRefs comments and uncomments ref lines", () => {
-    const hidden = toggleTableRefs(baseDbml, "users", {
-      name: "users",
-      x: 0,
-      y: 0,
-    });
-    expect(hidden).toContain("// Ref:");
+  test("upsertMetaInfoInDbml keeps a hidden flag written by an older version", () => {
+    // Hiding relations is a view preference now and nothing writes `hidden` any
+    // more, but a file that already carries one is not ours to rewrite.
+    const withHidden = `${baseDbml}
+/*MetaInfo
+[{"name":"users","x":1,"y":2,"hidden":true}]
+MetaInfo*/`;
 
-    const visible = toggleTableRefs(hidden, "users", {
-      name: "users",
-      x: 0,
-      y: 0,
-    });
-    expect(visible).not.toMatch(/^\s*\/\/\s*Ref:/m);
+    const result = upsertMetaInfoInDbml(withHidden, [
+      { name: "users", x: 50, y: 60 },
+    ]);
+
+    expect(result).toContain('"hidden":true');
   });
 });

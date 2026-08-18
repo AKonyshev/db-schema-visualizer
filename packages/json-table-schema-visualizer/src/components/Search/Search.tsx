@@ -9,7 +9,11 @@ import { type JSONTableTable } from "shared/types/tableSchema";
 
 import { t } from "@/i18n/t";
 import eventEmitter from "@/events-emitter";
-import { useTablesInfo } from "@/hooks/table";
+import {
+  setHighlightedColumns,
+  setHoveredTableName,
+} from "@/stores/hoverStore";
+import { isTypingTarget, type TypingTarget } from "@/utils/isTypingTarget";
 
 interface SearchResult {
   type: "table" | "column";
@@ -28,7 +32,6 @@ interface SearchProps {
 const Search = ({ tables }: SearchProps) => {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const { setHoveredTableName, setHighlightedColumns } = useTablesInfo();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -126,10 +129,19 @@ const Search = ({ tables }: SearchProps) => {
 
   useEffect(() => {
     const handleShortcut = (e: globalThis.KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
-        e.preventDefault();
-        inputRef.current?.focus();
+      if (!((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f")) {
+        return;
       }
+
+      // Ctrl/Cmd+F belongs to whatever holds focus. The listener is on the
+      // window, so without this the preventDefault below would deny a focused
+      // text field its own find — including a code editor sharing the page.
+      if (isTypingTarget(e.target as TypingTarget | null)) {
+        return;
+      }
+
+      e.preventDefault();
+      inputRef.current?.focus();
     };
 
     window.addEventListener("keydown", handleShortcut);
@@ -165,7 +177,9 @@ const Search = ({ tables }: SearchProps) => {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50" ref={dropdownRef}>
+    // `absolute`, not `fixed`: pinned to the diagram's own box so it stays over
+    // the diagram when that is one pane of a page rather than the whole window.
+    <div className="absolute top-4 right-4 z-50" ref={dropdownRef}>
       <div className="relative">
         <div title={t("search.tooltip")} className="relative flex items-center">
           <input

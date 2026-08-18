@@ -6,9 +6,7 @@
     "baseUrl": "./src",
     "paths": {
       "@/*": ["./*"]
-    },
-    "allowJs": true,
-    "checkJs": true
+    }
   },
   "exclude": ["node_modules", "vite.config.js"],
   "include": ["**/*.ts", "**/*.tsx"]
