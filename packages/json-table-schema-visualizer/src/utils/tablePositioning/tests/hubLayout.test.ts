@@ -77,7 +77,11 @@ describe("layoutAroundHubs", () => {
     expect(Math.sign(child.x - hub.x)).toBe(Math.sign(grandchild.x - hub.x));
   });
 
-  test("gathers tables with no relations underneath the rest", () => {
+  // These used to be gathered underneath, which cost their full height on a
+  // diagram that is taller than it is wide and has room going spare either
+  // side of it. Nothing has to reach a table with no relations, so beside the
+  // diagram is free where underneath it is not.
+  test("tucks tables with no relations in beside the rest", () => {
     const boxes = ["hub", "a", "b", "lonely1", "lonely2"].map((n) => box(n));
     const placed = layoutAroundHubs(boxes, [
       ["hub", "a"],
@@ -87,8 +91,32 @@ describe("layoutAroundHubs", () => {
     const related = ["hub", "a", "b"].map((n) => at(placed, n));
     const relatedBottom = Math.max(...related.map((b) => b.y + b.h));
 
-    expect(at(placed, "lonely1").y).toBeGreaterThanOrEqual(relatedBottom);
-    expect(at(placed, "lonely2").y).toBeGreaterThanOrEqual(relatedBottom);
+    ["lonely1", "lonely2"].forEach((name) => {
+      const lonely = at(placed, name);
+
+      expect(lonely.y).toBeLessThan(relatedBottom);
+    });
+  });
+
+  test("never makes the diagram taller to fit an unrelated table beside it", () => {
+    const related = ["hub", "a", "b"].map((n) => box(n));
+    const edges: Array<[string, string]> = [
+      ["hub", "a"],
+      ["hub", "b"],
+    ];
+    const bottomOf = (placed: PlacedBox[], names: string[]): number =>
+      Math.max(...names.map((n) => at(placed, n)).map((b) => b.y + b.h));
+
+    // A table far taller than the diagram has no side to fit in, so it falls
+    // through to the block underneath rather than stretching one.
+    const placed = layoutAroundHubs(
+      [...related, box("giant", 300, 9000)],
+      edges,
+    );
+
+    expect(at(placed, "giant").y).toBeGreaterThanOrEqual(
+      bottomOf(placed, ["hub", "a", "b"]),
+    );
   });
 
   test("lays unrelated tables in rows, not one long column", () => {
@@ -196,19 +224,19 @@ describe("gapsFor and the relation style", () => {
     expect(gaps.x).toBeGreaterThan(TABLES_GAP_X * 3);
   });
 
-  // A curve sweeps through whatever space there is, so a diagram drawn for
-  // curves can be the tighter of the two.
-  test("packs tighter for curves", () => {
+  // The opposite of what this file used to assert, and the reason the curve
+  // arrangement was unreadable: a right angle is routed round what is in its
+  // way, a curve takes the direct line and passes under it, and tables are
+  // drawn over relations. So a curve needs the more room of the two.
+  test("gives curves more room than right angles", () => {
     const angles = gapsFor(tables, RelationStyle.Orthogonal);
     const curves = gapsFor(tables, RelationStyle.Bezier);
 
-    expect(curves.x).toBeLessThan(angles.x);
-    expect(curves.y).toBeLessThan(angles.y);
-    expect(curves.x).toBeGreaterThanOrEqual(TABLES_GAP_X);
-    expect(curves.y).toBeGreaterThanOrEqual(TABLES_GAP_Y);
+    expect(curves.x).toBeGreaterThan(angles.x);
+    expect(curves.y).toBeGreaterThan(angles.y);
   });
 
-  test("a diagram drawn for curves comes out smaller", () => {
+  test("a diagram drawn for curves takes the more space", () => {
     const boxes = Array.from({ length: 40 }, (_, i) => ({
       name: `t${i}`,
       w: 450,
@@ -227,7 +255,7 @@ describe("gapsFor and the relation style", () => {
       return w * h;
     };
 
-    expect(areaOf(RelationStyle.Bezier)).toBeLessThan(
+    expect(areaOf(RelationStyle.Bezier)).toBeGreaterThan(
       areaOf(RelationStyle.Orthogonal),
     );
   });

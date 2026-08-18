@@ -12,7 +12,16 @@ export interface PlacedBox extends LayoutBox {
   y: number;
 }
 
-/** Five wide to four tall: about the shape of the space a diagram is read in. */
+/**
+ * The shape auto-arrange aims the whole diagram at.
+ *
+ * A wider target does fit a screen better, and it was tried: on a real
+ * eighteen-table schema, three halves scaled to 0.271 against five quarters'
+ * 0.241. It was not kept. The same change put a fifth of every relation
+ * underneath a table — 10% to 18% for right angles, 8% to 12% for curves —
+ * because a wider budget packs the columns closer together, and a diagram
+ * whose relations cannot be followed is not one worth fitting on a screen.
+ */
 export const TARGET_ASPECT = 5 / 4;
 
 interface Group {
@@ -35,10 +44,25 @@ interface Gaps {
  * gaps track the tables instead, so there is always somewhere for a line to be
  * seen going.
  *
- * How much room depends on what is drawn in it. Right angles need a corridor
- * wide enough to run a line down and still be told apart from the tables either
- * side. A curve sweeps through whatever space there is and needs far less, so a
- * diagram drawn for curves is the more compact of the two.
+ * How much room depends on what is drawn in it, and the two styles want it for
+ * opposite reasons. Right angles are routed: a line leaves its table, runs down
+ * a corridor and turns in, so it needs a corridor wide enough to be told apart
+ * from the tables either side, and no more. A curve is not routed at all — it
+ * takes the direct line between its ends and passes through whatever stands in
+ * the way, and tables are drawn over relations, so anything it passes through
+ * hides it.
+ *
+ * Which means curves need MORE room than right angles, not less. Measured on a
+ * hub-and-spoke schema by sampling every relation and counting the length that
+ * lands under some other table:
+ *
+ *   room  0.30  0.50  0.75  1.00  1.50
+ *   hidden 25%   20%   14%    8%    4%
+ *
+ * Right angles sit at 10% on 0.75. One is where curves match them while costing
+ * about a tenth more canvas; past that the gain is real but every table is drawn
+ * smaller once the result is fitted to the screen, which is its own kind of
+ * unreadable.
  */
 export const gapsFor = (
   boxes: LayoutBox[],
@@ -48,7 +72,7 @@ export const gapsFor = (
     return { x: TABLES_GAP_X, y: TABLES_GAP_Y };
   }
 
-  const room = style === RelationStyle.Bezier ? 0.3 : 0.75;
+  const room = style === RelationStyle.Bezier ? 1 : 0.75;
 
   const median = (values: number[]): number => {
     const sorted = [...values].sort((a, b) => a - b);
@@ -302,11 +326,70 @@ const intoRows = (
 };
 
 /**
+ * Unrelated tables tucked into the space either side of the diagram.
+ *
+ * The columns beside a hub-and-spoke diagram are free: it is taller than it is
+ * wide, nothing has to reach a table with no relations, and nothing is hidden
+ * by putting one there. Underneath, the same tables cost their full height —
+ * on a real schema of eighteen tables the four unrelated ones were the largest
+ * in the file and added 3,767px of it, which fit-to-view answered by halving
+ * the scale of everything.
+ *
+ * What they may not do is make the diagram taller than it already is, so a
+ * table is taken only while the side it would join still has room within the
+ * diagram's own height. Tallest first, onto whichever side is shorter; the
+ * rest fall through to the block underneath, which is where they all used to
+ * go.
+ */
+const besideDiagram = (
+  boxes: LayoutBox[],
+  height: number,
+  gaps: Gaps,
+): { left: LayoutBox[]; right: LayoutBox[]; leftover: LayoutBox[] } => {
+  const left: LayoutBox[] = [];
+  const right: LayoutBox[] = [];
+  const leftover: LayoutBox[] = [];
+  const used = [0, 0];
+
+  [...boxes]
+    .sort((a, b) => b.h - a.h)
+    .forEach((box) => {
+      const side = used[0] <= used[1] ? 0 : 1;
+      const column = side === 0 ? left : right;
+      const next = used[side] + (column.length > 0 ? gaps.y : 0) + box.h;
+
+      // The shorter side had no room, so neither has the other one.
+      if (next > height) {
+        leftover.push(box);
+
+        return;
+      }
+
+      column.push(box);
+      used[side] = next;
+    });
+
+  return { left, right, leftover };
+};
+
+/** A column of boxes stacked downward from `y = 0` at the given x. */
+const stackAt = (column: LayoutBox[], x: number, gaps: Gaps): PlacedBox[] => {
+  let y = 0;
+
+  return column.map((box) => {
+    const placed = { ...box, x, y };
+    y += box.h + gaps.y;
+
+    return placed;
+  });
+};
+
+/**
  * Place every table: hubs with their relations around them, and everything with
- * no relations gathered underneath.
+ * no relations either side of them or, failing that, gathered underneath.
  *
  * A table whose relations the reader has hidden arrives here with no edges, so
- * it joins the block below — which is what "hidden" should mean to a layout.
+ * it is placed as one — which is what "hidden" should mean to a layout.
  */
 export const layoutAroundHubs = (
   boxes: LayoutBox[],
@@ -349,32 +432,68 @@ export const layoutAroundHubs = (
 
   const layoutWith = (heightBudget: number): PlacedBox[] => {
     let placed: PlacedBox[] = [];
-    let bottom = 0;
 
-    components.forEach((component) => {
-      const laid = layoutComponent(
-        component,
-        sizeOf,
-        adjacency,
-        heightBudget,
-        gaps,
-      );
-      if (laid.length === 0) {
-        return;
-      }
+    // Each component drawn on its own, then the drawings arranged as a group.
+    // Stacking them one under another was what made a schema of five small
+    // components into a ribbon: none of them was taller than 1,214px and the
+    // stack came to 4,485px, all of it height that fit-to-view had to pay for
+    // while the space either side went unused.
+    const drawings = components
+      .map((component) =>
+        layoutComponent(component, sizeOf, adjacency, heightBudget, gaps),
+      )
+      .filter((laid) => laid.length > 0)
+      .map((laid) => ({ laid, bounds: boundsOf(laid) }));
 
-      const componentBounds = boundsOf(laid);
+    const shelfGaps = { x: gaps.x * 2, y: gaps.y * 2 };
+    const shelfWidth = Math.max(
+      Math.sqrt(
+        drawings.reduce((sum, d) => sum + d.bounds.w * d.bounds.h, 0) *
+          targetAspect,
+      ),
+      ...drawings.map((d) => d.bounds.w),
+    );
+    const shelves = intoRows(
+      drawings.map((d, index) => ({
+        name: String(index),
+        w: d.bounds.w,
+        h: d.bounds.h,
+      })),
+      shelfWidth,
+      shelfGaps,
+    );
+
+    shelves.forEach((shelf, index) => {
+      const { laid, bounds } = drawings[index];
       placed = placed.concat(
-        shift(laid, -componentBounds.x, bottom - componentBounds.y),
+        shift(laid, shelf.x - bounds.x, shelf.y - bounds.y),
       );
-      bottom += componentBounds.h + gaps.y * 2;
     });
 
-    if (isolated.length > 0) {
+    const bottom = placed.length > 0 ? boundsOf(placed).h + gaps.y * 2 : 0;
+
+    let remaining = isolated;
+
+    if (isolated.length > 0 && placed.length > 0) {
+      const main = boundsOf(placed);
+      const { left, right, leftover } = besideDiagram(isolated, main.h, gaps);
+      remaining = leftover;
+
+      if (left.length > 0) {
+        const x = main.x - gaps.x - columnWidth(left);
+        placed = placed.concat(shift(stackAt(left, x, gaps), 0, main.y));
+      }
+      if (right.length > 0) {
+        const x = main.x + main.w + gaps.x;
+        placed = placed.concat(shift(stackAt(right, x, gaps), 0, main.y));
+      }
+    }
+
+    if (remaining.length > 0) {
       // As wide as the diagram it sits under, so the whole thing reads as one
       // block rather than a wide picture with a long tail beneath it.
       const mainWidth = placed.length > 0 ? boundsOf(placed).w : targetWidth;
-      const rows = intoRows(isolated, Math.max(mainWidth, widest), gaps);
+      const rows = intoRows(remaining, Math.max(mainWidth, widest), gaps);
       const gap = placed.length > 0 ? gaps.y * 3 : 0;
       placed = placed.concat(shift(rows, 0, bottom + gap));
     }
@@ -397,12 +516,25 @@ export const layoutAroundHubs = (
     return bounds.h > 0 ? bounds.w / bounds.h : targetAspect;
   };
 
-  let low = tallest;
+  // The floor is the tallest table that actually goes into a column, which is
+  // not the tallest table there is. Unrelated tables are placed beside the
+  // diagram or beneath it and never enter a column, so letting one set the
+  // floor stops the columns wrapping at all: on a real schema the largest table
+  // was unrelated at 2,744px, the busiest level came to 2,732px, and every
+  // target aspect from 1.25 to 6 returned the identical arrangement because no
+  // budget the search was allowed to try could split that level in two.
+  const tallestConnected = connected.reduce(
+    (max, box) => Math.max(max, box.h),
+    0,
+  );
+  const tallestInColumn = tallestConnected > 0 ? tallestConnected : tallest;
+
+  let low = tallestInColumn;
   let high = Math.max(totalHeight, tallest * 2);
   let best = layoutWith(low);
   let bestMiss = Math.abs(Math.log(aspectOf(best) / targetAspect));
 
-  for (let pass = 0; pass < 24 && high - low > tallest / 4; pass++) {
+  for (let pass = 0; pass < 24 && high - low > tallestInColumn / 4; pass++) {
     const budget = (low + high) / 2;
     const candidate = layoutWith(budget);
     const aspect = aspectOf(candidate);

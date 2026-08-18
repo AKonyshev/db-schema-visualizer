@@ -48,8 +48,9 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
           tableRelationsVisibilityStore.areTableRelationsHidden(name),
         ),
     );
-    // The relation style decides how much room the lines need between tables,
-    // so an arrangement made for curves is tighter than one made for corners.
+    // The relation style decides how much room the lines need between tables.
+    // A right angle is routed round what stands in its way and a curve is not,
+    // so an arrangement made for curves is the roomier of the two.
     const tablesPos = computeTablesPositions(
       tables,
       refs,

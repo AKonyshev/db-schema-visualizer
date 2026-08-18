@@ -6,6 +6,17 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-08-18
+
+### Changed
+
+- Auto-arrange now tucks the tables that have no relations into the space either side of the diagram, instead of gathering them in a block underneath it. A hub-and-spoke diagram is taller than it is wide, so the columns beside it are free: nothing has to reach a table with no relations and nothing is hidden by putting one there, while underneath costs their full height. On an eighteen-table schema whose four unrelated tables were the largest in the file, the arrangement went from 1518x8830 to 3012x4518 — fit-to-view doubled, from 12% to 24%. A table too tall to fit beside the diagram still goes underneath, because using the side would mean making the diagram taller than it already is.
+
+### Fixed
+
+- Auto-arrange aimed at a target shape that never reached the layout. The floor of its search was the tallest table in the schema, and the tallest table is often one with no relations — which is placed beside the diagram or beneath it and never enters a column, so the search had nothing it was allowed to change. Every target shape produced an identical arrangement. Separately, each group of related tables was placed under the last one, so five small groups became a ribbon four times taller than any of them. Both are fixed; on the schema they were found on the two together are worth very little, but the setting now does what it says.
+- Auto-arrange left relations hidden underneath tables when the diagram was drawn with curves. Curves had been given the tighter arrangement of the two, on the reasoning that a curve sweeps through whatever space there is — which it does, including the space a table is standing in. Right angles are routed around what stands between a relation's ends; a curve takes the direct line and passes under it, and tables are drawn over relations, so what it passes under is not drawn at all. Measured on a hub-and-spoke schema, a quarter of every relation's length was hidden. Curves now get the roomier arrangement of the two, which puts them at 8% against 10% for right angles, and the arrangement is about a tenth larger in each direction as a result.
+
 ## [0.14.0] - 2026-08-18
 
 ### Added
