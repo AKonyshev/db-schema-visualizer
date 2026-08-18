@@ -6,6 +6,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+### Fixed
+
+- Auto-arrange left relations hidden underneath tables when the diagram was drawn with curves. Curves had been given the tighter arrangement of the two, on the reasoning that a curve sweeps through whatever space there is — which it does, including the space a table is standing in. Right angles are routed around what stands between a relation's ends; a curve takes the direct line and passes under it, and tables are drawn over relations, so what it passes under is not drawn at all. Measured on a hub-and-spoke schema, a quarter of every relation's length was hidden. Curves now get the roomier arrangement of the two, which puts them at 8% against 10% for right angles, and the arrangement is about a tenth larger in each direction as a result.
+
 ## [0.14.0] - 2026-08-18
 
 ### Added

@@ -196,19 +196,19 @@ describe("gapsFor and the relation style", () => {
     expect(gaps.x).toBeGreaterThan(TABLES_GAP_X * 3);
   });
 
-  // A curve sweeps through whatever space there is, so a diagram drawn for
-  // curves can be the tighter of the two.
-  test("packs tighter for curves", () => {
+  // The opposite of what this file used to assert, and the reason the curve
+  // arrangement was unreadable: a right angle is routed round what is in its
+  // way, a curve takes the direct line and passes under it, and tables are
+  // drawn over relations. So a curve needs the more room of the two.
+  test("gives curves more room than right angles", () => {
     const angles = gapsFor(tables, RelationStyle.Orthogonal);
     const curves = gapsFor(tables, RelationStyle.Bezier);
 
-    expect(curves.x).toBeLessThan(angles.x);
-    expect(curves.y).toBeLessThan(angles.y);
-    expect(curves.x).toBeGreaterThanOrEqual(TABLES_GAP_X);
-    expect(curves.y).toBeGreaterThanOrEqual(TABLES_GAP_Y);
+    expect(curves.x).toBeGreaterThan(angles.x);
+    expect(curves.y).toBeGreaterThan(angles.y);
   });
 
-  test("a diagram drawn for curves comes out smaller", () => {
+  test("a diagram drawn for curves takes the more space", () => {
     const boxes = Array.from({ length: 40 }, (_, i) => ({
       name: `t${i}`,
       w: 450,
@@ -227,7 +227,7 @@ describe("gapsFor and the relation style", () => {
       return w * h;
     };
 
-    expect(areaOf(RelationStyle.Bezier)).toBeLessThan(
+    expect(areaOf(RelationStyle.Bezier)).toBeGreaterThan(
       areaOf(RelationStyle.Orthogonal),
     );
   });

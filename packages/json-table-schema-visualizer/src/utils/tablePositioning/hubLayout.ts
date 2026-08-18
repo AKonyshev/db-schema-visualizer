@@ -35,10 +35,25 @@ interface Gaps {
  * gaps track the tables instead, so there is always somewhere for a line to be
  * seen going.
  *
- * How much room depends on what is drawn in it. Right angles need a corridor
- * wide enough to run a line down and still be told apart from the tables either
- * side. A curve sweeps through whatever space there is and needs far less, so a
- * diagram drawn for curves is the more compact of the two.
+ * How much room depends on what is drawn in it, and the two styles want it for
+ * opposite reasons. Right angles are routed: a line leaves its table, runs down
+ * a corridor and turns in, so it needs a corridor wide enough to be told apart
+ * from the tables either side, and no more. A curve is not routed at all — it
+ * takes the direct line between its ends and passes through whatever stands in
+ * the way, and tables are drawn over relations, so anything it passes through
+ * hides it.
+ *
+ * Which means curves need MORE room than right angles, not less. Measured on a
+ * hub-and-spoke schema by sampling every relation and counting the length that
+ * lands under some other table:
+ *
+ *   room  0.30  0.50  0.75  1.00  1.50
+ *   hidden 25%   20%   14%    8%    4%
+ *
+ * Right angles sit at 10% on 0.75. One is where curves match them while costing
+ * about a tenth more canvas; past that the gain is real but every table is drawn
+ * smaller once the result is fitted to the screen, which is its own kind of
+ * unreadable.
  */
 export const gapsFor = (
   boxes: LayoutBox[],
@@ -48,7 +63,7 @@ export const gapsFor = (
     return { x: TABLES_GAP_X, y: TABLES_GAP_Y };
   }
 
-  const room = style === RelationStyle.Bezier ? 0.3 : 0.75;
+  const room = style === RelationStyle.Bezier ? 1 : 0.75;
 
   const median = (values: number[]): number => {
     const sorted = [...values].sort((a, b) => a - b);
