@@ -4,6 +4,7 @@ import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 import type { XYPosition, XYWHPosition } from "@/types/positions";
 
 import computeTablesPositions from "@/utils/tablePositioning/computeTablesPositions";
+import { tableRelationsVisibilityStore } from "@/stores/tableRelationsVisibilityStore";
 import eventEmitter from "@/events-emitter";
 import { defaultTableCoord } from "@/constants/tableCoords";
 
@@ -36,7 +37,17 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     refs: JSONTableRef[],
     options?: { force?: boolean },
   ): void {
-    const tablesPos = computeTablesPositions(tables, refs);
+    // Hidden relations are hidden from the layout too: a table the reader has
+    // silenced should be arranged as one with no relations, not left sitting in
+    // the middle of a fan it no longer draws.
+    const hidden = new Set(
+      tables
+        .map((table) => table.name)
+        .filter((name) =>
+          tableRelationsVisibilityStore.areTableRelationsHidden(name),
+        ),
+    );
+    const tablesPos = computeTablesPositions(tables, refs, hidden);
 
     if (options?.force !== true) {
       const recoveredStore = this.retrieve(this.currentStoreKey) as Array<

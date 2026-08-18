@@ -222,6 +222,28 @@ const DiagramWrapper = ({
     setHighlightedColumns([]);
   };
 
+  /** Every table's box, drawn or not, in stage coordinates. */
+  const diagramBounds = (): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null => {
+    const coords = [...tableCoordsStore.getCurrentStoreValue().values()].filter(
+      (coord) => coord.w > 0 && coord.h > 0,
+    );
+    if (coords.length === 0) {
+      return null;
+    }
+
+    const left = Math.min(...coords.map((c) => c.x)) + DIAGRAM_PADDING;
+    const top = Math.min(...coords.map((c) => c.y)) + DIAGRAM_PADDING;
+    const right = Math.max(...coords.map((c) => c.x + c.w)) + DIAGRAM_PADDING;
+    const bottom = Math.max(...coords.map((c) => c.y + c.h)) + DIAGRAM_PADDING;
+
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  };
+
   const fitToView = () => {
     if (stageRef.current != null) {
       const stage = stageRef.current;
@@ -229,7 +251,12 @@ const DiagramWrapper = ({
       const containerWidth = container.offsetWidth;
       const containerHeight = container.offsetHeight;
 
-      const contentBounds = stage.getClientRect({ relativeTo: stage });
+      // Measured from the stored coordinates rather than from the stage: with
+      // off-screen tables unmounted, the stage only knows about the ones it is
+      // already showing, and fitting to those would frame a fraction of the
+      // diagram and call it the whole.
+      const contentBounds =
+        diagramBounds() ?? stage.getClientRect({ relativeTo: stage });
       contentBounds.x = contentBounds.x - DIAGRAM_PADDING;
       contentBounds.y = contentBounds.y - DIAGRAM_PADDING;
       contentBounds.width = contentBounds.width + 2 * DIAGRAM_PADDING;
@@ -239,7 +266,6 @@ const DiagramWrapper = ({
       const scale = Math.min(scaleX, scaleY);
 
       stage.scale({ x: scale, y: scale });
-      publishViewport();
       stage.position({
         x:
           (containerWidth - contentBounds.width * scale) / 2 -
@@ -250,6 +276,10 @@ const DiagramWrapper = ({
       });
       stage.batchDraw();
       stageStateStore.set({ scale, position: stage.position() });
+      // After the position, never between it and the scale: a viewport
+      // published half-updated culls against a rectangle that never existed,
+      // and every table disappears.
+      publishViewport();
     }
   };
 
