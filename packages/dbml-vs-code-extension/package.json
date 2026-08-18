@@ -47,7 +47,15 @@
         "icon": {
           "dark": "./icons/dbml-file.svg",
           "light": "./icons/dbml-file.svg"
-        }
+        },
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "dbml",
+        "scopeName": "source.dbml",
+        "path": "./syntaxes/dbml.tmLanguage.json"
       }
     ],
     "customEditors": [
