@@ -6,6 +6,33 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-08-18
+
+### Added
+
+- **A `.dbml` file switches between text and diagram in the same tab.** The diagram is now a custom editor of the file rather than a panel opened beside it, with buttons in the editor title to move between the two views. Opening a file still gives you the text; the diagram is a deliberate choice, and either view can be the one you leave open. The segmented Preview|Markdown control that Markdown has is not reachable from the extension API — this is the closest equivalent that is.
+- **Syntax highlighting for DBML.** The extension declared the language and gave it a file icon but contributed no grammar, so a `.dbml` file opened as plain text. Keywords, strings including the triple-quoted note, the settings bracket with its attribute names, numbers, comments and the cardinality operators are highlighted now. Column types are deliberately left out: DBML does not close that set, so listing the common ones would leave every other type looking wrong. A language configuration comes with it, so `Ctrl+/` comments and brackets match — neither of which worked before.
+- **A choice of how relations are drawn**, curves or right angles, next to auto-arrange. Curves are the default: they read well for as long as a diagram is small enough to take in, which most are, and right angles earn their keep on the large ones. Auto-arrange is told which is in use, because right angles need a corridor wide enough to run a line down while curves sweep through whatever space there is.
+
+### Changed
+
+- **Hiding a table's relations no longer edits the file.** `Alt+H` used to comment `Ref:` lines out of the `.dbml` and mark the table in MetaInfo, while the icon in the table header hid the same relations on the canvas alone — two mechanisms for one idea, and only the destructive one drew the dashed outline. They are one view preference now, remembered per machine and never written to the file. Two consequences worth knowing: the state no longer travels between people through the file, and relations that an earlier version already commented out stay commented out — the extension leaves them alone, and they have to be restored by hand.
+- **Auto-arrange rearranges the schema around its busiest table** instead of drawing layers. The most-connected table sits in the middle and the rest fan out left and right by level; tables with no relations — including those whose relations are hidden — are grouped into a compact block below. The height is chosen so the result fits on screen.
+- **A schema too big to draw at full detail opens with table headers.** Every column row is about eight Konva nodes, so a 5,676-column schema arrived as 46,210 nodes and about 155 ms a frame; the same schema with headers only is 821 nodes and about 3 ms. Full detail is still one keypress away.
+- **Only what is on screen is drawn, at the size it is seen.** Tables outside the view are no longer mounted, and column rows are drawn while a row is at least six screen pixels tall. Zoomed out past that, a table keeps its size and its header but not its rows — long before a name can be read, the rows still say how big a table is and where a relation arrives.
+- **More room between tables at full detail.** Fifty pixels was most of a table when tables were small; at full detail they are around 450 wide and over a thousand tall, and the same fifty pixels left the relation lines lost somewhere behind a wall of blocks.
+- Auto-arrange now reframes the view on the result. Pressing `L` while zoomed in could put the whole new arrangement off screen with nothing on screen changing to say why.
+- A diagram now belongs to its document instead of there being one for the whole window, so several `.dbml` files can be open as diagrams at once.
+
+### Fixed
+
+- `Alt+H` did nothing in the extension while it worked on the site. Three things stood between the chord and the toggle: a workbench binding matching on the language alone consumed it while the diagram had focus, the command posted from inside the webview never reached the page, and once the diagram became a custom editor a single keypress reached both the in-webview shortcut and the extension command — two toggles that cancelled each other out.
+- Hovering a table on a large schema cost about 100 ms. The column map was rebuilt on every pointer move, by an algorithm that was quadratic in the number of columns; it now depends only on the schema and the detail level, as it always did in principle.
+- A hover re-rendered the whole diagram — 117 headers, 93 connections and, at full detail, 5,676 column rows — almost none of which were affected by the table under the pointer. Two tables wake up now.
+- Zoom lagged behind the wheel. Wheel events are coalesced into one frame, and tables and connections are drawn on a layer each so dragging one no longer redraws the other.
+- Auto-arrange could produce an unusable strip. On a 117-table schema the old layout came out 1,980 wide and 145,826 tall, which fit-to-view could only answer by shrinking everything to a blank canvas.
+- Switching a file to the diagram left the original tab open beside it instead of taking it over.
+
 ## [0.13.0] - 2026-07-21
 
 ### Added

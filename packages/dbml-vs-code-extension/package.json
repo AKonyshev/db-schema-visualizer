@@ -2,7 +2,7 @@
   "name": "dbml-schema-visualizer",
   "displayName": "DBML Schema Visualizer",
   "description": "Visualize DBML schemas as ERD diagrams, import from PostgreSQL, and compare with a live database.",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "icon": "assets/logo.png",
   "publisher": "konyshevav",
   "license": "MIT",
