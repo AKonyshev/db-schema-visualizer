@@ -41,6 +41,7 @@ import useLocalStorage from "@/hooks/localStorage";
 import { useKeyboardShortcuts } from "@/hooks/keyboardShortcuts";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 import { computeWheelZoom } from "@/utils/computeWheelZoom";
+import { viewportStore } from "@/stores/viewportStore";
 
 interface DiagramWrapperProps {
   connections: ReactNode;
@@ -63,12 +64,29 @@ const DiagramWrapper = ({
   refs,
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<null | CoreStage>(null);
   const { height: viewHeight, width: viewWidth } = useElementSize(containerRef);
   const { scrollDirection } = useScrollDirectionContext();
+  // Konva is written to directly on pan and zoom, so this is the only thing
+  // that can tell the rest of the app the view moved.
+  const publishViewport = useCallback((): void => {
+    const stage = stageRef.current;
+    if (stage === null) {
+      return;
+    }
+
+    viewportStore.set({
+      scale: stage.scaleX(),
+      x: stage.x(),
+      y: stage.y(),
+      width: stage.width(),
+      height: stage.height(),
+    });
+  }, []);
+
   const { onChange: onGrabbing, onRestore: onGrabRelease } =
     useCursorChanger("grabbing");
   const themeColors = useThemeColors();
-  const stageRef = useRef<null | CoreStage>(null);
 
   // repositioning the stage only once
   const { scale: defaultStageScale, position: defaultStagePosition } =
@@ -95,7 +113,14 @@ const DiagramWrapper = ({
     });
     stageRef.current.position(defaultStagePosition);
     hasPositionedStage.current = true;
-  }, [defaultStageScale, defaultStagePosition, viewWidth, viewHeight]);
+    publishViewport();
+  }, [
+    defaultStageScale,
+    defaultStagePosition,
+    viewWidth,
+    viewHeight,
+    publishViewport,
+  ]);
 
   const pendingWheelRef = useRef<PendingWheelEvent | null>(null);
   const wheelFrameRef = useRef<number | null>(null);
@@ -124,7 +149,8 @@ const DiagramWrapper = ({
     stage.position(position);
     stage.batchDraw();
     stageStateStore.set({ scale, position });
-  }, [scrollDirection]);
+    publishViewport();
+  }, [scrollDirection, publishViewport]);
 
   useEffect(
     () => () => {
@@ -213,6 +239,7 @@ const DiagramWrapper = ({
       const scale = Math.min(scaleX, scaleY);
 
       stage.scale({ x: scale, y: scale });
+      publishViewport();
       stage.position({
         x:
           (containerWidth - contentBounds.width * scale) / 2 -
@@ -432,6 +459,7 @@ const DiagramWrapper = ({
         draggable
         ref={stageRef}
         onDragStart={onGrabbing}
+        onDragMove={publishViewport}
         onDragEnd={onGrabRelease}
         onWheel={handleZooming}
         onMouseDown={handleStagePointerDown}
