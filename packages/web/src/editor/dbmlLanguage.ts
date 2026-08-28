@@ -13,7 +13,8 @@ const escapeForRegExp = (literal: string): string =>
 // highlighting applying, quietly.
 export const DBML_LANGUAGE_ID = "dbml";
 
-export const DBML_THEME_ID = "dbml-dark";
+export const DBML_DARK_THEME_ID = "dbml-dark";
+export const DBML_LIGHT_THEME_ID = "dbml-light";
 
 // The stock `vs-dark` theme cannot express what this grammar means. Its
 // `metatag` is a saturated salmon — the layout block would be the loudest thing
@@ -24,7 +25,7 @@ export const DBML_THEME_ID = "dbml-dark";
 // So the token names above are this grammar's own, and this theme is what gives
 // them meaning. Built on `vs-dark`, so anything not listed keeps its familiar
 // colour.
-export const DBML_THEME: editor.IStandaloneThemeData = {
+export const DBML_DARK_THEME: editor.IStandaloneThemeData = {
   base: "vs-dark",
   inherit: true,
   rules: [
@@ -41,7 +42,50 @@ export const DBML_THEME: editor.IStandaloneThemeData = {
     // you go looking.
     { token: "metainfo", foreground: "6E6E6E", fontStyle: "italic" },
   ],
-  colors: {},
+  // The editor sits in the page rather than in a window of its own, so it takes
+  // the page's surface instead of Monaco's near-black. The values are the dark
+  // palette's `surface-sunken` and `text`; a stylesheet cannot reach in here.
+  colors: {
+    "editor.background": "#0b0d11",
+    "editor.foreground": "#e6e9ef",
+    "editorLineNumber.foreground": "#3a4150",
+    "editorLineNumber.activeForeground": "#98a2b3",
+    "editorCursor.foreground": "#4f8cff",
+    "editor.selectionBackground": "#1d4ed855",
+    "editor.lineHighlightBackground": "#171a21",
+  },
+};
+
+/**
+ * The same grammar in daylight.
+ *
+ * Not `vs` with the dark rules left on: every foreground here is chosen against
+ * a white page, and the two themes are the same categories in two keys — a
+ * keyword is a keyword in both, and the layout block stays the quietest thing on
+ * screen in both.
+ */
+export const DBML_LIGHT_THEME: editor.IStandaloneThemeData = {
+  base: "vs",
+  inherit: true,
+  rules: [
+    { token: "keyword", foreground: "1D4ED8" },
+    { token: "identifier", foreground: "0F172A" },
+    { token: "string", foreground: "B45309" },
+    { token: "number", foreground: "15803D" },
+    { token: "comment", foreground: "64748B" },
+    { token: "setting.bracket", foreground: "0E7490" },
+    { token: "setting.value", foreground: "9333EA" },
+    { token: "metainfo", foreground: "94A3B8", fontStyle: "italic" },
+  ],
+  colors: {
+    "editor.background": "#f1f5f9",
+    "editor.foreground": "#0f172a",
+    "editorLineNumber.foreground": "#cbd5e1",
+    "editorLineNumber.activeForeground": "#64748b",
+    "editorCursor.foreground": "#2563eb",
+    "editor.selectionBackground": "#93c5fd66",
+    "editor.lineHighlightBackground": "#e2e8f0",
+  },
 };
 
 // Written from scratch: the extension declares the language and its file icon

@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { applyThemeClass } from "json-table-schema-visualizer/src/hooks/theme";
 import { initI18n } from "json-table-schema-visualizer/src/i18n/initI18n";
 import { forgetAllDocuments } from "json-table-schema-visualizer/src/stores/forgetAllDocuments";
 import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
@@ -19,6 +20,11 @@ import {
   type Session,
 } from "./session/session";
 import { readStoredSession } from "./session/sessionStorage";
+import {
+  preferredTheme,
+  readStoredTheme,
+  systemPrefersDark,
+} from "./theme/preferredTheme";
 
 // The visualizer's own stylesheet, not a copy of it: the Tailwind directives and
 // the full-height rules are the same for either host, and a second file would
@@ -30,6 +36,10 @@ import "json-table-schema-visualizer/src/styles/index.css";
 initI18n(resolveBrowserLocale(navigator.languages));
 
 setupMonaco();
+
+// Before anything renders, so the first paint is not the wrong theme corrected
+// a frame later. `usePageTheme` keeps it in step from here on.
+applyThemeClass(preferredTheme(readStoredTheme(), systemPrefersDark()));
 
 /**
  * What a reader lands on when nothing has been stored yet.

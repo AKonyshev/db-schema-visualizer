@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import DiagramApp from "json-table-schema-visualizer/src/components/DiagramApp/DiagramApp";
-import { useCreateTheme } from "json-table-schema-visualizer/src/hooks/theme";
+import { Theme } from "json-table-schema-visualizer/src/types/theme";
 import { switchDocument } from "json-table-schema-visualizer/src/stores/switchDocument";
 import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
 import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDirection";
@@ -37,6 +37,7 @@ import {
   type Session,
 } from "./session/session";
 import { useSessionPersistence } from "./session/useSessionPersistence";
+import { usePageTheme } from "./theme/usePageTheme";
 
 export interface AppProps {
   /** Restored from storage by the entry point, which has already pointed the
@@ -129,7 +130,7 @@ const App = ({
     () => parseDbmlText(debouncedText),
     [debouncedText],
   );
-  const { theme, themeColors, setTheme } = useCreateTheme();
+  const { theme, themeColors, setTheme } = usePageTheme();
 
   useSessionPersistence(session, sessionRef);
 
@@ -326,7 +327,7 @@ const App = ({
   }, [applyToSession]);
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full bg-surface text-content">
       <FileTree
         catalogFiles={catalog?.files ?? []}
         localFiles={session.localFiles}
@@ -354,6 +355,7 @@ const App = ({
                 // Typing into a page with nothing open would go nowhere:
                 // `updateSelectedText` has no document to write to.
                 readOnly={selected === null}
+                dark={theme === Theme.dark}
                 onChange={(next) => {
                   // Monaco reports the edits the page itself wrote back into
                   // it, and those are not the reader's: restoring a project

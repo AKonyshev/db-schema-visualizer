@@ -1,5 +1,10 @@
 import { parseDbmlText } from "../../document/parseDbmlText";
-import { DBML_LANGUAGE_ID, DBML_THEME, DBML_TOKENS } from "../dbmlLanguage";
+import {
+  DBML_DARK_THEME,
+  DBML_LANGUAGE_ID,
+  DBML_LIGHT_THEME,
+  DBML_TOKENS,
+} from "../dbmlLanguage";
 
 // A snippet per keyword, each the smallest thing that uses it. The parser is the
 // judge: if it accepts the snippet the keyword is real, and if the grammar has
@@ -68,24 +73,62 @@ describe("the DBML language definition", () => {
   // vs-dark paints `metatag` a saturated salmon and gives `attribute.value` the
   // string colour, so leaning on it would have made the layout block the
   // loudest thing on screen and settings indistinguishable from strings. These
-  // assertions are what stop a later simplification from going back to it.
-  test("dims the layout block rather than letting the base theme shout it", () => {
-    const rule = DBML_THEME.rules.find((r) => r.token === "metainfo");
-    const identifier = DBML_THEME.rules.find((r) => r.token === "identifier");
+  // assertions are what stop a later simplification from going back to it —
+  // and they run over both themes, because a second theme is exactly where a
+  // guarantee like this gets forgotten.
+  const THEMES = {
+    dark: DBML_DARK_THEME,
+    light: DBML_LIGHT_THEME,
+  };
 
-    expect(rule?.foreground).toBeDefined();
-    expect(rule?.foreground).not.toBe(identifier?.foreground);
-    // Dimmer than body text: every channel darker.
-    const dim = parseInt(rule?.foreground ?? "ffffff", 16);
-    const body = parseInt(identifier?.foreground ?? "000000", 16);
-    expect(dim).toBeLessThan(body);
-  });
+  const channels = (hex: string): number[] => [
+    parseInt(hex.slice(0, 2), 16),
+    parseInt(hex.slice(2, 4), 16),
+    parseInt(hex.slice(4, 6), 16),
+  ];
 
-  test("gives setting values a colour of their own, not the string colour", () => {
-    const setting = DBML_THEME.rules.find((r) => r.token === "setting.value");
-    const string = DBML_THEME.rules.find((r) => r.token === "string");
+  // How far a colour stands out from the page it is written on. Distance rather
+  // than "darker": on a light theme dimmer means lighter, and a test that said
+  // "smaller number" would pass on one theme and be nonsense on the other.
+  const contrastWithBackground = (
+    theme: (typeof THEMES)[keyof typeof THEMES],
+    token: string,
+  ): number => {
+    const rule = theme.rules.find((candidate) => candidate.token === token);
+    const foreground = rule?.foreground;
+    expect(foreground).toBeDefined();
 
-    expect(setting?.foreground).toBeDefined();
-    expect(setting?.foreground).not.toBe(string?.foreground);
+    const background = theme.colors["editor.background"].replace("#", "");
+
+    return channels(foreground ?? "")
+      .map((value, index) => Math.abs(value - channels(background)[index]))
+      .reduce((total, value) => total + value, 0);
+  };
+
+  const foregroundOf = (
+    theme: (typeof THEMES)[keyof typeof THEMES],
+    token: string,
+  ): string | undefined =>
+    theme.rules.find((candidate) => candidate.token === token)?.foreground;
+
+  describe.each(Object.entries(THEMES))("the %s theme", (_name, theme) => {
+    test("dims the layout block rather than letting the base theme shout it", () => {
+      expect(contrastWithBackground(theme, "metainfo")).toBeLessThan(
+        contrastWithBackground(theme, "identifier"),
+      );
+    });
+
+    test("gives setting values a colour of their own, not the string colour", () => {
+      expect(foregroundOf(theme, "setting.value")).toBeDefined();
+      expect(foregroundOf(theme, "setting.value")).not.toBe(
+        foregroundOf(theme, "string"),
+      );
+    });
+
+    test("paints the editor in the page's own surface, not Monaco's default", () => {
+      // The editor sits inside the page rather than in a window of its own, so
+      // a background it brought with it would be a hole in the layout.
+      expect(theme.colors["editor.background"]).toBeDefined();
+    });
   });
 });
