@@ -19,6 +19,9 @@ const DEFAULT_TIMEOUT_MS = 5_000;
  * the catalogue existed.
  */
 export const loadCatalog = async (
+  // A parameter for one reason: the abort below is the branch most likely to be
+  // wrong and the only one no caller can reach, so the test needs a way to wait
+  // a millisecond instead of five seconds. The page never passes it.
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
 ): Promise<Catalog | null> => {
   const controller = new AbortController();

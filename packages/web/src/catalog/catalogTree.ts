@@ -50,14 +50,15 @@ const emptyBuilder = (path: string): FolderBuilder => ({
   files: [],
 });
 
-const finish = (builder: FolderBuilder): CatalogNode[] =>
+// The builder's mutable maps as the immutable, ordered nodes a reader sees.
+const toNodes = (builder: FolderBuilder): CatalogNode[] =>
   sortNodes([
     ...[...builder.folders.values()].map(
       (child): CatalogFolderNode => ({
         kind: "folder",
         name: fileNameOf(child.path),
         path: child.path,
-        children: finish(child),
+        children: toNodes(child),
       }),
     ),
     ...builder.files,
@@ -87,7 +88,7 @@ export const buildTree = (files: CatalogFile[]): CatalogNode[] => {
     folder.files.push({ kind: "file", name, file });
   }
 
-  return finish(root);
+  return toNodes(root);
 };
 
 const matches = (node: CatalogFileNode, needle: string): boolean =>

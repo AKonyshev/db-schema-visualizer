@@ -20,9 +20,15 @@ export interface CatalogSidebarProps {
 const ROW_CLASS =
   "flex w-full items-center gap-1 truncate rounded py-1 pr-2 text-left text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400";
 
-interface NodesProps {
-  nodes: CatalogNode[];
-  depth: number;
+/**
+ * Everything a row needs that is the same for every row.
+ *
+ * One object rather than five props, because the recursion below re-threads all
+ * five through every level of the tree unchanged: as separate props they read
+ * as five things that might differ per level, and they never do. Only `nodes`
+ * and `depth` actually change on the way down.
+ */
+interface TreeView {
   collapsed: Set<string>;
   activePath: string | null;
   failedPath: string | null;
@@ -30,25 +36,23 @@ interface NodesProps {
   onOpen: (file: CatalogFile) => void;
 }
 
+interface NodesProps {
+  nodes: CatalogNode[];
+  depth: number;
+  view: TreeView;
+}
+
 // Recursive rather than flattened, because the nesting is the tree: a flat list
 // carrying a depth would have to rebuild the parent-child relation to answer
 // either question the reader asks of it — how deep is this, and what does
 // collapsing that hide.
-const Nodes = ({
-  nodes,
-  depth,
-  collapsed,
-  activePath,
-  failedPath,
-  onToggle,
-  onOpen,
-}: NodesProps): JSX.Element => (
+const Nodes = ({ nodes, depth, view }: NodesProps): JSX.Element => (
   <ul className="list-none">
     {nodes.map((node) => {
       const indent = { paddingLeft: `${depth * 12 + 8}px` };
 
       if (node.kind === "folder") {
-        const open = !collapsed.has(node.path);
+        const open = !view.collapsed.has(node.path);
 
         return (
           <li key={`folder:${node.path}`}>
@@ -58,7 +62,7 @@ const Nodes = ({
               style={indent}
               className={`${ROW_CLASS} text-neutral-300 hover:bg-neutral-700`}
               onClick={() => {
-                onToggle(node.path);
+                view.onToggle(node.path);
               }}
             >
               {/* Triangles rather than chevron glyphs: they are in every font
@@ -69,22 +73,14 @@ const Nodes = ({
               <span className="truncate">{node.name}</span>
             </button>
             {open && (
-              <Nodes
-                nodes={node.children}
-                depth={depth + 1}
-                collapsed={collapsed}
-                activePath={activePath}
-                failedPath={failedPath}
-                onToggle={onToggle}
-                onOpen={onOpen}
-              />
+              <Nodes nodes={node.children} depth={depth + 1} view={view} />
             )}
           </li>
         );
       }
 
-      const active = node.file.path === activePath;
-      const failed = node.file.path === failedPath;
+      const active = node.file.path === view.activePath;
+      const failed = node.file.path === view.failedPath;
 
       return (
         <li key={`file:${node.file.path}`}>
@@ -101,7 +97,7 @@ const Nodes = ({
                 : "text-neutral-300 hover:bg-neutral-700"
             }`}
             onClick={() => {
-              onOpen(node.file);
+              view.onOpen(node.file);
             }}
           >
             <span className="truncate">{node.file.title}</span>
@@ -194,23 +190,25 @@ const CatalogSidebar = ({
         <Nodes
           nodes={shown}
           depth={0}
-          collapsed={collapsed}
-          activePath={activePath}
-          failedPath={failedPath}
-          onToggle={(path) => {
-            setCollapsed((current) => {
-              const next = new Set(current);
+          view={{
+            collapsed,
+            activePath,
+            failedPath,
+            onToggle: (path) => {
+              setCollapsed((current) => {
+                const next = new Set(current);
 
-              if (next.has(path)) {
-                next.delete(path);
-              } else {
-                next.add(path);
-              }
+                if (next.has(path)) {
+                  next.delete(path);
+                } else {
+                  next.add(path);
+                }
 
-              return next;
-            });
+                return next;
+              });
+            },
+            onOpen,
           }}
-          onOpen={onOpen}
         />
       </div>
     </div>
