@@ -48,10 +48,38 @@ ENV NODE_OPTIONS=--max-old-space-size=4096
 
 RUN yarn workspace web build
 
+# The catalogue's folder, as a stage rather than a plain COPY so that BuildKit
+# can replace it wholesale:
+#
+#   docker build --build-context schemas=/anywhere/on/disk ...
+#
+# A plain COPY cannot reach outside the build context, and the build context
+# here is the repository — so without this an operator could only bake in
+# schemas that live in this repository, which is not where anyone's schemas
+# live.
+#
+# The default is `packages/web/schemas/`, which holds nothing but a `.gitkeep`.
+# An image built without the flag therefore carries an empty catalogue and is
+# the site exactly as it was before any of this existed.
+FROM scratch AS schemas
+COPY packages/web/schemas/ /
+
 FROM nginx:alpine AS serve
 
 COPY packages/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /repo/packages/web/dist /usr/share/nginx/html
+
+# Outside the document root on purpose: a volume can be mounted over this path
+# without touching the bundle, and it can be mounted read-only — which is why
+# the manifest the scanner writes goes somewhere else entirely.
+COPY --from=schemas / /srv/schemas
+
+# The official image runs everything executable in this directory before
+# starting the server, so the manifest is rebuilt on every start and a swapped
+# volume needs no rebuild of the image.
+COPY packages/web/docker/schema-manifest.sh /docker-entrypoint.d/40-schema-manifest.sh
+RUN chmod +x /docker-entrypoint.d/40-schema-manifest.sh \
+ && mkdir -p /var/lib/dbml-schema-visualizer
 
 # Above 1024 so the server needs no privileged port and the image can run as a
 # non-root user where the operator's platform asks for one.
