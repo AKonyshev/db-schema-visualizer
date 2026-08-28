@@ -125,9 +125,9 @@ const bootstrap = async (): Promise<void> => {
   const container = document.getElementById("app");
 
   if (container !== null) {
-    // The catalogue reaches `App` in the change that draws the tree; here it is
-    // only what the first visit was built from.
-    createRoot(container).render(<App initialWorkspace={workspace} />);
+    createRoot(container).render(
+      <App initialWorkspace={workspace} catalog={catalog} />,
+    );
   }
 };
 
