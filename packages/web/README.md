@@ -120,16 +120,27 @@ yarn workspace web test
 
 Unit tests, in Node with no DOM, over the pure functions: parsing DBML text,
 deriving a download filename, the workspace of tabs, the editor's grammar, the
-browser-locale resolver.
+browser-locale resolver, and the catalogue — its manifest, its folder tree, and
+the two functions that fetch them.
+
+One test in that suite is not over a pure function:
+`src/catalog/__tests__/schemaManifestScript.test.ts` spawns `sh` on the
+container's manifest scanner against fixture folders in the temp directory. It
+is the only way to test the script that ships instead of a TypeScript copy of
+it, and it cannot see BusyBox — the shell and awk it runs are this machine's,
+not the image's, which is why the container is also checked by hand.
 
 ```bash
 yarn build:web && yarn test:e2e
 ```
 
-One browser test, against the built output rather than the dev server. It is the
-only check in the repository capable of catching an editor that is fetched at run
-time instead of bundled — with that mistake the types compile, the unit tests
-pass, the container starts, and the left half of the page is empty.
+Two browser tests, against the built output rather than the dev server. The
+first is the only check in the repository capable of catching an editor that is
+fetched at run time instead of bundled — with that mistake the types compile,
+the unit tests pass, the container starts, and the left half of the page is
+empty. The second covers the schema catalogue, supplying one with `page.route`
+because the built output has none: the catalogue is the container's, not the
+bundle's.
 
 It needs a build first, and deliberately does not run one: a stale `dist` should
 fail the test rather than be quietly repaired by it.

@@ -20,6 +20,19 @@ Two things follow from where it sits:
   does not. `yarn test` tests the working tree rather than the staged snapshot,
   so with a dirty tree it can pass on code the commit does not contain.
 
+## One suite in the sweep is not pure
+
+`packages/web/src/catalog/__tests__/schemaManifestScript.test.ts` runs the
+container's manifest scanner — a shell script — by spawning `sh` against fixture
+folders under the system temp directory. It is in the sweep, and therefore on
+every commit, which is a deliberate trade: the script decides what the site
+shows, and reimplementing its extraction in TypeScript to keep the suite pure
+would test a second copy of the logic rather than the one that ships.
+
+What it cannot see is BusyBox. The `sh` and `awk` it runs are the developer
+machine's; the image serves Alpine's. That gap is closed by hand, against a
+built container, and by nothing else.
+
 ## Each package owns its own suite
 
 A package's `test` script and its `jest.config.js` are the package's business.
@@ -52,7 +65,7 @@ The two sweeps share their package discovery (`scripts/workspace-packages.js`)
 so that "which packages exist" cannot answer differently for tests than it does
 for types.
 
-## The one browser test, and why it is not in the sweep
+## The browser tests, and why they are not in the sweep
 
 `packages/web` has a second suite that `yarn test` does not run:
 
@@ -60,12 +73,19 @@ for types.
 yarn build:web && yarn test:e2e
 ```
 
-One Playwright test against the built site. It is the only check here that can
-catch an editor fetched over the network at run time instead of bundled — the
-failure where the types compile, every unit test passes, the container starts,
-and half the page is empty on a closed network. It asserts the editor is really
-there, that typed DBML reaches the diagram, and that no request leaves the
-origin.
+Playwright, against the built site, in two files.
+
+`e2e/site.spec.ts` is the smoke test, and the only check here that can catch an
+editor fetched over the network at run time instead of bundled — the failure
+where the types compile, every unit test passes, the container starts, and half
+the page is empty on a closed network. It asserts the editor is really there,
+that typed DBML reaches the diagram, and that no request leaves the origin.
+
+`e2e/catalog.spec.ts` covers the schema catalogue: a deployment whose image was
+built around a folder of `.dbml` files. The catalogue is served by the
+container's nginx and is not in `dist`, so the test supplies it with
+`page.route` — both paths are same-origin, which is what keeps the smoke test's
+promise intact rather than quietly widening it.
 
 It is out of the sweep deliberately, and out of the pre-commit hook with it:
 
@@ -73,17 +93,18 @@ It is out of the sweep deliberately, and out of the pre-commit hook with it:
   ~15-second bundle on every commit. A browser test that quietly ran against
   last week's `dist` would be worse than not running it at all, so the test does
   not build either — a stale `dist` fails it rather than being repaired by it.
-- **It is `*.spec.ts`, not `*.test.ts`.** `scripts/test.js` discovers the latter,
-  so the trap described above — a package with tests and no `test` script — does
-  not fire for `e2e/`. That is the intended exemption rather than an oversight,
-  and this section is where it is recorded.
+- **They are `*.spec.ts`, not `*.test.ts`.** `scripts/test.js` discovers the
+  latter, so the trap described above — a package with tests and no `test`
+  script — does not fire for `e2e/`. That is the intended exemption rather than
+  an oversight, and this section is where it is recorded.
 
 Its files _are_ type-checked: `packages/web/tsconfig.json` includes `e2e/**` and
 `playwright.config.ts`, so `yarn typecheck` covers them. The package's `build`
 script uses `tsconfig.build.json` instead, which excludes both — the container
 image should not need Playwright installed to compile the site.
 
-The test's own guard was verified by breaking it: externalising the editor and
+The smoke test's own guard was verified by breaking it: externalising the editor
+and
 pointing an import map at a CDN made the build succeed and the test fail. See
 the ticket comments in the local tracker for the measurements.
 
@@ -103,7 +124,7 @@ because the behaviour lives in the workbench, not in our code: `vscode.openWith`
 routes through `editorService.openEditor` and cannot replace an editor, so the
 commands open the replacement and then close what it replaced.
 
-Out of the sweep for the same shape of reasons as the browser test, plus one of
+Out of the sweep for the same shape of reasons as the browser tests, plus one of
 its own:
 
 - **It needs a build**, and the script does it (`yarn build && yarn compile-tests
