@@ -11,4 +11,20 @@ import { workspaceReactResolve } from "../../vite.workspace-react.js";
 export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   resolve: workspaceReactResolve,
+  // Relative, because the site is copied into a subdirectory of the
+  // documentation build (`/_dbml/`) as well as being served from the root of
+  // its own image. Absolute `/assets/…` would resolve against the documentation
+  // site's root, where there is no such directory.
+  base: "./",
+  build: {
+    rollupOptions: {
+      // Two documents, one bundle. The frame's chunk carries no editor because
+      // nothing it imports reaches `setupMonaco` — that is the mechanism, and it
+      // is why the frame is not a flag on the main entry.
+      input: {
+        main: "index.html",
+        embed: "embed.html",
+      },
+    },
+  },
 });
