@@ -49,6 +49,13 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "files.show": "Показать дерево файлов",
   "files.openFailed": "Не удалось открыть файл",
   "legend.title": "Горячие клавиши",
+  "embed.noTablesLeft": "Ни одна из указанных таблиц не найдена в этой схеме",
+  "embed.notFound": "Модель не найдена",
+  "embed.srcInvalid": "Недопустимый путь к модели",
+  "embed.srcMissing": "Не указан путь к модели",
+  "embed.tableAmbiguous":
+    "Это имя принадлежит нескольким таблицам — укажите полное имя",
+  "embed.tableMissing": "Таблица не найдена",
   "message.noTables": "Таблицы не найдены",
   "message.noSchema": "Схема не найдена",
   "search.tooltip": "Нажмите ⌘+F или Ctrl+F для поиска",
