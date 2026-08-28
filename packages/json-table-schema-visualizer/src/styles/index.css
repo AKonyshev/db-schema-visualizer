@@ -1,12 +1,63 @@
 @tailwind base;
 @tailwind utilities;
 
+/**
+ * The palette, as custom properties.
+ *
+ * These values are `styles/palette.ts` written a second time, because CSS
+ * cannot import from TypeScript. `styles/__tests__/palette.test.ts` reads this
+ * file and fails when the two disagree, so the duplication cannot rot quietly.
+ *
+ * Both Tailwind configs map these to colour utilities, which is why a component
+ * says `bg-surface-raised` rather than `bg-neutral-800 dark:bg-gray-700`: the
+ * theme is decided here, once, instead of at every element.
+ */
 @layer base {
+  :root {
+    --surface: #ffffff;
+    --surface-raised: #f8fafc;
+    --surface-sunken: #f1f5f9;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --accent: #2563eb;
+    --accent-contrast: #ffffff;
+    --accent-soft: #93c5fd;
+    --danger: #dc2626;
+    --warning: #d97706;
+    --success: #16a34a;
+  }
+
+  /* `darkMode: "selector"` in both Tailwind configs, and the class goes on the
+     document root: the whole page turns over at once rather than the half of it
+     the viewer happens to own. */
+  .dark {
+    --surface: #0f1115;
+    --surface-raised: #171a21;
+    --surface-sunken: #0b0d11;
+    --border: #262b36;
+    --border-strong: #3a4150;
+    --text: #e6e9ef;
+    --text-muted: #98a2b3;
+    --accent: #4f8cff;
+    --accent-contrast: #0b0d11;
+    --accent-soft: #1d4ed8;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --success: #4ade80;
+  }
+
   html,
   body,
   #app {
     width: 100%;
     height: 100%;
     margin: 0;
+  }
+
+  body {
+    background-color: var(--surface);
+    color: var(--text);
   }
 }

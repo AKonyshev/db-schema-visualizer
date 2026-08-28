@@ -1,53 +1,56 @@
 import type { ThemeColors } from "@/types/theme";
 
-export const defaultThemeConfig: ThemeColors = {
-  text: {
-    "900": "#636363",
-    "700": "#9C9C9C",
-  },
-  connection: {
-    active: "#029CFD",
-    default: "#888",
-  },
-  colAccent: "aliceblue",
-  table: {
-    bg: "white",
-    shadow: "black",
-  },
-  tableHeader: {
-    bg: "#F8FAFC",
-    fg: "black",
-  },
-  red: "red",
-  green: "#00FF00",
-  enumItem: "#ccc",
-  white: "white",
-  noteBg: "#000000d6",
-  bg: "white",
-};
+import { darkPalette, lightPalette, type Palette } from "@/styles/palette";
 
-export const darkThemeConfig: ThemeColors = {
+/**
+ * The canvas half of the palette.
+ *
+ * Konva takes hex strings, not classes, so the diagram cannot read the custom
+ * properties the chrome uses. It reads the same values from the same file
+ * instead — which is the point: before this, the toolbar and the tables it sat
+ * over were themed by two different sets of greys that nobody had ever compared
+ * side by side.
+ *
+ * A few colours stay outside the palette because they are not roles anything
+ * else has: the shadow under a table, and the background of a note bubble that
+ * has to stay legible over both a table and the canvas behind it.
+ */
+const themeFrom = (
+  palette: Palette,
+  extras: { shadow: string; noteBg: string },
+): ThemeColors => ({
   text: {
-    "900": "#E6E6E6",
-    "700": "#B3B3B3",
+    "900": palette.text,
+    "700": palette.textMuted,
   },
   connection: {
-    active: "#00BFFF",
-    default: "#888888",
+    active: palette.accent,
+    default: palette.borderStrong,
   },
-  colAccent: "#333333",
+  colAccent: palette.surfaceSunken,
   table: {
-    bg: "#2F2F2F",
-    shadow: "rgba(255, 255, 255, 0.1)",
+    bg: palette.surfaceRaised,
+    shadow: extras.shadow,
   },
   tableHeader: {
-    bg: "#1E1E1E",
-    fg: "#CCCCCC",
+    bg: palette.surfaceSunken,
+    fg: palette.text,
   },
-  red: "#FF6347",
-  green: "#32CD32",
-  enumItem: "#999999",
-  white: "#FFFFFF",
-  noteBg: "#3F3F3F",
-  bg: "#1A1A1A",
-};
+  red: palette.danger,
+  green: palette.success,
+  enumItem: palette.textMuted,
+  // The label drawn on a field's type chip, which is painted in the accent.
+  white: palette.accentContrast,
+  noteBg: extras.noteBg,
+  bg: palette.surface,
+});
+
+export const defaultThemeConfig: ThemeColors = themeFrom(lightPalette, {
+  shadow: "rgba(15, 23, 42, 0.18)",
+  noteBg: "rgba(15, 23, 42, 0.88)",
+});
+
+export const darkThemeConfig: ThemeColors = themeFrom(darkPalette, {
+  shadow: "rgba(0, 0, 0, 0.45)",
+  noteBg: "rgba(23, 26, 33, 0.94)",
+});
