@@ -51,10 +51,15 @@ describe("parseManifest", () => {
     ).toBeNull();
   });
 
-  it("refuses a default that names no file in the list", () => {
-    // The site asks for `default` before the first render. A name nothing backs
-    // would leave a new reader waiting on a request that ends in a 404.
-    expect(parseManifest({ ...valid, default: "gone.dbml" })).toBeNull();
+  it("drops a default that names no file, and keeps the catalogue", () => {
+    // The site asks for `default` before the first render, so a name nothing
+    // backs would leave a new reader waiting on a request that ends in a 404.
+    // Dropping it costs them the opening schema; refusing the manifest over it
+    // would cost them the whole tree, with a file list that was never wrong.
+    const parsed = parseManifest({ ...valid, default: "gone.dbml" });
+
+    expect(parsed?.defaultPath).toBeNull();
+    expect(parsed?.files).toHaveLength(2);
   });
 
   it("refuses a default that is neither a string nor null", () => {

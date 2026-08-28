@@ -56,15 +56,15 @@ export const parseManifest = (parsed: unknown): Catalog | null => {
     return null;
   }
 
-  // A default naming no file is worse than no default at all: it is asked for
-  // before the first render, so the one thing it can produce is a failed
-  // request in front of a reader who has not done anything yet.
-  if (
-    defaultPath !== null &&
-    !files.some((file) => file.path === defaultPath)
-  ) {
-    return null;
-  }
+  // A default naming no file is dropped rather than taken at its word: it is
+  // asked for before the first render, so the one thing it could produce is a
+  // failed request in front of a reader who has not done anything yet.
+  //
+  // Dropped, and not grounds for refusing the whole manifest — the file list is
+  // the catalogue, and one bad name in the field beside it is no reason to take
+  // a reader's entire tree away.
+  const named =
+    defaultPath !== null && files.some((file) => file.path === defaultPath);
 
-  return { files, defaultPath };
+  return { files, defaultPath: named ? defaultPath : null };
 };
