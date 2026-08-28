@@ -1,5 +1,8 @@
 import DiagramApp from "json-table-schema-visualizer/src/components/DiagramApp/DiagramApp";
-import { useCreateTheme } from "json-table-schema-visualizer/src/hooks/theme";
+import {
+  useCreateTheme,
+  useThemeClass,
+} from "json-table-schema-visualizer/src/hooks/theme";
 import { type Theme } from "json-table-schema-visualizer/src/types/theme";
 import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDirection";
 
@@ -20,6 +23,11 @@ const App = () => {
   const { setTheme, theme, themeColors } = useCreateTheme(
     window.EXTENSION_DEFAULT_CONFIG?.theme,
   );
+  // The palette is declared on `:root` and `.dark`, so the webview's own body —
+  // which is outside the diagram — needs the class too, or a dark VS Code gets a
+  // page in daylight colours around the diagram.
+  useThemeClass(theme);
+
   const { schema, key, schemaErrorMessage, rawContent } = useSchema();
   const supportsDbmlFileSync =
     window.EXTENSION_DEFAULT_CONFIG?.supportsDbmlFileSync === true;

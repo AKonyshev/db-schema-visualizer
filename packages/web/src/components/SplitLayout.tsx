@@ -83,7 +83,7 @@ const SplitLayout = ({ left, right }: SplitLayoutProps): JSX.Element => {
           }
           event.preventDefault();
         }}
-        className="w-1 shrink-0 cursor-col-resize bg-neutral-700 hover:bg-neutral-500 focus:bg-neutral-400 focus:outline-none"
+        className="w-px shrink-0 cursor-col-resize bg-subtle transition-colors hover:w-1 hover:bg-accent focus:w-1 focus:bg-accent focus:outline-none"
       />
       <div className="h-full min-w-0 flex-1">{right}</div>
     </div>

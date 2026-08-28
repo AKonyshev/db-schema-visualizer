@@ -84,12 +84,12 @@ const ExportMenu = ({
         // trigger, aria-controls pointing here.
         <div
           id={PANEL_ID}
-          className="absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 overflow-hidden rounded-lg bg-gray-100 shadow-lg dark:bg-gray-700"
+          className="absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 overflow-hidden rounded-xl border border-subtle bg-surface-raised shadow-xl shadow-black/10"
         >
           {items.map((item) => (
             <button
               key={item.labelKey}
-              className="block w-full whitespace-nowrap px-4 py-2 text-left text-xs text-gray-800 hover:bg-gray-200 dark:text-gray-200 dark:hover:bg-gray-600"
+              className="block w-full whitespace-nowrap px-4 py-2 text-left text-xs text-content hover:bg-accent/10"
               onClick={() => {
                 // Close first: the download itself may open a save dialog, and
                 // leaving the menu behind it looks like a stuck interface.

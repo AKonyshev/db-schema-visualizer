@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import { type ReactNode } from "react";
 import { KeyboardIcon } from "lucide-react";
 
 import AutoArrangeTableButton from "./AutoArrage/AutoArrangeTables";
@@ -22,6 +23,7 @@ const Toolbar = ({
   onDownloadAdoc,
   onDownloadMarkdown,
   onShowLegend,
+  hostActions = null,
 }: {
   onFitToView: () => void;
   onDownloadPng: () => void;
@@ -29,6 +31,16 @@ const Toolbar = ({
   onDownloadAdoc: () => void;
   onDownloadMarkdown: () => void;
   onShowLegend: () => void;
+  /**
+   * Buttons only one host has. The site puts "download this schema" and "write
+   * the layout into the text" here; the extension needs neither, because the
+   * schema is a file it already has open and it writes positions back itself.
+   *
+   * A slot rather than a flag, and beside the export menu rather than anywhere
+   * else: what a host adds here is another way of getting the diagram out, and
+   * that is the group it belongs to.
+   */
+  hostActions?: ReactNode;
 }) => {
   return (
     // Centred explicitly. It used to be centred by the flex container above it —
@@ -39,25 +51,27 @@ const Toolbar = ({
     //
     // `max-w-full` rather than a viewport width, so a narrow pane clips the
     // toolbar's own box rather than letting it run past the diagram.
-    <div className="absolute bottom-14 left-1/2 flex w-max max-w-full -translate-x-1/2 flex-wrap items-center gap-2 rounded-2xl bg-gray-100 px-6 py-1 text-sm shadow-lg dark:bg-gray-700 [&_svg]:h-5 [&_svg]:w-5">
+    <div className="absolute bottom-14 left-1/2 flex w-max max-w-full -translate-x-1/2 flex-wrap items-center gap-1 rounded-2xl border border-subtle bg-surface-raised/95 px-4 py-1.5 text-sm shadow-xl shadow-black/10 backdrop-blur [&_svg]:h-5 [&_svg]:w-5">
       <AutoArrangeTableButton />
       {/* Beside auto-arrange because it shapes the arrangement, not only the
           look: right angles need corridors and curves do not. */}
       <RelationStyleToggle />
       <DetailLevelToggle />
       <FitToViewButton onClick={onFitToView} />
-      <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
+      <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
       <ExportMenu
         onDownloadPng={onDownloadPng}
         onDownloadSvg={onDownloadSvg}
         onDownloadAdoc={onDownloadAdoc}
         onDownloadMarkdown={onDownloadMarkdown}
       />
-      <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
+      <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
+      {hostActions}
+      <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
       <ShortTableNameSetting />
       <EnableAlwaysHover />
       <AnimateRelations />
-      <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
+      <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
       <ToolbarButton
         label={t("legend.title")}
         shortcutKey={shortcutKeyFor("legend")}

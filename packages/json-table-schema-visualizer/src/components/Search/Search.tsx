@@ -192,16 +192,16 @@ const Search = ({ tables }: SearchProps) => {
               setIsOpen(true);
             }}
             placeholder={t("search.placeholder")}
-            className="w-72 px-4 py-3 focus:outline-none text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-72 rounded-xl border border-subtle bg-surface-raised px-4 py-3 text-sm text-content shadow-lg shadow-black/5 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40"
           />
 
-          <span className="absolute right-2 px-2 py-1 rounded-lg bg-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+          <span className="absolute right-2 rounded-lg bg-surface-sunken px-2 py-1 text-content-muted">
             ⌘F
           </span>
         </div>
 
         {isOpen && searchResults.length > 0 && (
-          <div className="absolute top-full mt-1 w-full bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600 max-h-60 overflow-y-auto">
+          <div className="absolute top-full mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-subtle bg-surface-raised shadow-xl shadow-black/10">
             {searchResults.map((result, index) => (
               <button
                 tabIndex={-index}
@@ -210,18 +210,18 @@ const Search = ({ tables }: SearchProps) => {
                   handleSelect(result);
                 }}
                 onKeyDown={handleOptionClick}
-                className="w-full px-4 py-2 text-left text-sm focus:outline-none hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600 flex flex-col items-start"
+                className="flex w-full flex-col items-start px-4 py-2 text-left text-sm hover:bg-accent/10 focus:bg-accent/10 focus:outline-none"
               >
                 <div className="flex space-x-2 w-full items-start">
                   <span className="text-xs mt-[3px]">
                     {result.type === "table" ? "📋" : "🔤"}
                   </span>
-                  <span className="font-medium break-all text-gray-700 dark:text-gray-200">
+                  <span className="break-all font-medium text-content">
                     {result.name}
                   </span>
                 </div>
                 {result.type === "column" && (
-                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 break-all">
+                  <div className="mt-1 break-all text-xs text-content-muted">
                     in {result.tableName}
                   </div>
                 )}

@@ -13,3 +13,7 @@ services:
     image: dbml-schema-visualizer-web
     ports:
       - "8080:8080"
+    # A folder of .dbml files to browse, for an image that was not built around
+    # one. See the README section on project schemas inside the image.
+    # volumes:
+    #   - ./my-project:/srv/schemas:ro

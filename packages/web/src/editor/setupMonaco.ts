@@ -21,9 +21,11 @@ import "monaco-editor/editor/contrib/contextmenu/browser/contextmenu";
 import EditorWorker from "monaco-editor/editor/editor.worker?worker";
 
 import {
+  DBML_DARK_THEME,
+  DBML_DARK_THEME_ID,
   DBML_LANGUAGE_ID,
-  DBML_THEME,
-  DBML_THEME_ID,
+  DBML_LIGHT_THEME,
+  DBML_LIGHT_THEME_ID,
   DBML_TOKENS,
 } from "./dbmlLanguage";
 
@@ -45,5 +47,6 @@ export const setupMonaco = (): void => {
 
   monaco.languages.register({ id: DBML_LANGUAGE_ID });
   monaco.languages.setMonarchTokensProvider(DBML_LANGUAGE_ID, DBML_TOKENS);
-  monaco.editor.defineTheme(DBML_THEME_ID, DBML_THEME);
+  monaco.editor.defineTheme(DBML_DARK_THEME_ID, DBML_DARK_THEME);
+  monaco.editor.defineTheme(DBML_LIGHT_THEME_ID, DBML_LIGHT_THEME);
 };

@@ -28,7 +28,7 @@ const ToolbarButton = ({
   return (
     <button
       onClick={onClick}
-      className={`group relative flex items-center p-1 text-gray-800 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-200 ${className}`}
+      className={`group relative flex items-center rounded-lg p-1.5 text-content-muted transition-colors hover:bg-accent/10 hover:text-content focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${className}`}
       {...props}
       // Deliberately AFTER the spread: later JSX attributes win, so a caller
       // cannot replace the computed accessible name. There is no `title` — the
@@ -43,7 +43,7 @@ const ToolbarButton = ({
         // Hidden from assistive tech: it repeats the accessible name verbatim,
         // and announcing it twice is noise. It is a purely visual affordance.
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs font-normal text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-gray-900"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-content px-2 py-1 text-xs font-normal text-surface opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
       >
         {tooltip}
       </span>

@@ -1,11 +1,21 @@
 import { useEffect, useRef } from "react";
 import * as monaco from "monaco-editor/editor/editor.api";
 
-import { DBML_LANGUAGE_ID, DBML_THEME_ID } from "../editor/dbmlLanguage";
+import {
+  DBML_DARK_THEME_ID,
+  DBML_LANGUAGE_ID,
+  DBML_LIGHT_THEME_ID,
+} from "../editor/dbmlLanguage";
 
 export interface EditorPaneProps {
   value: string;
   onChange: (next: string) => void;
+  /** For the one state that has no document behind it: an empty tree, where
+   * anything typed would have nowhere to go. */
+  readOnly?: boolean;
+  /** The page's theme. Monaco is not styled by the stylesheet, so it has to be
+   * told. */
+  dark: boolean;
 }
 
 // Monaco is mounted directly rather than through `@monaco-editor/react`.
@@ -17,7 +27,15 @@ export interface EditorPaneProps {
 // the built artefact contains no CDN host at all.
 //
 // Still two properties to the page above it: current text, and a callback.
-const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
+const themeIdFor = (dark: boolean): string =>
+  dark ? DBML_DARK_THEME_ID : DBML_LIGHT_THEME_ID;
+
+const EditorPane = ({
+  value,
+  onChange,
+  readOnly = false,
+  dark,
+}: EditorPaneProps): JSX.Element => {
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -35,7 +53,7 @@ const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
     const editor = monaco.editor.create(host, {
       value,
       language: DBML_LANGUAGE_ID,
-      theme: DBML_THEME_ID,
+      theme: themeIdFor(dark),
       minimap: { enabled: false },
       fontSize: 13,
       scrollBeyondLastLine: false,
@@ -43,6 +61,7 @@ const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
       automaticLayout: true,
       renderWhitespace: "none",
       tabSize: 2,
+      readOnly,
     });
 
     editorRef.current = editor;
@@ -60,6 +79,19 @@ const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
     // afterwards flows through the effect below, so that typing a character does
     // not tear the editor down and build a new one.
   }, []);
+
+  // Seeded above and kept in step here, because the editor outlives the state:
+  // it is created once, and neither whether there is a document to type into
+  // nor which theme the page is in stays still.
+  useEffect(() => {
+    editorRef.current?.updateOptions({ readOnly });
+  }, [readOnly]);
+
+  useEffect(() => {
+    // `monaco.editor.setTheme` rather than an option on the instance: a theme is
+    // registered globally, and Monaco applies it to every editor at once.
+    monaco.editor.setTheme(themeIdFor(dark));
+  }, [dark]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -99,7 +131,7 @@ const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
     editor.pushUndoStop();
   }, [value]);
 
-  return <div ref={hostRef} className="h-full w-full" />;
+  return <div ref={hostRef} className="h-full w-full bg-surface-sunken" />;
 };
 
 export default EditorPane;
