@@ -6,6 +6,22 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-08-28
+
+### Added
+
+- **The site can be built with a project's schemas inside it.** A folder of `.dbml` files goes into the image, and the deployment opens showing them: a tree on the left, the first schema already drawn, nothing to find and drag into the window. The folder is supplied at build time (`--build-context schemas=/path/to/my-project`), as a layer on top of the published image, or mounted as a volume — the list is rebuilt at every container start, so a swapped volume needs a restart and nothing more. A row is named after the file's `Project` block, else its first `//` comment, else the file itself. Only `.dbml` is served: a README or an `.env` sitting beside the schemas stays unreachable. An image built without a folder is the site exactly as it was.
+- **The site remembers which theme you chose**, and takes the system's preference on a first visit instead of always opening dark.
+
+### Changed
+
+- **The site navigates by a file tree rather than by tabs.** The tab bar and the bar above the editor are gone; one schema is open at a time and it is chosen in the tree, which has two sections. _Project_ is what the image was built with — the same for everyone who opens the deployment, read-only, back after every restart. _My files_ are the schemas this reader opened or dropped on the page, which live in that browser and nowhere else. Merging the two into one list would have been tidier and would have quietly lied about which schemas survive a cleared cache. Editing a project file keeps your version beside its path and marks the row; the row's menu gives the image's version back. Downloading and saving the layout moved into the diagram's toolbar, and downloading is also on every row — a schema with a typo in it has no diagram, so no toolbar, at exactly the moment somebody wants their text out of the page. What this costs is switching quickly between two schemas: a click on the neighbouring tab is now finding a row in the tree.
+- **One palette for the diagram and everything around it.** The chrome is DOM and the diagram is a canvas, and the two had been themed by different sets of greys that nobody had compared side by side. Both now read the same values from one file, and the class that selects light or dark sits on the document root — so in the extension the page around the diagram turns over with it rather than staying in daylight colours. The extension inherits the new palette; the diagram's own colours are the same roles in new values, not a redraw.
+
+### Fixed
+
+- On the site, the theme toggle turned over only the half of the page the diagram owned: the editor and everything beside it stayed dark while the diagram went light. The whole page follows the toggle now, the editor included — it has a light syntax theme of its own, rather than the dark one on a white page.
+
 ## [0.14.1] - 2026-08-18
 
 ### Changed
