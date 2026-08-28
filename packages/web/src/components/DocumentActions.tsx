@@ -6,7 +6,7 @@ export interface DocumentActionsProps {
 }
 
 const BUTTON_CLASS =
-  "rounded px-2 py-1 text-sm text-gray-700 hover:bg-gray-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 dark:text-gray-100 dark:hover:bg-gray-600";
+  "rounded-lg px-2.5 py-1 text-sm text-content-muted transition-colors hover:bg-accent/10 hover:text-content focus:outline-none focus-visible:ring-1 focus-visible:ring-accent";
 
 /**
  * The two actions the site adds to the diagram's toolbar, through the slot the

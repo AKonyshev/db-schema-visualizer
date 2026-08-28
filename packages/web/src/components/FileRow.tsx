@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { MoreHorizontal } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { t } from "json-table-schema-visualizer/src/i18n/t";
 
 export interface FileRowAction {
@@ -10,6 +11,8 @@ export interface FileRowProps {
   label: string;
   /** The full path, or nothing when the row is a file with no path to show. */
   hint?: string;
+  /** Drawn before the name: what kind of thing this row is. */
+  icon: ReactNode;
   depth: number;
   selected: boolean;
   /** The reader has their own version of this file. */
@@ -21,23 +24,24 @@ export interface FileRowProps {
 }
 
 export const ROW_CLASS =
-  "flex w-full items-center gap-1 truncate rounded py-1 pr-1 text-left text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400";
+  "flex h-8 w-full items-center gap-2 truncate rounded-lg pr-1 text-left text-sm transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-accent";
 
 /** Every one-glyph button in the tree: collapse, reveal, add, the row's menu. */
 export const ICON_BUTTON_CLASS =
-  "rounded px-1 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400";
+  "rounded-lg p-1 text-content-muted transition-colors hover:bg-accent/10 hover:text-content focus:outline-none focus-visible:ring-1 focus-visible:ring-accent";
 
 /**
  * One file in the tree: what it is called, whether it is yours, and what can be
  * done to it.
  *
- * The menu is opened by a button rather than by right-clicking. The context
- * menu belongs to the browser, and a reader who wants to copy a name or open
+ * The menu is opened by a button rather than by right-clicking. The context menu
+ * belongs to the browser, and a reader who wants to copy a name or open
  * something in a new tab should keep it.
  */
 const FileRow = ({
   label,
   hint,
+  icon,
   depth,
   selected,
   edited,
@@ -68,11 +72,11 @@ const FileRow = ({
   }, [open]);
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative px-2">
       <div
-        className={`group flex items-center ${
-          selected ? "bg-neutral-700" : "hover:bg-neutral-700"
-        } rounded`}
+        className={`group flex items-center rounded-lg ${
+          selected ? "bg-accent/15" : "hover:bg-accent/10"
+        }`}
       >
         <button
           type="button"
@@ -84,24 +88,30 @@ const FileRow = ({
           title={[hint ?? label, edited ? t("files.edited") : null]
             .filter((part) => part !== null)
             .join(" — ")}
-          style={{ paddingLeft: `${depth * 12 + 8}px` }}
+          style={{ paddingLeft: `${depth * 14 + 8}px` }}
           className={`${ROW_CLASS} ${
-            selected ? "text-neutral-100" : "text-neutral-300"
+            selected ? "font-medium text-content" : "text-content-muted"
           }`}
           onClick={onOpen}
         >
+          <span
+            className={`shrink-0 ${selected ? "text-accent" : "text-content-muted/70"} [&_svg]:h-4 [&_svg]:w-4`}
+          >
+            {icon}
+          </span>
           <span className="truncate">{label}</span>
           {edited && (
             // A dot rather than a word: it has to sit beside names that already
             // fill the column. Hidden from the accessibility tree because the
             // same fact is in the row's description, where it does not change
             // what the row is called.
-            <span aria-hidden="true" className="shrink-0 text-amber-400">
-              •
-            </span>
+            <span
+              aria-hidden="true"
+              className="ml-auto mr-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning"
+            />
           )}
           {failed && (
-            <span className="shrink-0 text-xs text-red-400">
+            <span className="ml-auto shrink-0 text-xs text-danger">
               {t("files.openFailed")}
             </span>
           )}
@@ -118,7 +128,7 @@ const FileRow = ({
             setOpen((current) => !current);
           }}
         >
-          ⋯
+          <MoreHorizontal className="h-4 w-4" />
         </button>
       </div>
       {open && (
@@ -129,14 +139,14 @@ const FileRow = ({
         <ul
           role="menu"
           aria-label={`${t("files.actions")}: ${label}`}
-          className="absolute right-1 z-10 min-w-40 list-none rounded border border-neutral-600 bg-neutral-800 py-1 shadow-lg"
+          className="absolute right-2 z-10 mt-1 min-w-44 list-none overflow-hidden rounded-xl border border-subtle bg-surface-raised py-1 shadow-xl shadow-black/10"
         >
           {actions.map((action) => (
             <li key={action.label} role="none">
               <button
                 type="button"
                 role="menuitem"
-                className="w-full px-3 py-1 text-left text-sm text-neutral-200 hover:bg-neutral-700 focus:bg-neutral-700 focus:outline-none"
+                className="w-full px-3 py-1.5 text-left text-sm text-content transition-colors hover:bg-accent/10 focus:bg-accent/10 focus:outline-none"
                 onClick={() => {
                   setOpen(false);
                   action.run();

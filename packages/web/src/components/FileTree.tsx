@@ -1,3 +1,13 @@
+import {
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Folder,
+  FolderOpen,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+} from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { t } from "json-table-schema-visualizer/src/i18n/t";
 
@@ -33,7 +43,7 @@ export interface FileTreeProps {
 }
 
 const HEADING_CLASS =
-  "flex items-center justify-between gap-1 px-2 pb-1 pt-2 text-xs uppercase tracking-wide text-neutral-500";
+  "flex items-center justify-between gap-1 px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-content-muted/80";
 
 /**
  * The only way into a document, which is why it is always on screen — including
@@ -99,22 +109,33 @@ const FileTree = ({
 
           return (
             <li key={`folder:${node.path}`}>
-              <button
-                type="button"
-                aria-expanded={open}
-                style={{ paddingLeft: `${depth * 12 + 8}px` }}
-                className={`${ROW_CLASS} text-neutral-300 hover:bg-neutral-700`}
-                onClick={() => {
-                  toggleFolder(node.path);
-                }}
-              >
-                {/* Triangles rather than chevron glyphs: they are in every font
-                    the site can end up being rendered with. */}
-                <span className="shrink-0 text-neutral-500">
-                  {open ? "▾" : "▸"}
-                </span>
-                <span className="truncate">{node.name}</span>
-              </button>
+              <div className="px-2">
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  style={{ paddingLeft: `${depth * 14 + 8}px` }}
+                  className={`${ROW_CLASS} text-content-muted hover:bg-accent/10`}
+                  onClick={() => {
+                    toggleFolder(node.path);
+                  }}
+                >
+                  <span className="shrink-0 text-content-muted/70">
+                    {open ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </span>
+                  <span className="shrink-0 text-content-muted/70">
+                    {open ? (
+                      <FolderOpen className="h-4 w-4" />
+                    ) : (
+                      <Folder className="h-4 w-4" />
+                    )}
+                  </span>
+                  <span className="truncate">{node.name}</span>
+                </button>
+              </div>
               {open && renderNodes(node.children, depth + 1)}
             </li>
           );
@@ -128,7 +149,8 @@ const FileTree = ({
             <FileRow
               label={node.file.title}
               hint={node.file.path}
-              depth={depth}
+              icon={<FileText />}
+              depth={depth + 1}
               selected={sameDocument(selected, id)}
               edited={edited}
               failed={node.file.path === failedPath}
@@ -162,31 +184,31 @@ const FileTree = ({
 
   if (hidden) {
     return (
-      <div className="flex h-full w-8 shrink-0 justify-center border-r border-neutral-700 bg-neutral-900 py-1">
+      <div className="flex h-full w-10 shrink-0 justify-center border-r border-subtle bg-surface-raised py-2">
         <button
           type="button"
           title={t("files.show")}
           aria-label={t("files.show")}
-          className={`h-6 ${ICON_BUTTON_CLASS}`}
+          className={`h-8 ${ICON_BUTTON_CLASS}`}
           onClick={() => {
             setHidden(false);
           }}
         >
-          ▸
+          <PanelLeftOpen className="h-4 w-4" />
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full w-64 shrink-0 flex-col border-r border-neutral-700 bg-neutral-900">
-      <div className="flex shrink-0 items-center gap-1 border-b border-neutral-700 px-2 py-1">
+    <div className="flex h-full w-72 shrink-0 flex-col border-r border-subtle bg-surface-raised">
+      <div className="flex shrink-0 items-center gap-1 border-b border-subtle px-3 py-2">
         <input
           type="search"
           value={query}
           placeholder={t("files.filter")}
           aria-label={t("files.filter")}
-          className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400"
+          className="min-w-0 flex-1 rounded-lg border border-subtle bg-surface px-3 py-1.5 text-sm text-content placeholder:text-content-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
           onChange={(event) => {
             setQuery(event.target.value);
           }}
@@ -200,7 +222,7 @@ const FileTree = ({
             setHidden(true);
           }}
         >
-          ◂
+          <PanelLeftClose className="h-4 w-4" />
         </button>
       </div>
 
@@ -211,7 +233,7 @@ const FileTree = ({
           // Otherwise a filter that matches nothing looks exactly like a
           // deployment that has nothing — two very different things to be
           // looking at.
-          <p className="px-3 py-2 text-xs text-neutral-500">
+          <p className="px-4 py-2 text-xs text-content-muted">
             {t("files.noMatches")}
           </p>
         )}
@@ -233,7 +255,7 @@ const FileTree = ({
               inputRef.current?.click();
             }}
           >
-            +
+            <Plus className="h-4 w-4" />
           </button>
         </div>
         <input
@@ -259,7 +281,7 @@ const FileTree = ({
         />
 
         {localFiles.length === 0 ? (
-          <p className="px-3 py-1 text-xs text-neutral-500">
+          <p className="px-4 py-1 text-xs leading-relaxed text-content-muted">
             {t("files.empty")}
           </p>
         ) : (
@@ -271,6 +293,7 @@ const FileTree = ({
                 <li key={documentKeyOf(id)}>
                   <FileRow
                     label={file.name}
+                    icon={<FileText />}
                     depth={0}
                     selected={sameDocument(selected, id)}
                     // A local file is its own text: there is no other version
