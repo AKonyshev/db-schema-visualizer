@@ -6,8 +6,10 @@ import {
   createWorkspace,
   documentKeyOf,
   loadIntoActive,
+  openCatalogFile,
   parseWorkspace,
   serialiseWorkspace,
+  tabForPath,
   updateActiveText,
   type Workspace,
 } from "../workspace";
@@ -176,5 +178,108 @@ describe("a workspace of open schemas", () => {
       expect(restored.tabs).toHaveLength(1);
       expect(activeTab(restored).text).toBe("fresh");
     });
+  });
+});
+
+describe("tabs opened from the bundled catalogue", () => {
+  test("a catalogue file opens in a tab of its own", () => {
+    const before = createWorkspace("Table a {\n  id integer\n}\n");
+    const after = openCatalogFile(
+      before,
+      "billing/invoices.dbml",
+      "invoices.dbml",
+      "Table invoices {\n  id integer\n}\n",
+    );
+
+    expect(after.tabs).toHaveLength(2);
+    expect(activeTab(after)).toMatchObject({
+      title: "invoices.dbml",
+      sourcePath: "billing/invoices.dbml",
+      text: "Table invoices {\n  id integer\n}\n",
+    });
+  });
+
+  test("choosing a file already open returns to it, keeping its text", () => {
+    const opened = openCatalogFile(
+      createWorkspace("first"),
+      "users.dbml",
+      "users.dbml",
+      "original",
+    );
+    const edited = updateActiveText(opened, "edited by the reader");
+    const elsewhere = activateTab(edited, 1);
+
+    const again = openCatalogFile(
+      elsewhere,
+      "users.dbml",
+      "users.dbml",
+      "original",
+    );
+
+    // Two clicks on one file must not cost the reader the edits made between
+    // them, and must not leave two tabs on the same file.
+    expect(again.tabs).toHaveLength(2);
+    expect(activeTab(again).text).toBe("edited by the reader");
+  });
+
+  test("the tab a path is open in can be found", () => {
+    const opened = openCatalogFile(
+      createWorkspace("first"),
+      "users.dbml",
+      "users.dbml",
+      "text",
+    );
+
+    expect(tabForPath(opened, "users.dbml")?.number).toBe(2);
+    expect(tabForPath(opened, "nothing.dbml")).toBeUndefined();
+  });
+
+  test("a first visit can start from a catalogue file", () => {
+    const workspace = createWorkspace("text", {
+      path: "billing/invoices.dbml",
+      title: "invoices.dbml",
+    });
+
+    expect(workspace.tabs).toEqual([
+      {
+        number: 1,
+        title: "invoices.dbml",
+        text: "text",
+        sourcePath: "billing/invoices.dbml",
+      },
+    ]);
+  });
+
+  test("the path survives storage, and tabs written without one still read", () => {
+    const opened = openCatalogFile(
+      createWorkspace("first"),
+      "users.dbml",
+      "users.dbml",
+      "text",
+    );
+
+    expect(parseWorkspace(serialiseWorkspace(opened))).toEqual(opened);
+
+    // Written by a deployment from before the catalogue existed. The version is
+    // unchanged, so these must still restore rather than be thrown away.
+    const older = JSON.stringify({
+      version: 1,
+      tabs: [{ number: 1, title: "", text: "old" }],
+      activeNumber: 1,
+      nextNumber: 2,
+    });
+
+    expect(parseWorkspace(older)?.tabs[0].sourcePath).toBeUndefined();
+  });
+
+  test("a stored tab whose path is not a string is refused", () => {
+    const broken = JSON.stringify({
+      version: 1,
+      tabs: [{ number: 1, title: "", text: "t", sourcePath: 7 }],
+      activeNumber: 1,
+      nextNumber: 2,
+    });
+
+    expect(parseWorkspace(broken)).toBeNull();
   });
 });

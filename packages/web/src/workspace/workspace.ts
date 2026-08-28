@@ -17,6 +17,13 @@ export interface SchemaTab {
   /** What a file named it. Empty until a file does. */
   title: string;
   text: string;
+  /**
+   * Where in the bundled catalogue this tab came from, if it came from there at
+   * all. It is what makes a second click on a file in the tree return to the
+   * tab it is already open in rather than open a duplicate — the title cannot
+   * do that job, because two folders may hold files of the same name.
+   */
+  sourcePath?: string;
 }
 
 export interface Workspace {
@@ -54,8 +61,21 @@ export const activeTab = (workspace: Workspace): SchemaTab => {
   return found;
 };
 
-export const createWorkspace = (text: string): Workspace => ({
-  tabs: [{ number: 1, title: "", text }],
+export const createWorkspace = (
+  text: string,
+  // Given on a first visit to an image that carries a catalogue, so the tab the
+  // reader lands on is a real file of theirs rather than an untitled copy of
+  // one.
+  source?: { path: string; title: string },
+): Workspace => ({
+  tabs: [
+    {
+      number: 1,
+      title: source?.title ?? "",
+      text,
+      ...(source === undefined ? {} : { sourcePath: source.path }),
+    },
+  ],
   activeNumber: 1,
   nextNumber: 2,
 });
@@ -66,6 +86,43 @@ export const addTab = (workspace: Workspace, text: string): Workspace => ({
   activeNumber: workspace.nextNumber,
   nextNumber: workspace.nextNumber + 1,
 });
+
+export const tabForPath = (
+  workspace: Workspace,
+  path: string,
+): SchemaTab | undefined =>
+  workspace.tabs.find((tab) => tab.sourcePath === path);
+
+/**
+ * What choosing a file in the catalogue does.
+ *
+ * A file already open comes back as it is, text and all: the contents just
+ * fetched are dropped rather than written over edits the reader made after
+ * opening it. The caller normally avoids that fetch entirely by asking
+ * `tabForPath` first — this branch is what catches the race, since the fetch is
+ * asynchronous and the tab may have appeared while it was in flight.
+ */
+export const openCatalogFile = (
+  workspace: Workspace,
+  path: string,
+  title: string,
+  text: string,
+): Workspace => {
+  const existing = tabForPath(workspace, path);
+
+  if (existing !== undefined) {
+    return activateTab(workspace, existing.number);
+  }
+
+  return {
+    tabs: [
+      ...workspace.tabs,
+      { number: workspace.nextNumber, title, text, sourcePath: path },
+    ],
+    activeNumber: workspace.nextNumber,
+    nextNumber: workspace.nextNumber + 1,
+  };
+};
 
 export const activateTab = (workspace: Workspace, number: number): Workspace =>
   workspace.tabs.some((tab) => tab.number === number)
@@ -137,7 +194,12 @@ const isTab = (value: unknown): value is SchemaTab => {
     typeof tab.number === "number" &&
     Number.isInteger(tab.number) &&
     typeof tab.title === "string" &&
-    typeof tab.text === "string"
+    typeof tab.text === "string" &&
+    // Absent for every tab written before the catalogue existed, and for every
+    // tab opened by hand since. The stored version is not bumped for it:
+    // refusing those tabs would throw away layouts over a field they had no way
+    // to carry.
+    (tab.sourcePath === undefined || typeof tab.sourcePath === "string")
   );
 };
 
