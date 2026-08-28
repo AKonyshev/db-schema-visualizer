@@ -25,6 +25,7 @@ interface DiagramViewerProps {
   enums: JSONTableEnum[];
   documentKey?: string | null;
   syncEffects?: ReactNode;
+  hostActions?: ReactNode;
 }
 
 const DiagramViewer = ({
@@ -33,6 +34,7 @@ const DiagramViewer = ({
   enums,
   documentKey = null,
   syncEffects = null,
+  hostActions = null,
 }: DiagramViewerProps) => {
   const { theme } = useThemeContext();
 
@@ -57,6 +59,7 @@ const DiagramViewer = ({
             <Search tables={tables} />
 
             <DiagramWrapper
+              hostActions={hostActions}
               tablesMeta={tables}
               refs={refs}
               connections={

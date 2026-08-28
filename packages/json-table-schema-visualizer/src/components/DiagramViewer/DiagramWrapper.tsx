@@ -48,6 +48,8 @@ interface DiagramWrapperProps {
   tables: ReactNode;
   tablesMeta: JSONTableTable[];
   refs: JSONTableRef[];
+  /** Passed straight through to the toolbar; see `DiagramApp`. */
+  hostActions?: ReactNode;
 }
 
 interface PendingWheelEvent {
@@ -62,6 +64,7 @@ const DiagramWrapper = ({
   tables,
   tablesMeta,
   refs,
+  hostActions = null,
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
@@ -521,6 +524,7 @@ const DiagramWrapper = ({
         onShowLegend={() => {
           setIsLegendOpen(true);
         }}
+        hostActions={hostActions}
       />
 
       {isLegendOpen && (

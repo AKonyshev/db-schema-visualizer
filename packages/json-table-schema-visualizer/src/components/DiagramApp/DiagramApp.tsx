@@ -24,6 +24,11 @@ interface DiagramAppProps {
    * to write table positions back into the open file. Called only once a schema
    * exists, so the host never has to re-check for one. */
   syncEffects?: (schema: JSONTableSchema) => ReactNode;
+  /** Host-specific buttons added to the toolbar — the site uses this for the
+   * two actions that only mean something in a browser: downloading the schema
+   * as a file, and writing the layout into text it holds rather than a file on
+   * disk. The extension passes nothing, because it has neither problem. */
+  hostActions?: ReactNode;
 }
 
 // The composition both hosts share. It reads nothing from `window` and knows
@@ -40,6 +45,7 @@ const DiagramApp = ({
   setTheme,
   scrollDirection,
   syncEffects,
+  hostActions,
 }: DiagramAppProps) => {
   if (schemaErrorMessage !== null && schema === null) {
     return <ErrorMessage message={schemaErrorMessage} />;
@@ -57,6 +63,7 @@ const DiagramApp = ({
           documentKey={documentKey}
           {...schema}
           syncEffects={syncEffects?.(schema) ?? null}
+          hostActions={hostActions}
         />
       </ScrollDirectionProvider>
     </ThemeProvider>

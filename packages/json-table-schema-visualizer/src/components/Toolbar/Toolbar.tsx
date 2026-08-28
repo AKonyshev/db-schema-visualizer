@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import { type ReactNode } from "react";
 import { KeyboardIcon } from "lucide-react";
 
 import AutoArrangeTableButton from "./AutoArrage/AutoArrangeTables";
@@ -22,6 +23,7 @@ const Toolbar = ({
   onDownloadAdoc,
   onDownloadMarkdown,
   onShowLegend,
+  hostActions = null,
 }: {
   onFitToView: () => void;
   onDownloadPng: () => void;
@@ -29,6 +31,16 @@ const Toolbar = ({
   onDownloadAdoc: () => void;
   onDownloadMarkdown: () => void;
   onShowLegend: () => void;
+  /**
+   * Buttons only one host has. The site puts "download this schema" and "write
+   * the layout into the text" here; the extension needs neither, because the
+   * schema is a file it already has open and it writes positions back itself.
+   *
+   * A slot rather than a flag, and beside the export menu rather than anywhere
+   * else: what a host adds here is another way of getting the diagram out, and
+   * that is the group it belongs to.
+   */
+  hostActions?: ReactNode;
 }) => {
   return (
     // Centred explicitly. It used to be centred by the flex container above it —
@@ -53,6 +65,8 @@ const Toolbar = ({
         onDownloadAdoc={onDownloadAdoc}
         onDownloadMarkdown={onDownloadMarkdown}
       />
+      <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
+      {hostActions}
       <hr className="mx-2 my-1 w-px h-6 bg-gray-300" />
       <ShortTableNameSetting />
       <EnableAlwaysHover />
