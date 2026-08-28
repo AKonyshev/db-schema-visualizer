@@ -38,17 +38,30 @@ tmp="${SCHEMAS_MANIFEST}.tmp"
 # Written to a temporary file and renamed, so nginx can never serve a manifest
 # that is still being written.
 list_paths | awk -v root="$SCHEMAS_DIR" -v want="$SCHEMAS_DEFAULT" -v q="'" '
+# Every control character JSON refuses to carry raw, by the escape it wants
+# instead. Built once, because the alternative is deciding it per character per
+# file. Codes 1 to 31: a NUL cannot reach here — awk strings do not hold one —
+# and everything above 31 is a character JSON is happy to pass through.
+function buildControlEscapes(   i) {
+  for (i = 1; i < 32; i++) CONTROL[sprintf("%c", i)] = sprintf("\\u%04x", i)
+}
+
 # JSON escaping character by character rather than through gsub: in a gsub
 # replacement a backslash has a second meaning, and how many of them it takes to
 # emit one differs between awk implementations. Concatenation has one meaning
 # everywhere.
+#
+# Control characters are escaped rather than dropped or flattened, and that
+# matters more than it looks: a raw one makes the manifest unparseable, and an
+# unparseable manifest is not one bad row — it is the entire catalogue gone, for
+# every reader, over a stray byte in the title of a single file.
 function esc(s,   i, c, out) {
   out = ""
   for (i = 1; i <= length(s); i++) {
     c = substr(s, i, 1)
     if (c == "\\") out = out "\\" "\\"
     else if (c == "\"") out = out "\\" "\""
-    else if (c == "\t" || c == "\r") out = out " "
+    else if (c in CONTROL) out = out CONTROL[c]
     else out = out c
   }
   return out
@@ -100,6 +113,8 @@ function title_of(path,   line, status, title, comment, value) {
   if (comment != "") return comment
   return base(path)
 }
+
+BEGIN { buildControlEscapes() }
 
 { paths[++seen] = $0 }
 

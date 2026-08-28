@@ -149,6 +149,24 @@ describe("schema-manifest.sh", () => {
     expect(manifest.files[0].title).toBe('A "quoted" \\ title');
   });
 
+  it("escapes the control characters JSON has no room for", () => {
+    const root = folder();
+    // A byte nobody typed on purpose — a stray \x01 pasted along with a title,
+    // or a form feed left by an editor. Written through raw it makes the
+    // manifest unparseable, and an unparseable manifest is not one bad row: it
+    // is the whole catalogue gone, for every reader, over one file.
+    write(
+      root,
+      "control.dbml",
+      "// Ledger\u0001 export\u000c\nTable t {\n  id integer\n}\n",
+    );
+
+    const { manifest, raw } = run(root);
+
+    expect(() => JSON.parse(raw)).not.toThrow();
+    expect(manifest.files[0].title).toBe("Ledger\u0001 export\u000c");
+  });
+
   it("stays valid JSON when a file name contains a newline", () => {
     const root = folder();
     write(root, "we\nird.dbml", "Table w {\n  id integer\n}\n");
