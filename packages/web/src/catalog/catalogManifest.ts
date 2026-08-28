@@ -2,7 +2,8 @@
  * The catalogue, as the page understands it.
  *
  * Everything here is checked rather than cast, for the same reason
- * `parseWorkspace` checks: the value did not come from this build. It was
+ * `parseSession` checks what a browser stored: the value did not come from this
+ * build. It was
  * written by a script in the container, over a folder an operator supplied, and
  * a manifest from a newer image — or one somebody put at that path by hand —
  * must leave the page working rather than blank with a `TypeError` in a console

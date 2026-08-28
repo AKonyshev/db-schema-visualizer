@@ -6,6 +6,9 @@ import { DBML_LANGUAGE_ID, DBML_THEME_ID } from "../editor/dbmlLanguage";
 export interface EditorPaneProps {
   value: string;
   onChange: (next: string) => void;
+  /** For the one state that has no document behind it: an empty tree, where
+   * anything typed would have nowhere to go. */
+  readOnly?: boolean;
 }
 
 // Monaco is mounted directly rather than through `@monaco-editor/react`.
@@ -17,7 +20,11 @@ export interface EditorPaneProps {
 // the built artefact contains no CDN host at all.
 //
 // Still two properties to the page above it: current text, and a callback.
-const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
+const EditorPane = ({
+  value,
+  onChange,
+  readOnly = false,
+}: EditorPaneProps): JSX.Element => {
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -43,6 +50,7 @@ const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
       automaticLayout: true,
       renderWhitespace: "none",
       tabSize: 2,
+      readOnly,
     });
 
     editorRef.current = editor;
@@ -60,6 +68,12 @@ const EditorPane = ({ value, onChange }: EditorPaneProps): JSX.Element => {
     // afterwards flows through the effect below, so that typing a character does
     // not tear the editor down and build a new one.
   }, []);
+
+  // Seeded above and kept in step here, because the editor outlives the state:
+  // it is created once, and whether there is a document to type into is not.
+  useEffect(() => {
+    editorRef.current?.updateOptions({ readOnly });
+  }, [readOnly]);
 
   useEffect(() => {
     const editor = editorRef.current;

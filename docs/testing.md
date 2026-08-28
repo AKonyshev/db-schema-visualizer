@@ -81,11 +81,12 @@ where the types compile, every unit test passes, the container starts, and half
 the page is empty on a closed network. It asserts the editor is really there,
 that typed DBML reaches the diagram, and that no request leaves the origin.
 
-`e2e/catalog.spec.ts` covers the schema catalogue: a deployment whose image was
-built around a folder of `.dbml` files. The catalogue is served by the
-container's nginx and is not in `dist`, so the test supplies it with
-`page.route` — both paths are same-origin, which is what keeps the smoke test's
-promise intact rather than quietly widening it.
+`e2e/catalog.spec.ts` covers the file tree: a deployment whose image was built
+around a folder of `.dbml` files, the reader's own version of a project schema,
+their own files, and downloading a schema too broken to draw. The catalogue is
+served by the container's nginx and is not in `dist`, so the test supplies it
+with `page.route` — both paths are same-origin, which is what keeps the smoke
+test's promise intact rather than quietly widening it.
 
 It is out of the sweep deliberately, and out of the pre-commit hook with it:
 
@@ -104,8 +105,7 @@ script uses `tsconfig.build.json` instead, which excludes both — the container
 image should not need Playwright installed to compile the site.
 
 The smoke test's own guard was verified by breaking it: externalising the editor
-and
-pointing an import map at a CDN made the build succeed and the test fail. See
+and pointing an import map at a CDN made the build succeed and the test fail. See
 the ticket comments in the local tracker for the measurements.
 
 ## The extension test that runs inside VS Code

@@ -1,7 +1,20 @@
 # The site
 
-The same schema visualizer as the VS Code extension, as a web page: a DBML
-editor on the left, the diagram it describes on the right.
+The same schema visualizer as the VS Code extension, as a web page: a tree of
+schemas on the left, a DBML editor beside it, and the diagram it describes on
+the right.
+
+The tree is the whole of the navigation — one schema is open at a time, and it
+is chosen there. It holds two sections. **Project** is what the image was built
+with: the same for everyone who opens this deployment, read-only, and back after
+every restart. **My files** are the schemas this reader opened or dropped on the
+page; they live in this browser and nowhere else. Keeping them apart is the
+point — merged into one list, the tree would quietly lie about which schemas
+survive a cleared cache.
+
+Editing a project file keeps your version beside its path, marked with a dot on
+its row, and "Restore the project's version" in the row's menu gives the
+image's back.
 
 It is the extension's viewer, not a reimplementation of it. Both hosts mount the
 same `DiagramApp` from `json-table-schema-visualizer`; the difference is only
@@ -105,7 +118,9 @@ and only `.dbml` files are served — a README or an `.env` sitting next to the
 schemas stays unreachable.
 
 The files are read-only. Edits live in the browser and leave through the download
-button; nothing is written back into the image or the volume.
+action on the row; nothing is written back into the image or the volume. An image
+built without a folder is the same site, with the sample schema sitting in "My
+files" and the project section absent.
 
 **Adding a package to the monorepo means adding it to the `Dockerfile` too.** The
 dependency layer lists each workspace manifest by hand so that the install layer
@@ -119,9 +134,9 @@ yarn workspace web test
 ```
 
 Unit tests, in Node with no DOM, over the pure functions: parsing DBML text,
-deriving a download filename, the workspace of tabs, the editor's grammar, the
-browser-locale resolver, and the catalogue — its manifest, its folder tree, and
-the two functions that fetch them.
+deriving a download filename, the session of open documents, the editor's
+grammar, the browser-locale resolver, and the catalogue — its manifest, its
+folder tree, and the two functions that fetch them.
 
 One test in that suite is not over a pure function:
 `src/catalog/__tests__/schemaManifestScript.test.ts` spawns `sh` on the
@@ -134,13 +149,15 @@ not the image's, which is why the container is also checked by hand.
 yarn build:web && yarn test:e2e
 ```
 
-Two browser tests, against the built output rather than the dev server. The
-first is the only check in the repository capable of catching an editor that is
+Browser tests, against the built output rather than the dev server. The smoke
+test is the only check in the repository capable of catching an editor that is
 fetched at run time instead of bundled — with that mistake the types compile,
 the unit tests pass, the container starts, and the left half of the page is
-empty. The second covers the schema catalogue, supplying one with `page.route`
-because the built output has none: the catalogue is the container's, not the
-bundle's.
+empty. The rest cover the file tree: opening a project schema, keeping and
+restoring a reader's own version of one, adding and removing their own files,
+and taking a schema away that is too broken to draw. They supply a catalogue
+with `page.route`, because the built output has none — the catalogue is the
+container's, not the bundle's.
 
 It needs a build first, and deliberately does not run one: a stale `dist` should
 fail the test rather than be quietly repaired by it.

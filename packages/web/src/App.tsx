@@ -5,322 +5,393 @@ import { switchDocument } from "json-table-schema-visualizer/src/stores/switchDo
 import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
 import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDirection";
 
-import { type Catalog, type CatalogFile } from "./catalog/catalogManifest";
-import { fileNameOf } from "./catalog/catalogPath";
+import { type Catalog } from "./catalog/catalogManifest";
 import { loadSchemaText } from "./catalog/loadSchemaText";
-import CatalogSidebar from "./components/CatalogSidebar";
-import DocumentBar from "./components/DocumentBar";
+import DocumentActions from "./components/DocumentActions";
 import EditorPane from "./components/EditorPane";
+import FileTree from "./components/FileTree";
 import SplitLayout from "./components/SplitLayout";
-import TabBar from "./components/TabBar";
 import { toDbmlFilename } from "./document/dbmlFilename";
 import { downloadTextFile } from "./document/downloadTextFile";
 import { parseDbmlText } from "./document/parseDbmlText";
 import { writeLayoutIntoText } from "./document/writeLayoutIntoText";
 import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { useFileDrop } from "./hooks/useFileDrop";
-import { useWorkspacePersistence } from "./workspace/useWorkspacePersistence";
 import {
-  activateTab,
-  activeTab,
-  addTab,
-  closeTab,
+  documentText,
+  loadedOf,
+  type LoadedTexts,
+} from "./session/documentText";
+import { pointStoresAtDocument } from "./session/pointStoresAtDocument";
+import {
+  addLocalFile,
   documentKeyOf,
-  loadIntoActive,
-  openCatalogFile,
-  tabForPath,
-  updateActiveText,
-  type Workspace,
-} from "./workspace/workspace";
+  localFileById,
+  NO_DOCUMENT_KEY,
+  removeLocalFile,
+  revertCatalogFile,
+  selectDocument,
+  textOf,
+  updateSelectedText,
+  type DocumentId,
+  type Session,
+} from "./session/session";
+import { useSessionPersistence } from "./session/useSessionPersistence";
 
 export interface AppProps {
   /** Restored from storage by the entry point, which has already pointed the
-   * diagram's stores at the active tab. */
-  initialWorkspace: Workspace;
+   * diagram's stores at the selected document. */
+  initialSession: Session;
   /** The schemas the image was built with, or `null` when it carries none. */
   catalog: Catalog | null;
+  /** What the entry point fetched for the selected document, when that document
+   * is a project file. */
+  initialLoaded: string | null;
 }
 
-// What a tab opened by the `+` button starts with. Empty rather than a copy of
-// the sample schema: someone opening a second tab has already seen the sample
-// and is about to paste or open something of their own.
-const NEW_TAB_TEXT = "";
+const App = ({
+  initialSession,
+  catalog,
+  initialLoaded,
+}: AppProps): JSX.Element => {
+  const [session, setSession] = useState(initialSession);
+  const [loaded, setLoaded] = useState<LoadedTexts>(
+    initialSession.selected?.kind === "catalog" && initialLoaded !== null
+      ? { [initialSession.selected.path]: initialLoaded }
+      : {},
+  );
 
-const App = ({ initialWorkspace, catalog }: AppProps): JSX.Element => {
-  const [workspace, setWorkspace] = useState(initialWorkspace);
-  // Which catalogue file refused to open, and nothing more: the tree says it
-  // next to the row it happened on, and the next successful open clears it.
+  // Which project file refused to open, and nothing more: the tree says it next
+  // to the row it happened on, and the next successful open clears it.
   const [failedPath, setFailedPath] = useState<string | null>(null);
 
-  // The workspace as the handlers below see it. They are stable callbacks, so
+  // The session as the handlers below see it. They are stable callbacks, so
   // reading state through a closure would give them whatever it was when the
   // callback was built — which for `onChange` is the first render.
-  const workspaceRef = useRef(workspace);
+  const sessionRef = useRef(session);
+  const loadedRef = useRef(loaded);
 
-  const tab = activeTab(workspace);
-  const documentKey = documentKeyOf(tab);
+  const selected = session.selected;
+  const documentKey = selected === null ? null : documentKeyOf(selected);
+  const text = selected === null ? "" : documentText(session, loaded, selected);
 
   /**
-   * Every change to the workspace goes through here, because every change might
+   * Every change to the session goes through here, because every change might
    * be a change of document.
    *
    * `switchDocument` runs in the handler rather than in an effect, and that is
    * not a preference: `DiagramViewer` is keyed on the document key, so React
-   * mounts the new one during the render that follows. An effect would run after
-   * that mount, and the viewer would have already read the previous document's
-   * table positions. Doing it here means the stores are pointing at the new
-   * document before the render begins — which is also how the extension does it,
-   * from its message handler.
+   * mounts the new one during the render that follows. An effect would run
+   * after that mount, and the viewer would have already read the previous
+   * document's table positions. Doing it here means the stores point at the new
+   * document before the render begins — which is also how the extension does
+   * it, from its message handler.
    */
-  const changeWorkspace = useCallback((next: Workspace) => {
-    const current = workspaceRef.current;
-    const nextTab = activeTab(next);
-    const nextKey = documentKeyOf(nextTab);
+  const changeSession = useCallback((next: Session) => {
+    const current = sessionRef.current;
+    const opened = next.selected;
+    const currentKey =
+      current.selected === null ? null : documentKeyOf(current.selected);
 
-    if (nextKey !== documentKeyOf(activeTab(current))) {
-      const { schema } = parseDbmlText(nextTab.text);
-      switchDocument(nextKey, schema?.tables ?? [], schema?.refs ?? []);
+    if (opened === null) {
+      // Nothing open, so the stores are parked: left pointing at the document
+      // that just went, they would write its layout back under a key nothing
+      // will ever claim again.
+      if (currentKey !== null) {
+        switchDocument(NO_DOCUMENT_KEY, [], []);
+      }
+    } else if (documentKeyOf(opened) !== currentKey) {
+      pointStoresAtDocument(next, loadedRef.current, opened);
     }
 
-    workspaceRef.current = next;
-    setWorkspace(next);
+    sessionRef.current = next;
+    setSession(next);
   }, []);
 
-  // Not debounced on the document key: a tab switch must land in the same render
-  // as the key, or the viewer arranges the outgoing schema's tables and files the
-  // result under the incoming schema's name.
-  const debouncedText = useDebouncedValue(tab.text, documentKey);
+  /**
+   * Every transition reads the session as it is now and commits what the
+   * transition returns. Through a ref rather than through `session`, so these
+   * callbacks stay stable and a handler built on the first render does not
+   * commit the first render's session on the hundredth.
+   */
+  const applyToSession = useCallback(
+    (transition: (current: Session) => Session) => {
+      changeSession(transition(sessionRef.current));
+    },
+    [changeSession],
+  );
+
+  // Not debounced on the document key: switching documents must land in the
+  // same render as the key, or the viewer arranges the outgoing schema's tables
+  // and files the result under the incoming schema's name.
+  const debouncedText = useDebouncedValue(text, documentKey ?? "");
   const { schema, errorMessage } = useMemo(
     () => parseDbmlText(debouncedText),
     [debouncedText],
   );
   const { theme, themeColors, setTheme } = useCreateTheme();
 
-  useWorkspacePersistence(workspace, workspaceRef);
+  useSessionPersistence(session, sessionRef);
 
   /**
-   * Every transition reads the workspace as it is now and commits what the
-   * transition returns. Through a ref rather than through `workspace`, so these
-   * callbacks stay stable and a handler built on the first render does not
-   * commit the first render's workspace on the hundredth.
+   * What a newly loaded schema does to the diagram.
+   *
+   * A file arrives as a whole document rather than as an edit, so it can bring
+   * tables nothing has ever held a position for — which is every table, the
+   * first time it is opened. Left alone they all take the same default
+   * coordinate and land in one pile.
+   *
+   * `resetPositions` computes a layout and then keeps whatever stored position
+   * it recognises, so a schema arranged last week still opens arranged.
+   * Reserved for opening: running it on every edit would rearrange the diagram
+   * under someone mid-sentence.
    */
-  const applyToWorkspace = useCallback(
-    (transition: (current: Workspace) => Workspace) => {
-      changeWorkspace(transition(workspaceRef.current));
-    },
-    [changeWorkspace],
-  );
+  const arrangeLoadedText = useCallback((contents: string, key: string) => {
+    const { schema: loadedSchema } = parseDbmlText(contents);
+
+    if (loadedSchema === null) {
+      return;
+    }
+
+    // A file carrying its own layout block overrules whatever was remembered
+    // for it, and the stored positions have to be cleared for it to be heard at
+    // all: `resetPositions` only consults a file's coordinates when it finds
+    // nothing stored. Without this, a file arranged in the extension opens on
+    // the site in a layout the site invented — which is the round trip the whole
+    // format exists for.
+    if (loadedSchema.tables.some((table) => table.fromMetaInfo === true)) {
+      tableCoordsStore.clear(key);
+    }
+
+    tableCoordsStore.resetPositions(loadedSchema.tables, loadedSchema.refs);
+  }, []);
+
+  const rememberLoaded = useCallback((path: string, contents: string) => {
+    loadedRef.current = { ...loadedRef.current, [path]: contents };
+    setLoaded(loadedRef.current);
+  }, []);
 
   /**
-   * Text that has just been loaded, becoming the document on screen.
+   * Opening a file of the reader's own: the picker in the tree and a file
+   * dropped on the page both end here.
    *
-   * Both ways in go through here — the picker and the drop target, which put a
-   * file into the tab that is open, and the catalogue, which opens a tab of its
-   * own. What differs between them is the transition; what they share is
-   * everything after it, and that is what this holds.
+   * Decoded as UTF-8 and never sent anywhere — the read happens in the page,
+   * which is what lets someone open a production schema without it becoming a
+   * request.
    *
-   * The arranging happens after the transition rather than before, which is the
-   * opposite of what this code did when a file could only land in the current
-   * tab: opening from the catalogue changes the document key, `switchDocument`
-   * runs inside `changeWorkspace`, and arranging first would file the layout
-   * under the outgoing tab's name. It is still before the render — React
-   * flushes the update in a microtask, and these lines run to the end first.
+   * One byte does not survive the trip: `File.text()` strips a leading UTF-8
+   * BOM, so a file written by a Windows editor comes back three bytes shorter.
+   * Keeping it would mean carrying it as state the reader cannot see, and
+   * keeping it *in the text* is worse — the parser rejects U+FEFF, so the
+   * diagram would go blank for exactly those files.
    */
-  const openLoadedText = useCallback(
-    (contents: string, transition: (current: Workspace) => Workspace) => {
-      applyToWorkspace(transition);
-
-      const opened = activeTab(workspaceRef.current);
-
-      // The transition may have returned to a tab this file is already open in
-      // rather than opening one, and that tab's text is the reader's, not the
-      // one just fetched. Arranging then would clear the positions they had.
-      if (opened.text !== contents) {
-        return;
-      }
-
-      const { schema } = parseDbmlText(contents);
-
-      if (schema === null) {
-        return;
-      }
-
-      // A file replaces the document rather than editing it, so it can bring
-      // tables this document has never held a position for — which is every
-      // table when the file lands in a fresh tab. Left alone they all take the
-      // same default coordinate and land in one pile.
-      //
-      // `resetPositions` computes a layout and then keeps whatever stored
-      // position it recognises, so reopening a file that was arranged earlier
-      // still finds that arrangement. Reserved for opening a file: running it
-      // on every edit would rearrange the diagram under someone mid-sentence.
-      //
-      // A file carrying its own layout block overrules whatever the tab
-      // remembered, and the stored positions have to be cleared for it to be
-      // heard at all: `resetPositions` only consults a file's coordinates when
-      // it finds nothing stored, and a tab opened by the `+` button has already
-      // stored an empty layout for its empty document. Without this, a file
-      // arranged in the extension opens on the site in a layout the site
-      // invented — which is the round trip the whole format exists for.
-      if (schema.tables.some((table) => table.fromMetaInfo === true)) {
-        tableCoordsStore.clear(documentKeyOf(opened));
-      }
-
-      tableCoordsStore.resetPositions(schema.tables, schema.refs);
-    },
-    [applyToWorkspace],
-  );
-
-  const openFile = useCallback(
+  const addFile = useCallback(
     (file: File) => {
-      // Decoded as UTF-8 and never sent anywhere: the read happens in the page,
-      // which is what lets someone paste a production schema in without it
-      // becoming a request.
-      //
-      // One byte does not survive the trip: `File.text()` strips a leading UTF-8
-      // BOM, so a file written by a Windows editor comes back three bytes
-      // shorter. Keeping it would mean carrying it as state the reader cannot
-      // see, and keeping it *in the text* is worse — the parser rejects U+FEFF,
-      // so the diagram would go blank for exactly those files.
       void file.text().then((contents) => {
-        openLoadedText(contents, (current) =>
-          loadIntoActive(current, file.name, contents),
-        );
+        applyToSession((current) => addLocalFile(current, file.name, contents));
+
+        const opened = sessionRef.current.selected;
+        if (opened !== null) {
+          arrangeLoadedText(contents, documentKeyOf(opened));
+        }
       });
     },
-    [openLoadedText],
+    [applyToSession, arrangeLoadedText],
   );
 
-  useFileDrop(openFile);
+  useFileDrop(addFile);
 
-  /**
-   * Choosing a file in the catalogue: the third way through the same door,
-   * beside the picker and the drop target.
-   */
-  const openFromCatalog = useCallback(
-    (file: CatalogFile) => {
-      // A file already open comes back as the tab it is in, edits and all, and
-      // without a request. `openCatalogFile` would do the same, but only after
-      // fetching contents it is then going to throw away.
-      const existing = tabForPath(workspaceRef.current, file.path);
-
-      if (existing !== undefined) {
-        applyToWorkspace((current) => activateTab(current, existing.number));
+  const selectFile = useCallback(
+    (id: DocumentId) => {
+      // A local file is already here, and so is a project file fetched earlier
+      // this visit: choosing it is a selection, not a load.
+      if (id.kind === "local" || loadedRef.current[id.path] !== undefined) {
+        applyToSession((current) => selectDocument(current, id));
         return;
       }
 
-      void loadSchemaText(file.path).then((text) => {
-        if (text === null) {
-          // The manifest is built once, at start, and a mounted folder can
-          // change under a running container. Said in the tree rather than by
-          // opening an empty tab named after a file that is not there.
-          setFailedPath(file.path);
+      void loadSchemaText(id.path).then((contents) => {
+        if (contents === null) {
+          // The manifest is built once, at container start, and a mounted
+          // folder can change under a running container. Said in the tree
+          // rather than by opening an empty document named after a file that is
+          // not there.
+          setFailedPath(id.path);
           return;
         }
 
         setFailedPath(null);
-
-        openLoadedText(text, (current) =>
-          openCatalogFile(
-            current,
-            { path: file.path, title: fileNameOf(file.path) },
-            text,
-          ),
-        );
+        rememberLoaded(id.path, contents);
+        applyToSession((current) => selectDocument(current, id));
+        arrangeLoadedText(contents, documentKeyOf(id));
       });
     },
-    [applyToWorkspace, openLoadedText],
+    [applyToSession, arrangeLoadedText, rememberLoaded],
+  );
+
+  const revert = useCallback(
+    (path: string) => {
+      applyToSession((current) => revertCatalogFile(current, path));
+
+      // Before the arranging and not after, which is the opposite of the order
+      // deleting needs: the document does not change here, so nothing flushes
+      // the store behind us, and `resetPositions` reads storage to decide
+      // whether to keep an arrangement. Cleared, it reaches for the project
+      // file's own coordinates instead — or computes a fresh layout.
+      const key = documentKeyOf({ kind: "catalog", path });
+      tableCoordsStore.clear(key);
+
+      const contents = loadedRef.current[path];
+      if (contents !== undefined) {
+        arrangeLoadedText(contents, key);
+      }
+    },
+    [applyToSession, arrangeLoadedText],
+  );
+
+  const remove = useCallback(
+    (id: number) => {
+      applyToSession((current) => removeLocalFile(current, id));
+
+      // After the transition, never before it. `clear` empties storage and
+      // leaves the store holding what it held, so clearing first and switching
+      // second writes the deleted document's layout straight back — the switch
+      // flushes the outgoing store before it loads the incoming one. By here
+      // the stores point elsewhere, and the key stays gone.
+      tableCoordsStore.clear(documentKeyOf({ kind: "local", id }));
+    },
+    [applyToSession],
   );
 
   /**
-   * The text-changing commands take one further shape, and the shape is the
-   * point: hand the active tab's text to a transform that came from the package
-   * the extension uses, and put the answer back only if it differs.
+   * Handing a schema to the reader, from anywhere in the tree.
    *
-   * Comparing first is what keeps a command that changed nothing — Alt+H over a
-   * table with no relations, the layout button before a diagram exists — out of
-   * the undo history entirely, rather than leaving an empty step in it.
+   * A project file they have never opened has not been fetched, and handing
+   * them an empty file would be worse than making them wait for the request:
+   * this is the download the row menu promises even when the schema is too
+   * broken to draw, so it cannot be the one that quietly produces nothing.
    */
-  const runTextCommand = useCallback(
-    (transform: (text: string) => string) => {
-      applyToWorkspace((current) => {
-        const text = activeTab(current).text;
-        const updated = transform(text);
+  const download = useCallback(
+    (id: DocumentId) => {
+      void (async () => {
+        const current = sessionRef.current;
+        let contents = textOf(current, id, loadedOf(loadedRef.current, id));
 
-        return updated === text ? current : updateActiveText(current, updated);
-      });
+        if (contents === null && id.kind === "catalog") {
+          contents = await loadSchemaText(id.path);
+
+          if (contents === null) {
+            setFailedPath(id.path);
+            return;
+          }
+
+          rememberLoaded(id.path, contents);
+        }
+
+        const name =
+          id.kind === "local"
+            ? localFileById(current, id.id)?.name ?? ""
+            : id.path;
+
+        downloadTextFile(toDbmlFilename(name), contents ?? "");
+      })();
     },
-    [applyToWorkspace],
+    [rememberLoaded],
   );
 
+  /**
+   * Writing the table positions into the text, so the layout travels with the
+   * file. The answer goes back only if it differs: a command that changed
+   * nothing — the button pressed twice, or before a diagram exists — stays out
+   * of the editor's undo history rather than leaving an empty step in it.
+   */
   const writeLayout = useCallback(() => {
-    runTextCommand((text) =>
-      writeLayoutIntoText(text, tableCoordsStore.getCoordEntriesForMetaInfo()),
-    );
-  }, [runTextCommand]);
+    applyToSession((current) => {
+      const id = current.selected;
 
-  const catalogFiles = catalog?.files ?? [];
+      if (id === null) {
+        return current;
+      }
+
+      const contents = documentText(current, loadedRef.current, id);
+      const updated = writeLayoutIntoText(
+        contents,
+        tableCoordsStore.getCoordEntriesForMetaInfo(),
+      );
+
+      return updated === contents
+        ? current
+        : updateSelectedText(current, updated);
+    });
+  }, [applyToSession]);
 
   return (
     <div className="flex h-full w-full">
-      {catalogFiles.length > 0 && (
-        <CatalogSidebar
-          files={catalogFiles}
-          activePath={tab.sourcePath ?? null}
-          failedPath={failedPath}
-          onOpen={openFromCatalog}
-        />
-      )}
+      <FileTree
+        catalogFiles={catalog?.files ?? []}
+        localFiles={session.localFiles}
+        selected={selected}
+        editedPaths={Object.keys(session.edits)}
+        failedPath={failedPath}
+        onSelect={selectFile}
+        onAddFile={addFile}
+        onDownload={download}
+        onRevert={revert}
+        onRemove={remove}
+      />
       <div className="min-w-0 flex-1">
         <SplitLayout
           left={
-            <div className="flex h-full flex-col">
-              <TabBar
-                workspace={workspace}
-                onActivate={(number) => {
-                  applyToWorkspace((current) => activateTab(current, number));
-                }}
-                onClose={(number) => {
-                  applyToWorkspace((current) => closeTab(current, number));
-                }}
-                onAdd={() => {
-                  applyToWorkspace((current) => addTab(current, NEW_TAB_TEXT));
+            // `min-h-0` so the editor shrinks inside the column rather than
+            // growing the page.
+            <div className="flex h-full min-h-0 flex-col">
+              <EditorPane
+                // Keyed on the document so switching gives the editor the other
+                // schema's text outright, rather than as an edit — an edit would
+                // leave the undo history of one schema attached to another.
+                key={documentKey ?? NO_DOCUMENT_KEY}
+                value={text}
+                // Typing into a page with nothing open would go nowhere:
+                // `updateSelectedText` has no document to write to.
+                readOnly={selected === null}
+                onChange={(next) => {
+                  // Monaco reports the edits the page itself wrote back into
+                  // it, and those are not the reader's: restoring a project
+                  // file would file the project's own text as their version of
+                  // it, leaving the row marked as changed for good.
+                  if (next === text) {
+                    return;
+                  }
+
+                  applyToSession((current) =>
+                    updateSelectedText(current, next),
+                  );
                 }}
               />
-              <DocumentBar
-                onOpen={openFile}
-                onDownload={() => {
-                  downloadTextFile(toDbmlFilename(tab.title), tab.text);
-                }}
-                onWriteLayout={writeLayout}
-              />
-              {/* `min-h-0` so the editor shrinks inside the column rather than
-              pushing the bars off the top. */}
-              <div className="min-h-0 flex-1">
-                <EditorPane
-                  // Keyed on the document so switching tabs gives the editor the
-                  // other schema's text outright, rather than as an edit — an edit
-                  // would leave the undo history of one schema attached to another.
-                  key={documentKey}
-                  value={tab.text}
-                  onChange={(next) => {
-                    applyToWorkspace((current) =>
-                      updateActiveText(current, next),
-                    );
-                  }}
-                />
-              </div>
             </div>
           }
           right={
             <DiagramApp
-              schema={schema}
-              schemaErrorMessage={errorMessage}
+              // Nothing open is not an empty schema: `parseDbmlText("")` yields
+              // a schema with no tables, which the viewer would draw as an empty
+              // canvas. `null` is what makes it say so instead.
+              schema={selected === null ? null : schema}
+              schemaErrorMessage={selected === null ? null : errorMessage}
               documentKey={documentKey}
               theme={theme}
               themeColors={themeColors}
               setTheme={setTheme}
               scrollDirection={ScrollDirection.UpOut}
+              hostActions={
+                selected === null ? null : (
+                  <DocumentActions
+                    onDownload={() => {
+                      download(selected);
+                    }}
+                    onWriteLayout={writeLayout}
+                  />
+                )
+              }
             />
           }
         />

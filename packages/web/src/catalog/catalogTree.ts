@@ -1,5 +1,4 @@
 import { type CatalogFile } from "./catalogManifest";
-import { fileNameOf } from "./catalogPath";
 
 /**
  * The catalogue as something to draw, built from the flat list the manifest
@@ -25,6 +24,17 @@ export interface CatalogFileNode {
 }
 
 export type CatalogNode = CatalogFolderNode | CatalogFileNode;
+
+/**
+ * The last segment of a catalogue path. The separator is always `/`: these
+ * paths come from a URL and from a manifest built on Linux, never from a
+ * Windows filesystem.
+ */
+export const fileNameOf = (path: string): string => {
+  const cut = path.lastIndexOf("/");
+
+  return cut === -1 ? path : path.slice(cut + 1);
+};
 
 // Folders first, then files, each group alphabetical — the order every file
 // browser has trained everyone to expect, and the reason the manifest's own

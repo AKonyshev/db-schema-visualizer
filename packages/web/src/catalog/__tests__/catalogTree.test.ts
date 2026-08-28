@@ -1,6 +1,10 @@
 import { type CatalogFile } from "../catalogManifest";
-import { fileNameOf } from "../catalogPath";
-import { buildTree, filterTree, type CatalogNode } from "../catalogTree";
+import {
+  buildTree,
+  fileNameOf,
+  filterTree,
+  type CatalogNode,
+} from "../catalogTree";
 
 const file = (path: string, title = path): CatalogFile => ({ path, title });
 

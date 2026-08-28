@@ -1,4 +1,4 @@
-import { readStoredWorkspace } from "../workspaceStorage";
+import { readStoredSession } from "../sessionStorage";
 
 // The suite runs under Node, where there is no `window` at all. Standing one up
 // per test is also the only way to have `getItem` throw, which is what a
@@ -11,20 +11,20 @@ afterEach(() => {
   delete (globalThis as { window?: unknown }).window;
 });
 
-describe("readStoredWorkspace", () => {
+describe("readStoredSession", () => {
   test("hands over what was stored, unparsed", () => {
-    withLocalStorage({ getItem: () => '{"version":1}' });
+    withLocalStorage({ getItem: () => '{"version":2}' });
 
-    expect(readStoredWorkspace()).toEqual({
+    expect(readStoredSession()).toEqual({
       kind: "found",
-      raw: '{"version":1}',
+      raw: '{"version":2}',
     });
   });
 
   test("says so when nothing has been stored", () => {
     withLocalStorage({ getItem: () => null });
 
-    expect(readStoredWorkspace()).toEqual({ kind: "empty" });
+    expect(readStoredSession()).toEqual({ kind: "empty" });
   });
 
   // Safari's private mode and a browser told to block site data both raise on
@@ -38,6 +38,6 @@ describe("readStoredWorkspace", () => {
       },
     });
 
-    expect(readStoredWorkspace()).toEqual({ kind: "unreadable" });
+    expect(readStoredSession()).toEqual({ kind: "unreadable" });
   });
 });

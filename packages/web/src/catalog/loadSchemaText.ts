@@ -3,8 +3,9 @@
  *
  * A file listed in the manifest and missing from disk is possible in the
  * ordinary way of things: the manifest is built once, at start, and a mounted
- * folder can change under a running container. The caller says so in the tree
- * rather than opening an empty tab named after a file that is not there.
+ * folder can change under a running container. The caller says so on the row it
+ * happened on, rather than opening an empty document named after a file that is
+ * not there.
  */
 export const loadSchemaText = async (path: string): Promise<string | null> => {
   // Segment by segment: the separators are part of the URL, and everything
