@@ -112,27 +112,50 @@ const App = ({ initialWorkspace, catalog }: AppProps): JSX.Element => {
   );
 
   /**
-   * What a newly loaded schema does to the diagram.
+   * Text that has just been loaded, becoming the document on screen.
    *
-   * A file replaces the document rather than editing it, so it can bring tables
-   * this document has never held a position for — which is every table when the
-   * file lands in a fresh tab. Left alone they all take the same default
-   * coordinate and land in one pile.
+   * Both ways in go through here — the picker and the drop target, which put a
+   * file into the tab that is open, and the catalogue, which opens a tab of its
+   * own. What differs between them is the transition; what they share is
+   * everything after it, and that is what this holds.
    *
-   * `resetPositions` computes a layout and then keeps whatever stored position
-   * it recognises, so reopening a file that was arranged earlier still finds
-   * that arrangement. Reserved for opening a file: running it on every edit
-   * would rearrange the diagram under someone mid-sentence.
+   * The arranging happens after the transition rather than before, which is the
+   * opposite of what this code did when a file could only land in the current
+   * tab: opening from the catalogue changes the document key, `switchDocument`
+   * runs inside `changeWorkspace`, and arranging first would file the layout
+   * under the outgoing tab's name. It is still before the render — React
+   * flushes the update in a microtask, and these lines run to the end first.
    */
-  const arrangeLoadedText = useCallback(
-    (contents: string, documentKey: string) => {
+  const openLoadedText = useCallback(
+    (contents: string, transition: (current: Workspace) => Workspace) => {
+      applyToWorkspace(transition);
+
+      const opened = activeTab(workspaceRef.current);
+
+      // The transition may have returned to a tab this file is already open in
+      // rather than opening one, and that tab's text is the reader's, not the
+      // one just fetched. Arranging then would clear the positions they had.
+      if (opened.text !== contents) {
+        return;
+      }
+
       const { schema } = parseDbmlText(contents);
 
       if (schema === null) {
         return;
       }
 
-      // A file carrying its own layout block overrules whatever this tab
+      // A file replaces the document rather than editing it, so it can bring
+      // tables this document has never held a position for — which is every
+      // table when the file lands in a fresh tab. Left alone they all take the
+      // same default coordinate and land in one pile.
+      //
+      // `resetPositions` computes a layout and then keeps whatever stored
+      // position it recognises, so reopening a file that was arranged earlier
+      // still finds that arrangement. Reserved for opening a file: running it
+      // on every edit would rearrange the diagram under someone mid-sentence.
+      //
+      // A file carrying its own layout block overrules whatever the tab
       // remembered, and the stored positions have to be cleared for it to be
       // heard at all: `resetPositions` only consults a file's coordinates when
       // it finds nothing stored, and a tab opened by the `+` button has already
@@ -140,12 +163,12 @@ const App = ({ initialWorkspace, catalog }: AppProps): JSX.Element => {
       // arranged in the extension opens on the site in a layout the site
       // invented — which is the round trip the whole format exists for.
       if (schema.tables.some((table) => table.fromMetaInfo === true)) {
-        tableCoordsStore.clear(documentKey);
+        tableCoordsStore.clear(documentKeyOf(opened));
       }
 
       tableCoordsStore.resetPositions(schema.tables, schema.refs);
     },
-    [],
+    [applyToWorkspace],
   );
 
   const openFile = useCallback(
@@ -160,26 +183,19 @@ const App = ({ initialWorkspace, catalog }: AppProps): JSX.Element => {
       // see, and keeping it *in the text* is worse — the parser rejects U+FEFF,
       // so the diagram would go blank for exactly those files.
       void file.text().then((contents) => {
-        // The document does not change here — the file lands in the tab that is
-        // already open — so the positions can be prepared before the text is.
-        arrangeLoadedText(
-          contents,
-          documentKeyOf(activeTab(workspaceRef.current)),
-        );
-
-        applyToWorkspace((current) =>
+        openLoadedText(contents, (current) =>
           loadIntoActive(current, file.name, contents),
         );
       });
     },
-    [applyToWorkspace, arrangeLoadedText],
+    [openLoadedText],
   );
 
   useFileDrop(openFile);
 
   /**
-   * Choosing a file in the catalogue: the third way into the same door, beside
-   * the picker and the drop target.
+   * Choosing a file in the catalogue: the third way through the same door,
+   * beside the picker and the drop target.
    */
   const openFromCatalog = useCallback(
     (file: CatalogFile) => {
@@ -204,17 +220,16 @@ const App = ({ initialWorkspace, catalog }: AppProps): JSX.Element => {
 
         setFailedPath(null);
 
-        // The order here is the opposite of the one `openFile` uses, and that
-        // is the point: this opens a new tab, so the document key changes, and
-        // `switchDocument` runs inside the transition below. Arranging first
-        // would file the layout under the outgoing tab's name.
-        applyToWorkspace((current) =>
-          openCatalogFile(current, file.path, fileNameOf(file.path), text),
+        openLoadedText(text, (current) =>
+          openCatalogFile(
+            current,
+            { path: file.path, title: fileNameOf(file.path) },
+            text,
+          ),
         );
-        arrangeLoadedText(text, documentKeyOf(activeTab(workspaceRef.current)));
       });
     },
-    [applyToWorkspace, arrangeLoadedText],
+    [applyToWorkspace, openLoadedText],
   );
 
   /**

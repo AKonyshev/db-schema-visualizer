@@ -186,8 +186,7 @@ describe("tabs opened from the bundled catalogue", () => {
     const before = createWorkspace("Table a {\n  id integer\n}\n");
     const after = openCatalogFile(
       before,
-      "billing/invoices.dbml",
-      "invoices.dbml",
+      { path: "billing/invoices.dbml", title: "invoices.dbml" },
       "Table invoices {\n  id integer\n}\n",
     );
 
@@ -202,8 +201,7 @@ describe("tabs opened from the bundled catalogue", () => {
   test("choosing a file already open returns to it, keeping its text", () => {
     const opened = openCatalogFile(
       createWorkspace("first"),
-      "users.dbml",
-      "users.dbml",
+      { path: "users.dbml", title: "users.dbml" },
       "original",
     );
     const edited = updateActiveText(opened, "edited by the reader");
@@ -211,8 +209,7 @@ describe("tabs opened from the bundled catalogue", () => {
 
     const again = openCatalogFile(
       elsewhere,
-      "users.dbml",
-      "users.dbml",
+      { path: "users.dbml", title: "users.dbml" },
       "original",
     );
 
@@ -225,8 +222,7 @@ describe("tabs opened from the bundled catalogue", () => {
   test("the tab a path is open in can be found", () => {
     const opened = openCatalogFile(
       createWorkspace("first"),
-      "users.dbml",
-      "users.dbml",
+      { path: "users.dbml", title: "users.dbml" },
       "text",
     );
 
@@ -253,8 +249,7 @@ describe("tabs opened from the bundled catalogue", () => {
   test("the path survives storage, and tabs written without one still read", () => {
     const opened = openCatalogFile(
       createWorkspace("first"),
-      "users.dbml",
-      "users.dbml",
+      { path: "users.dbml", title: "users.dbml" },
       "text",
     );
 

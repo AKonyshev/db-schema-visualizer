@@ -26,6 +26,21 @@ export interface SchemaTab {
   sourcePath?: string;
 }
 
+/**
+ * Where a tab's contents came from, when they came from the catalogue.
+ *
+ * A type rather than two more parameters: `path` and `title` travel together
+ * everywhere they travel at all, and side by side as bare strings they are two
+ * arguments the compiler would happily let anyone swap.
+ *
+ * `title` is not the catalogue's title. That one names a schema for a reader
+ * browsing a tree; this one names a tab, and a tab is named after its file.
+ */
+export interface TabSource {
+  path: string;
+  title: string;
+}
+
 export interface Workspace {
   tabs: SchemaTab[];
   activeNumber: number;
@@ -66,7 +81,7 @@ export const createWorkspace = (
   // Given on a first visit to an image that carries a catalogue, so the tab the
   // reader lands on is a real file of theirs rather than an untitled copy of
   // one.
-  source?: { path: string; title: string },
+  source?: TabSource,
 ): Workspace => ({
   tabs: [
     {
@@ -104,11 +119,10 @@ export const tabForPath = (
  */
 export const openCatalogFile = (
   workspace: Workspace,
-  path: string,
-  title: string,
+  source: TabSource,
   text: string,
 ): Workspace => {
-  const existing = tabForPath(workspace, path);
+  const existing = tabForPath(workspace, source.path);
 
   if (existing !== undefined) {
     return activateTab(workspace, existing.number);
@@ -117,7 +131,12 @@ export const openCatalogFile = (
   return {
     tabs: [
       ...workspace.tabs,
-      { number: workspace.nextNumber, title, text, sourcePath: path },
+      {
+        number: workspace.nextNumber,
+        title: source.title,
+        text,
+        sourcePath: source.path,
+      },
     ],
     activeNumber: workspace.nextNumber,
     nextNumber: workspace.nextNumber + 1,
