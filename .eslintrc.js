@@ -1,4 +1,12 @@
 module.exports = {
+  // Stops the config search here. Without it ESLint keeps walking up past the
+  // repository root, and a git worktree created inside the repo — which is
+  // where `.claude/worktrees/` puts them — finds this same file twice, once as
+  // its own root and once as an ancestor. Both copies declare the `react`
+  // plugin and both have a `node_modules` to resolve it from, so ESLint refuses
+  // to pick between them and fails on every file, including untouched ones.
+  // That took out the `eslint --fix` step of the pre-commit hook entirely.
+  root: true,
   env: {
     browser: true,
     es2021: true,
