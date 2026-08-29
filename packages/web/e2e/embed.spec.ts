@@ -28,6 +28,23 @@ Ref: "acl"."analysis"."id" < "acl"."analysis_liquid"."analysis_id"
 Ref: "acl"."analysis"."id" < "acl"."gas_dynamic_research"."analysis_id"
 `;
 
+// One table wide enough that its detail level decides the whole framing, and
+// narrow enough to still open at full detail: fifty columns is fifteen hundred
+// pixels of table, against forty-four with the headers alone. Kept apart from
+// `ACL` so that the tests above go on describing an ordinary model.
+const WIDE = `
+Table "wide"."reading" {
+${Array.from({ length: 50 }, (_, i) => `  c${i} integer`).join("\n")}
+}
+
+Table "wide"."note" {
+  id integer [pk]
+  reading_id integer
+}
+
+Ref: "wide"."reading"."c0" < "wide"."note"."reading_id"
+`;
+
 // The built site has no catalogue in it — nginx is what puts one at these paths
 // in the container. Same-origin, so fulfilling them here keeps the promise the
 // smoke test checks: nothing the page asks for leaves the origin.
@@ -35,9 +52,16 @@ const serveModel = async (page: Page): Promise<void> => {
   await page.route("**/schemas/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
 
-    await (path === "/schemas/acl.dbml"
-      ? route.fulfill({ status: 200, contentType: "text/plain", body: ACL })
-      : route.fulfill({ status: 404, body: "not found" }));
+    const model =
+      path === "/schemas/acl.dbml"
+        ? ACL
+        : path === "/schemas/wide.dbml"
+          ? WIDE
+          : null;
+
+    await (model === null
+      ? route.fulfill({ status: 404, body: "not found" })
+      : route.fulfill({ status: 200, contentType: "text/plain", body: model }));
   });
 };
 
@@ -128,6 +152,35 @@ test("the diagram arrives already framed", async ({ page }) => {
     .poll(async () =>
       Buffer.compare(await canvasOf(page).screenshot(), onArrival),
     )
+    .toBe(0);
+});
+
+test("fit-to-view follows a change of detail level", async ({ page }) => {
+  await serveModel(page);
+  await page.goto("/embed.html?src=wide.dbml");
+  await expect(canvasOf(page)).toBeVisible();
+
+  // `D` shortens every table to its header. The view does not move with them,
+  // so what is on screen now is a headers-only drawing framed for a full-detail
+  // one — a small thing adrift in a large empty canvas.
+  await page.keyboard.press("d");
+  const unfit = await canvasOf(page).screenshot();
+
+  // Fit-to-view has to measure the tables as they are drawn now. Measuring the
+  // heights the layout stored — which never change with the detail level — puts
+  // it back at exactly the scale it is already at, and the keypress does
+  // nothing at all.
+  await page.keyboard.press("f");
+  await expect
+    .poll(async () => Buffer.compare(await canvasOf(page).screenshot(), unfit))
+    .not.toBe(0);
+
+  // And what it moved to is a framing, by the same measure as on arrival: one
+  // that pressing fit-to-view again cannot improve.
+  const fitted = await canvasOf(page).screenshot();
+  await page.keyboard.press("f");
+  await expect
+    .poll(async () => Buffer.compare(await canvasOf(page).screenshot(), fitted))
     .toBe(0);
 });
 

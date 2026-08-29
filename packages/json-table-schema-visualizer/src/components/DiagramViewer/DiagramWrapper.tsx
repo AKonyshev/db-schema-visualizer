@@ -41,6 +41,7 @@ import useLocalStorage from "@/hooks/localStorage";
 import { useKeyboardShortcuts } from "@/hooks/keyboardShortcuts";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 import { computeWheelZoom } from "@/utils/computeWheelZoom";
+import { computeDiagramBounds } from "@/utils/diagramBounds";
 import { viewportStore } from "@/stores/viewportStore";
 
 interface DiagramWrapperProps {
@@ -119,27 +120,25 @@ const DiagramWrapper = ({
     useCursorChanger("grabbing");
   const themeColors = useThemeColors();
 
-  /** Every table's box, drawn or not, in stage coordinates. */
+  const { detailLevel, next: nextDetailLevel } = useTableDetailLevel();
+  // Read through a ref rather than closed over: `fitToView` is captured once,
+  // by the mount-time subscription below, and a captured detail level would be
+  // whatever it was when the document opened for the rest of the document's
+  // life.
+  const detailLevelRef = useRef(detailLevel);
+  detailLevelRef.current = detailLevel;
+
   const diagramBounds = (): {
     x: number;
     y: number;
     width: number;
     height: number;
-  } | null => {
-    const coords = [...tableCoordsStore.getCurrentStoreValue().values()].filter(
-      (coord) => coord.w > 0 && coord.h > 0,
+  } | null =>
+    computeDiagramBounds(
+      tableCoordsStore.getCurrentStoreValue(),
+      tablesMeta,
+      detailLevelRef.current,
     );
-    if (coords.length === 0) {
-      return null;
-    }
-
-    const left = Math.min(...coords.map((c) => c.x)) + DIAGRAM_PADDING;
-    const top = Math.min(...coords.map((c) => c.y)) + DIAGRAM_PADDING;
-    const right = Math.max(...coords.map((c) => c.x + c.w)) + DIAGRAM_PADDING;
-    const bottom = Math.max(...coords.map((c) => c.y + c.h)) + DIAGRAM_PADDING;
-
-    return { x: left, y: top, width: right - left, height: bottom - top };
-  };
 
   const fitToView = () => {
     if (stageRef.current != null) {
@@ -148,10 +147,9 @@ const DiagramWrapper = ({
       const containerWidth = container.offsetWidth;
       const containerHeight = container.offsetHeight;
 
-      // Measured from the stored coordinates rather than from the stage: with
-      // off-screen tables unmounted, the stage only knows about the ones it is
-      // already showing, and fitting to those would frame a fraction of the
-      // diagram and call it the whole.
+      // `diagramBounds` rather than the stage: see `computeDiagramBounds` for
+      // why the stage is the wrong thing to measure and why the stored heights
+      // are not the right ones either.
       const contentBounds =
         diagramBounds() ?? stage.getClientRect({ relativeTo: stage });
       contentBounds.x = contentBounds.x - DIAGRAM_PADDING;
@@ -360,7 +358,7 @@ const DiagramWrapper = ({
         fitToView();
       });
     });
-    // `fitToView` reads nothing but `stageRef` and constants, so the copy
+    // `fitToView` reads nothing but `stageRef`, constants and refs, so the copy
     // captured here stays correct for the life of the component.
   }, []);
 
@@ -376,7 +374,6 @@ const DiagramWrapper = ({
     STORAGE_KEYS.SHORT_TABLE_NAME,
     false,
   );
-  const { next: nextDetailLevel } = useTableDetailLevel();
   const { resetPositions } = useTablePositionContext();
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 

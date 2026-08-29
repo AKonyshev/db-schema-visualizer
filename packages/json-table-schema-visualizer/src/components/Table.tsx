@@ -11,7 +11,6 @@ import type Konva from "konva";
 import {
   COLUMN_HEIGHT,
   PADDINGS,
-  TABLE_COLOR_HEIGHT,
   TABLE_HEADER_HEIGHT,
 } from "@/constants/sizing";
 import { useThemeColors, useThemeContext } from "@/hooks/theme";
@@ -27,6 +26,7 @@ import { useAreRowsWorthDrawing } from "@/hooks/viewport";
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
 import computeFieldDisplayTypeName from "@/utils/getFieldType";
+import { drawnTableHeight } from "@/utils/drawnTableHeight";
 
 interface TableProps extends JSONTableTable {}
 
@@ -57,11 +57,9 @@ const Table = ({ fields, name }: TableProps) => {
     }
   }, [tableX, tableY]);
 
-  const tableHeight =
-    TABLE_COLOR_HEIGHT +
-    COLUMN_HEIGHT +
-    visibleFields.length * COLUMN_HEIGHT +
-    PADDINGS.sm;
+  // The same function `computeDiagramBounds` frames this table with, so that
+  // fit-to-view is computed for the drawing that is actually on screen.
+  const tableHeight = drawnTableHeight(fields, detailLevel);
 
   const tableDragEventName = computeTableDragEventName(name);
 
