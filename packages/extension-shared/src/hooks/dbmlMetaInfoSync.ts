@@ -31,13 +31,12 @@ export const useDbmlMetaInfoSync = (
       const uri = documentKeyRef.current;
       if (content == null || uri == null) return;
 
-      // `null` means the reader is looking at the schema at a reduced detail
-      // level and has no full-detail arrangement stored for it. There is
-      // nothing to write that would still be true the next time the file is
-      // opened, and writing the reduced one would overwrite a layout the reader
-      // never asked to change.
+      // Whatever the reader has arranged, at whichever detail level: the
+      // entries carry the level with them, so the file can be read back safely.
+      // Nothing to write only when there is no diagram yet — an empty list
+      // would replace the file's layout block with an empty one.
       const coords = tableCoordsStore.getCoordEntriesForMetaInfo();
-      if (coords === null) return;
+      if (coords.length === 0) return;
 
       const updated = upsertMetaInfoInDbml(content, coords);
 

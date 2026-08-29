@@ -74,4 +74,46 @@ MetaInfo*/`;
 
     expect(result).toContain('"hidden":true');
   });
+
+  test("upsertMetaInfoInDbml records which detail level the layout was made at", () => {
+    // One arrangement in the file, and the reader may have made it at any of
+    // three detail levels. Which one is not a detail: the tables are laid out
+    // by their drawn height, so coordinates made for headers put tables on top
+    // of one another if they are read back at full detail. Saying so is what
+    // lets them be read back safely — or passed over.
+    const result = upsertMetaInfoInDbml(baseDbml, [
+      { name: "users", x: 5, y: 15, detailLevel: "HeaderOnly" },
+    ]);
+
+    expect(result).toContain('"detailLevel":"HeaderOnly"');
+  });
+
+  test("parseDBMLToJSON carries the detail level through to the schema", () => {
+    const dbml = `${baseDbml}
+/*MetaInfo
+[{"name":"users","x":100,"y":200,"detailLevel":"HeaderOnly"}]
+MetaInfo*/`;
+
+    const schema = parseDBMLToJSON(dbml);
+
+    expect(
+      schema.tables.find((t) => t.name === "users")?.fromMetaInfoDetailLevel,
+    ).toBe("HeaderOnly");
+  });
+
+  test("reads a block from before the level was written as full detail", () => {
+    // Every file written until now holds a full-detail arrangement, because
+    // that was the only kind anything wrote. Saying nothing has to go on
+    // meaning that, or the layouts already in people's files stop being used.
+    const dbml = `${baseDbml}
+/*MetaInfo
+[{"name":"users","x":100,"y":200}]
+MetaInfo*/`;
+
+    const schema = parseDBMLToJSON(dbml);
+
+    expect(
+      schema.tables.find((t) => t.name === "users")?.fromMetaInfoDetailLevel,
+    ).toBe("FullDetails");
+  });
 });

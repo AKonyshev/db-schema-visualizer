@@ -1,3 +1,5 @@
+import { DEFAULT_META_INFO_DETAIL_LEVEL } from "shared/types/metainfo";
+
 import { PersistableStore } from "./PersitableStore";
 import { detailLevelStore } from "./detailLevelStore";
 
@@ -92,18 +94,22 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
           }
         }
       } else {
-        // A file's own coordinates are a full-detail arrangement — that is the
-        // only kind written back into one, see `getCoordEntriesForMetaInfo`.
-        // Laying headers out on them would space them as though every column
-        // were still there, which is the arrangement this level exists to get
-        // away from, so at a reduced level they are passed over for a computed
-        // one.
-        const hasMetaInfo =
-          detailLevel === TableDetailLevel.FullDetails &&
-          tables.some((t) => t.fromMetaInfo === true);
+        // A file's coordinates are used only at the level they were arranged
+        // for, and they say which that is. Tables are placed by the height they
+        // are drawn at, so an arrangement made with the headers alone leaves a
+        // fortieth of the room a full-detail one needs: read back at the wrong
+        // level it does not look like a layout, it looks like every table
+        // sitting on the next. At any other level they are passed over and one
+        // is computed.
+        const arrangedForThisLevel = (table: JSONTableTable): boolean =>
+          table.fromMetaInfo === true &&
+          (table.fromMetaInfoDetailLevel ?? DEFAULT_META_INFO_DETAIL_LEVEL) ===
+            String(detailLevel);
+
+        const hasMetaInfo = tables.some(arrangedForThisLevel);
         if (hasMetaInfo) {
           tables.forEach((table) => {
-            if (table.fromMetaInfo === true && tablesPos.has(table.name)) {
+            if (arrangedForThisLevel(table) && tablesPos.has(table.name)) {
               const existing = tablesPos.get(table.name);
               if (existing == null) return;
               tablesPos.set(table.name, {
@@ -278,52 +284,33 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
   }
 
   /**
-   * The arrangement to write into the file, or `null` when there is none to
-   * write.
+   * The arrangement to write into the file, stamped with the level it was made
+   * at.
    *
-   * A file holds one set of coordinates and cannot say which detail level they
-   * were made at, so they have to mean the same thing every time they are read.
-   * They mean the full-detail arrangement: it is the roomiest of the three, and
-   * it is the only one that can be laid out again at any level without tables
-   * landing on top of each other.
+   * A file holds one set of coordinates, so the stamp is what lets it hold an
+   * arrangement made at any level rather than only a full-detail one: read back
+   * at that same level it is used, at any other it is passed over for a
+   * computed layout. Without it a compact arrangement of headers, read back at
+   * full detail, would pile every table on the next.
    *
-   * So a reader at a reduced level writes nothing of their own. If they have a
-   * full-detail layout stored for this document it goes out unchanged — moving
-   * headers about does not disturb it — and if they have never opened the
-   * document at full detail there is nothing honest to write, and this says so.
-   *
-   * `null` rather than an empty list, because the two are opposite
-   * instructions: `upsertMetaInfoInDbml` given an empty list replaces the
-   * file's coordinate block with an empty one, which would delete the layout
-   * the reader is trying not to touch.
+   * So moving tables about with the columns hidden is written down like any
+   * other arrangement, and the last one the reader made is the one the file
+   * carries.
    */
   public getCoordEntriesForMetaInfo(): Array<{
     name: string;
     x: number;
     y: number;
-  }> | null {
-    const entriesOf = (
-      coords: Map<string, XYWHPosition>,
-    ): Array<{ name: string; x: number; y: number }> =>
-      Array.from(coords.entries()).map(([name, value]) => ({
-        name,
-        x: value.x,
-        y: value.y,
-      }));
+    detailLevel: string;
+  }> {
+    const detailLevel = String(detailLevelStore.getCurrentDetailLevel());
 
-    if (
-      detailLevelStore.getCurrentDetailLevel() === TableDetailLevel.FullDetails
-    ) {
-      return entriesOf(this.tableCoords);
-    }
-
-    const stored = this.retrieve(
-      storeKeyFor(this.currentDocumentKey, TableDetailLevel.FullDetails),
-    ) as Array<[string, XYWHPosition]> | null;
-
-    return stored === null || !Array.isArray(stored)
-      ? null
-      : entriesOf(new Map(stored));
+    return Array.from(this.tableCoords.entries()).map(([name, value]) => ({
+      name,
+      x: value.x,
+      y: value.y,
+      detailLevel,
+    }));
   }
 }
 

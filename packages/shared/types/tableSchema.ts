@@ -55,4 +55,10 @@ export interface JSONTableTable
   x: number;
   y: number;
   fromMetaInfo?: boolean;
+  /**
+   * The detail level the file's coordinates were arranged for, when they came
+   * from a file at all. See `MetaInfo` for why one set of coordinates has to
+   * say which level it belongs to.
+   */
+  fromMetaInfoDetailLevel?: string;
 }
