@@ -1,5 +1,6 @@
 import computeTablesPositions from "../computeTablesPositions";
 
+import { TableDetailLevel } from "@/types/tableDetailLevel";
 import { exampleData } from "@/fake/fakeJsonTables";
 
 jest.mock("../../computeTableDimension", () => ({
@@ -11,7 +12,11 @@ jest.mock("../../computeTableDimension", () => ({
 
 describe("computeTablesPositions", () => {
   test("keeps coordinates non-negative and unique per table", () => {
-    const map = computeTablesPositions(exampleData.tables, []);
+    const map = computeTablesPositions(
+      exampleData.tables,
+      [],
+      TableDetailLevel.FullDetails,
+    );
 
     expect(map.size).toBe(exampleData.tables.length);
 
@@ -26,7 +31,11 @@ describe("computeTablesPositions", () => {
   });
 
   test("carries each table's own size through", () => {
-    const map = computeTablesPositions(exampleData.tables, []);
+    const map = computeTablesPositions(
+      exampleData.tables,
+      [],
+      TableDetailLevel.FullDetails,
+    );
 
     Array.from(map.values()).forEach(({ w, h }) => {
       expect(w).toBe(200);
@@ -40,10 +49,15 @@ describe("computeTablesPositions", () => {
     const ref = exampleData.refs[0];
     const owner = ref.endpoints[0].tableName;
 
-    const shown = computeTablesPositions(exampleData.tables, [ref]);
+    const shown = computeTablesPositions(
+      exampleData.tables,
+      [ref],
+      TableDetailLevel.FullDetails,
+    );
     const hidden = computeTablesPositions(
       exampleData.tables,
       [ref],
+      TableDetailLevel.FullDetails,
       new Set([owner]),
     );
 
@@ -52,6 +66,8 @@ describe("computeTablesPositions", () => {
   });
 
   test("returns nothing for no tables", () => {
-    expect(computeTablesPositions([], []).size).toBe(0);
+    expect(
+      computeTablesPositions([], [], TableDetailLevel.FullDetails).size,
+    ).toBe(0);
   });
 });

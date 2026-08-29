@@ -8,6 +8,7 @@ import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 import { TABLES_GAP_X, TABLES_GAP_Y } from "@/constants/sizing";
 import { type XYWHPosition } from "@/types/positions";
 import { type RelationStyle } from "@/types/relationStyle";
+import { type TableDetailLevel } from "@/types/tableDetailLevel";
 
 /**
  * Where the tables go when the diagram is arranged for the reader.
@@ -23,10 +24,21 @@ import { type RelationStyle } from "@/types/relationStyle";
  *
  * `style` is what the relations will be drawn as, which decides how much room
  * they need between the tables: right angles want corridors, curves do not.
+ *
+ * `detailLevel` is how much of each table will be drawn, and so how tall the
+ * boxes being arranged are. It reaches further than it looks: `gapsFor` takes
+ * the room between tables as a share of their height, and `layoutAroundHubs`
+ * breaks the diagram into however many columns bring the whole thing nearest
+ * `TARGET_ASPECT`. Arranging headers therefore does not merely close the
+ * vertical gaps — it lays the diagram out wider and flatter, which is the shape
+ * a row of headers wants. Pass the wrong level and headers are spaced as though
+ * every column were still under them, which is a frame showing four names in a
+ * field of white.
  */
 const computeTablesPositions = (
   tables: JSONTableTable[],
   refs: JSONTableRef[],
+  detailLevel: TableDetailLevel,
   hiddenRelations?: ReadonlySet<string>,
   style?: RelationStyle,
 ): Map<string, XYWHPosition> => {
@@ -35,7 +47,7 @@ const computeTablesPositions = (
   }
 
   const boxes = tables.map((table) => {
-    const { width, height } = computeTableDimension(table);
+    const { width, height } = computeTableDimension(table, detailLevel);
 
     return { name: table.name, w: width, h: height };
   });

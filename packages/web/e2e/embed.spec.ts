@@ -194,16 +194,16 @@ test("a change of detail level re-frames the diagram", async ({ page }) => {
   // them. `window.Konva` is Konva's own global, not a handle the app adds for
   // testing.
   //
-  // Half again is a floor, not the expected figure — the measured jump is a
-  // little under twofold. It is not larger because only the tables shrink: the
-  // gaps between them were computed by the layout at full detail and stay that
-  // size, so a diagram of two headers is still some seven hundred units tall
-  // and the fit is still decided by its height. What the floor rules out is the
-  // view not moving at all, which is what every way of getting this wrong looks
-  // like.
+  // Four times is a floor, not the expected figure — the measured jump is
+  // a little over five. It is that large because the tables are not the only
+  // thing that shrinks: the arrangement is computed from their drawn height, so
+  // the room left between them shrinks with them and the whole diagram is laid
+  // out in a shape that suits a row of headers. Spacing headers as though every
+  // column were still under them scores about two, which is what this floor is
+  // set to rule out.
   await expect
     .poll(async () => await stageScale(page))
-    .toBeGreaterThan(atFullDetail * 1.5);
+    .toBeGreaterThan(atFullDetail * 4);
 
   // And where it landed is a framing, by the same measure the arrival uses:
   // one that pressing fit-to-view cannot improve.
@@ -212,6 +212,19 @@ test("a change of detail level re-frames the diagram", async ({ page }) => {
   await expect
     .poll(async () => Buffer.compare(await canvasOf(page).screenshot(), framed))
     .toBe(0);
+
+  // Round the rest of the cycle, back to where it started, because one press is
+  // not enough to catch the way this went wrong: the level that is drawn and
+  // the level the arrangement is computed for are kept in two places, and while
+  // they were updated one render apart the first press looked right and every
+  // press after it arranged for the level before. Coming back to full detail is
+  // exact — the arrangement is the stored one, recovered rather than recomputed
+  // — so a cycle that ends anywhere but where it began has lost track of which
+  // level it is arranging for.
+  await page.keyboard.press("d");
+  await page.keyboard.press("d");
+
+  await expect.poll(async () => await stageScale(page)).toBe(atFullDetail);
 });
 
 test("the toolbar stays out of the diagram until the reader reaches for it", async ({

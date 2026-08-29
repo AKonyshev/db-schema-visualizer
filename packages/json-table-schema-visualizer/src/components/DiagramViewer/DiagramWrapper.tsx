@@ -363,40 +363,39 @@ const DiagramWrapper = ({
   }, []);
 
   /**
-   * A different amount of table gets a fresh view.
+   * A different amount of table gets an arrangement of its own.
    *
-   * Changing the detail level does not move a single table, but it changes how
-   * much of one there is to look at by a factor of fifty on a wide schema, and
-   * the view does not follow. Dropping to headers on a diagram framed for full
-   * detail leaves the reader with everything they asked to see crammed into a
-   * band across the middle of an empty canvas; going back the other way runs
-   * the tables off the bottom of it. Both are recoverable by pressing `F`, and
-   * both look like the level change having gone wrong until you do.
+   * The layout is computed from how tall the tables are drawn — the gaps
+   * between them are a share of their height, and the number of columns the
+   * diagram is broken into is chosen to bring the whole near `TARGET_ASPECT`.
+   * None of that survives the tables becoming a fortieth of their height, so
+   * headers left in a full-detail arrangement sit in a field of white with the
+   * relations running the length of it.
    *
-   * Same reasoning as the auto-arrange path above, and the same cost: a reader
-   * zoomed into one table to read its columns is returned to the whole diagram.
-   * That is the trade — `D` is a request to see the schema at a different
-   * grain, and the framing for one grain is not the framing for another.
+   * `switchToDetailLevel` re-keys the store to this level and either recovers
+   * the arrangement the reader last had here or computes one. Announcing the
+   * coordinates as replaced is what moves the tables; the subscription above
+   * hears that too and would eventually frame them, but only on the next
+   * animation frame, and a frame that is off-screen or in a background tab is
+   * not given one. The framing is called for here instead, where it is
+   * immediate and certain — nothing is waited for, because the bounds are read
+   * from the coordinate store rather than measured off the stage.
    *
-   * The guard is what keeps this from firing on mount, where it would override
-   * the starting state `hasPositionedStage` just set and take away the view a
+   * The guard keeps this off the mount, where it would arrange a document that
+   * `switchDocument` has just arranged and take away the view a returning
    * reader left behind. The viewer is keyed by document, so a document switch
    * mounts a fresh one and lands here too.
-   *
-   * No `requestAnimationFrame`, unlike the auto-arrange path: an effect already
-   * runs after React has re-rendered, and the bounds come from the coordinate
-   * store and `tablesMeta` rather than from the stage, so there is nothing left
-   * to wait for.
    */
-  const framedAtDetailLevel = useRef(detailLevel);
+  const arrangedAtDetailLevel = useRef(detailLevel);
   useEffect(() => {
-    if (framedAtDetailLevel.current === detailLevel) {
+    if (arrangedAtDetailLevel.current === detailLevel) {
       return;
     }
 
-    framedAtDetailLevel.current = detailLevel;
+    arrangedAtDetailLevel.current = detailLevel;
+    tableCoordsStore.switchToDetailLevel(tablesMeta, refs);
     fitToView();
-  }, [detailLevel]);
+  }, [detailLevel, tablesMeta, refs]);
 
   const [, setColorRelations] = useLocalStorage<boolean>(
     STORAGE_KEYS.COLOR_RELATIONS,

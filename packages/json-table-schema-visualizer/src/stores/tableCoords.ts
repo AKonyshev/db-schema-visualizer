@@ -1,4 +1,5 @@
 import { PersistableStore } from "./PersitableStore";
+import { detailLevelStore } from "./detailLevelStore";
 
 import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 import type { XYPosition, XYWHPosition } from "@/types/positions";
@@ -8,10 +9,24 @@ import { tableRelationsVisibilityStore } from "@/stores/tableRelationsVisibility
 import { getRelationStyle } from "@/stores/relationStyle";
 import eventEmitter from "@/events-emitter";
 import { defaultTableCoord } from "@/constants/tableCoords";
+import { TableDetailLevel } from "@/types/tableDetailLevel";
+
+/**
+ * A layout belongs to a document *and* to a detail level.
+ *
+ * The arrangement is computed from how tall the tables are drawn, so the three
+ * levels want three different ones — and a reader who has moved tables about at
+ * one level should find them where they left them when they come back to it,
+ * rather than have the move thrown away because they looked at the schema
+ * another way in between.
+ */
+const storeKeyFor = (documentKey: string, level: TableDetailLevel): string =>
+  `${documentKey}#${level}`;
 
 class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
   private tableCoords = new Map<string, XYWHPosition>();
-  private currentStoreKey = "none";
+  private currentDocumentKey = "none";
+  private currentStoreKey = storeKeyFor("none", TableDetailLevel.FullDetails);
 
   static RESET_POS_EVENT_NAME = "tableCoords:resetTablesPositions";
 
@@ -51,9 +66,11 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     // The relation style decides how much room the lines need between tables.
     // A right angle is routed round what stands in its way and a curve is not,
     // so an arrangement made for curves is the roomier of the two.
+    const detailLevel = detailLevelStore.getCurrentDetailLevel();
     const tablesPos = computeTablesPositions(
       tables,
       refs,
+      detailLevel,
       hidden,
       getRelationStyle(),
     );
@@ -107,23 +124,87 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     this.persist(this.currentStoreKey, storeValue);
   }
 
+  /**
+   * Point the store at one stored layout, computing it if there is none.
+   *
+   * `announceRecovered` is what separates the two callers. Switching documents
+   * remounts the diagram, so a recovered layout is already what the new tables
+   * render with and announcing it would only make them fit twice. Switching
+   * detail levels remounts nothing: the tables are on screen at the old
+   * arrangement's coordinates and nothing else will tell them to move.
+   */
+  private adoptStoreKey(
+    storeKey: string,
+    tables: JSONTableTable[],
+    refs: JSONTableRef[],
+    announceRecovered: boolean,
+  ): void {
+    this.saveCurrentStore();
+
+    this.currentStoreKey = storeKey;
+    const recoveredStore = this.retrieve(this.currentStoreKey) as Array<
+      [string, XYWHPosition]
+    > | null;
+    if (recoveredStore === null || !Array.isArray(recoveredStore)) {
+      // Announces the reset itself.
+      this.resetPositions(tables, refs);
+      return;
+    }
+
+    this.tableCoords = new Map<string, XYWHPosition>(recoveredStore);
+    if (announceRecovered) {
+      eventEmitter.emit(
+        TableCoordsStore.RESET_POS_EVENT_NAME,
+        this.tableCoords,
+      );
+    }
+  }
+
   public switchTo(
     newStoreKey: string,
     newTables: JSONTableTable[],
     refs: JSONTableRef[],
   ): void {
-    this.saveCurrentStore();
+    this.currentDocumentKey = newStoreKey;
+    this.adoptStoreKey(
+      storeKeyFor(newStoreKey, detailLevelStore.getCurrentDetailLevel()),
+      newTables,
+      refs,
+      false,
+    );
+  }
 
-    this.currentStoreKey = newStoreKey;
-    const recoveredStore = this.retrieve(this.currentStoreKey) as Array<
-      [string, XYWHPosition]
-    > | null;
-    if (recoveredStore === null || !Array.isArray(recoveredStore)) {
-      this.resetPositions(newTables, refs);
-      return;
+  /**
+   * The same document, arranged for the detail level now in force.
+   *
+   * Called after the level has changed, so the level it reads is the new one.
+   */
+  public switchToDetailLevel(
+    tables: JSONTableTable[],
+    refs: JSONTableRef[],
+  ): void {
+    this.adoptStoreKey(
+      storeKeyFor(
+        this.currentDocumentKey,
+        detailLevelStore.getCurrentDetailLevel(),
+      ),
+      tables,
+      refs,
+      true,
+    );
+  }
+
+  /**
+   * Everything remembered for one document, at every level.
+   *
+   * The caller names a document, not a layout — it has no idea there are three
+   * — so clearing the one that happens to be current would leave the other two
+   * to be adopted the moment the reader pressed `D`.
+   */
+  public clear(documentKey: string): void {
+    for (const level of Object.values(TableDetailLevel)) {
+      super.clear(storeKeyFor(documentKey, level));
     }
-
-    this.tableCoords = new Map<string, XYWHPosition>(recoveredStore);
   }
 
   public getCoords(table: string): XYPosition {
