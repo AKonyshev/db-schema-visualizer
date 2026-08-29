@@ -53,7 +53,10 @@ const tableFrom = (
     x: fromFile?.x ?? 0,
     y: fromFile?.y ?? 0,
     fromMetaInfo: fromFile !== undefined,
-    fromMetaInfoDetailLevel: fromFile?.detailLevel,
+    metaInfoPositions:
+      fromFile === undefined
+        ? undefined
+        : { [fromFile.detailLevel]: { x: fromFile.x, y: fromFile.y } },
   }) as unknown as JSONTableTable;
 
 describe("the layout a file is given, and the one it is read back from", () => {
@@ -112,5 +115,29 @@ describe("the layout a file is given, and the one it is read back from", () => {
     // Eighty rows of table laid out on coordinates spaced for eighty headers is
     // eighty rows of table on top of the next one along.
     expect(tableCoordsStore.getFullCoords("t").x).not.toBe(4242);
+  });
+
+  test("offers every arrangement it has, full detail last", () => {
+    detailLevelStore.set(TableDetailLevel.FullDetails);
+    tableCoordsStore.switchTo("doc-three", [tableFrom("t", 80)], []);
+
+    // `D` to headers: a second arrangement, computed and stored under its own
+    // key, with the full-detail one saved on the way out.
+    detailLevelStore.set(TableDetailLevel.HeaderOnly);
+    tableCoordsStore.switchToDetailLevel([tableFrom("t", 80)], []);
+
+    const entries = tableCoordsStore.getCoordEntriesForMetaInfo();
+    const levels = entries.map((entry) => entry.detailLevel);
+
+    // Both go into the file. Holding only the one on screen would throw the
+    // reader's other arrangement away every time they pressed `D`.
+    expect(new Set(levels)).toEqual(
+      new Set([TableDetailLevel.HeaderOnly, TableDetailLevel.FullDetails]),
+    );
+
+    // And full detail is written last, because a reader that predates the
+    // level field keeps whichever entry it saw last, and that one is the only
+    // arrangement safe to draw at any level.
+    expect(levels[levels.length - 1]).toBe(TableDetailLevel.FullDetails);
   });
 });

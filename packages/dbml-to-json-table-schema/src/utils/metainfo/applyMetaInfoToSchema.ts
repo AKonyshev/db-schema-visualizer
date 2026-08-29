@@ -12,15 +12,24 @@ export const applyMetaInfoToSchema = (
   metaInfo.forEach((item) => {
     const table = schema.tables.find((t) => t.name === item.name);
     if (table != null) {
-      table.x = item.x;
-      table.y = item.y;
       table.fromMetaInfo = true;
-      // Which level these coordinates were arranged for, so that whatever draws
-      // them can tell whether they are safe to use as they are. A block that
-      // does not say was written before the field existed, and every one of
-      // those holds a full-detail arrangement.
-      table.fromMetaInfoDetailLevel =
-        item.detailLevel ?? DEFAULT_META_INFO_DETAIL_LEVEL;
+
+      // One entry per table per level, so a table is met once for each
+      // arrangement the file holds rather than once in total.
+      const level = item.detailLevel ?? DEFAULT_META_INFO_DETAIL_LEVEL;
+      table.metaInfoPositions = {
+        ...table.metaInfoPositions,
+        [level]: { x: item.x, y: item.y },
+      };
+
+      // `x` and `y` are what a reader knowing nothing of levels uses, and the
+      // full-detail arrangement is the one with room enough to be drawn at any
+      // level — so it wins whenever the file has one.
+      const chosen =
+        table.metaInfoPositions[DEFAULT_META_INFO_DETAIL_LEVEL] ?? item;
+      table.x = chosen.x;
+      table.y = chosen.y;
+
       // `hidden` is still read off the file and written back by
       // `upsertMetaInfoInDbml`, so a block written by an older version survives
       // untouched. Nothing acts on it any more: which tables have their

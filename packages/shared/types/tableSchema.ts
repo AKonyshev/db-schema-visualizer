@@ -56,9 +56,9 @@ export interface JSONTableTable
   y: number;
   fromMetaInfo?: boolean;
   /**
-   * The detail level the file's coordinates were arranged for, when they came
-   * from a file at all. See `MetaInfo` for why one set of coordinates has to
-   * say which level it belongs to.
+   * The arrangements the file held for this table, keyed by the detail level
+   * each was made at. See `MetaInfo`: one set of coordinates cannot serve three
+   * levels, because tables are laid out by the height they are drawn at.
    */
-  fromMetaInfoDetailLevel?: string;
+  metaInfoPositions?: Record<string, { x: number; y: number }>;
 }

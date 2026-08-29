@@ -88,32 +88,50 @@ MetaInfo*/`;
     expect(result).toContain('"detailLevel":"HeaderOnly"');
   });
 
-  test("parseDBMLToJSON carries the detail level through to the schema", () => {
+  test("keeps an arrangement per detail level, all in the one block", () => {
     const dbml = `${baseDbml}
 /*MetaInfo
-[{"name":"users","x":100,"y":200,"detailLevel":"HeaderOnly"}]
+[{"name":"users","x":10,"y":20,"detailLevel":"HeaderOnly"},
+{"name":"users","x":300,"y":400,"detailLevel":"FullDetails"}]
 MetaInfo*/`;
 
     const schema = parseDBMLToJSON(dbml);
 
+    // One entry per table per level, rather than a block keyed by level: it
+    // keeps the block a flat array, which is what every reader written before
+    // this parses it as.
     expect(
-      schema.tables.find((t) => t.name === "users")?.fromMetaInfoDetailLevel,
-    ).toBe("HeaderOnly");
+      schema.tables.find((t) => t.name === "users")?.metaInfoPositions,
+    ).toEqual({
+      HeaderOnly: { x: 10, y: 20 },
+      FullDetails: { x: 300, y: 400 },
+    });
   });
 
-  test("reads a block from before the level was written as full detail", () => {
-    // Every file written until now holds a full-detail arrangement, because
-    // that was the only kind anything wrote. Saying nothing has to go on
-    // meaning that, or the layouts already in people's files stop being used.
+  test("leaves x and y on the full-detail arrangement", () => {
+    const dbml = `${baseDbml}
+/*MetaInfo
+[{"name":"users","x":10,"y":20,"detailLevel":"HeaderOnly"},
+{"name":"users","x":300,"y":400,"detailLevel":"FullDetails"}]
+MetaInfo*/`;
+
+    const users = parseDBMLToJSON(dbml).tables.find((t) => t.name === "users");
+
+    // A reader written before any of this knows only `x` and `y`, and takes
+    // whichever entry it saw last. Full detail is the arrangement with the most
+    // room in it, so it is the safe one to be left holding.
+    expect([users?.x, users?.y]).toEqual([300, 400]);
+  });
+
+  test("a block naming no level is still one full-detail arrangement", () => {
     const dbml = `${baseDbml}
 /*MetaInfo
 [{"name":"users","x":100,"y":200}]
 MetaInfo*/`;
 
-    const schema = parseDBMLToJSON(dbml);
-
     expect(
-      schema.tables.find((t) => t.name === "users")?.fromMetaInfoDetailLevel,
-    ).toBe("FullDetails");
+      parseDBMLToJSON(dbml).tables.find((t) => t.name === "users")
+        ?.metaInfoPositions,
+    ).toEqual({ FullDetails: { x: 100, y: 200 } });
   });
 });

@@ -1,5 +1,3 @@
-import { DEFAULT_META_INFO_DETAIL_LEVEL } from "shared/types/metainfo";
-
 import { PersistableStore } from "./PersitableStore";
 import { detailLevelStore } from "./detailLevelStore";
 
@@ -94,31 +92,30 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
           }
         }
       } else {
-        // A file's coordinates are used only at the level they were arranged
-        // for, and they say which that is. Tables are placed by the height they
-        // are drawn at, so an arrangement made with the headers alone leaves a
-        // fortieth of the room a full-detail one needs: read back at the wrong
-        // level it does not look like a layout, it looks like every table
-        // sitting on the next. At any other level they are passed over and one
-        // is computed.
-        const arrangedForThisLevel = (table: JSONTableTable): boolean =>
-          table.fromMetaInfo === true &&
-          (table.fromMetaInfoDetailLevel ?? DEFAULT_META_INFO_DETAIL_LEVEL) ===
-            String(detailLevel);
+        // A file can hold an arrangement for each detail level, and each says
+        // which it is. Only the one for the level in force is any use: tables
+        // are placed by the height they are drawn at, so an arrangement made
+        // with the headers alone leaves a fortieth of the room a full-detail
+        // one needs. Read back at the wrong level it is not a layout, it is
+        // every table sitting on the next.
+        const fromFileAt = (table: JSONTableTable): XYPosition | undefined =>
+          table.metaInfoPositions?.[String(detailLevel)];
 
-        const hasMetaInfo = tables.some(arrangedForThisLevel);
+        const hasMetaInfo = tables.some(
+          (table) => fromFileAt(table) !== undefined,
+        );
         if (hasMetaInfo) {
           tables.forEach((table) => {
-            if (arrangedForThisLevel(table) && tablesPos.has(table.name)) {
-              const existing = tablesPos.get(table.name);
-              if (existing == null) return;
-              tablesPos.set(table.name, {
-                x: table.x,
-                y: table.y,
-                w: existing.w,
-                h: existing.h,
-              });
-            }
+            const placed = fromFileAt(table);
+            const existing = tablesPos.get(table.name);
+            if (placed === undefined || existing == null) return;
+
+            tablesPos.set(table.name, {
+              x: placed.x,
+              y: placed.y,
+              w: existing.w,
+              h: existing.h,
+            });
           });
         }
       }
@@ -283,19 +280,31 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     this.tableCoords.delete(table);
   }
 
+  private storedCoordsFor(
+    level: TableDetailLevel,
+  ): Map<string, XYWHPosition> | null {
+    const stored = this.retrieve(
+      storeKeyFor(this.currentDocumentKey, level),
+    ) as Array<[string, XYWHPosition]> | null;
+
+    return stored === null || !Array.isArray(stored) ? null : new Map(stored);
+  }
+
   /**
-   * The arrangement to write into the file, stamped with the level it was made
-   * at.
+   * Every arrangement this document has, one entry per table per level, for
+   * writing into the file.
    *
-   * A file holds one set of coordinates, so the stamp is what lets it hold an
-   * arrangement made at any level rather than only a full-detail one: read back
-   * at that same level it is used, at any other it is passed over for a
-   * computed layout. Without it a compact arrangement of headers, read back at
-   * full detail, would pile every table on the next.
+   * All of them, not only the one on screen. A reader who arranges a schema
+   * with the headers showing and then again at full detail has made two
+   * layouts and both are theirs; a file able to hold only the last would drop
+   * the other every time they pressed `D`.
    *
-   * So moving tables about with the columns hidden is written down like any
-   * other arrangement, and the last one the reader made is the one the file
-   * carries.
+   * Full detail last, which is not cosmetic. A reader written before the
+   * `detailLevel` field existed applies every entry in turn and is left holding
+   * whichever came last, so it should be left holding the arrangement with the
+   * most room in it — a compact one drawn at full detail is tables on top of
+   * tables. A document its reader has never opened at full detail has no such
+   * arrangement to put last, and nothing here can invent one.
    */
   public getCoordEntriesForMetaInfo(): Array<{
     name: string;
@@ -303,14 +312,27 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     y: number;
     detailLevel: string;
   }> {
-    const detailLevel = String(detailLevelStore.getCurrentDetailLevel());
+    const current = detailLevelStore.getCurrentDetailLevel();
+    const ordered = [
+      ...Object.values(TableDetailLevel).filter(
+        (level) => level !== TableDetailLevel.FullDetails,
+      ),
+      TableDetailLevel.FullDetails,
+    ];
 
-    return Array.from(this.tableCoords.entries()).map(([name, value]) => ({
-      name,
-      x: value.x,
-      y: value.y,
-      detailLevel,
-    }));
+    return ordered.flatMap((level) => {
+      const coords =
+        level === current ? this.tableCoords : this.storedCoordsFor(level);
+
+      return coords === null
+        ? []
+        : [...coords.entries()].map(([name, value]) => ({
+            name,
+            x: value.x,
+            y: value.y,
+            detailLevel: String(level),
+          }));
+    });
   }
 }
 

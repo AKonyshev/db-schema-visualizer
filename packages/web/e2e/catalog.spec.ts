@@ -213,4 +213,17 @@ test("a layout made with the columns hidden is saved, and says so", async ({
   // every table on the next.
   await expect(editor).toContainText("MetaInfo");
   await expect(editor).toContainText("HeaderOnly");
+
+  // Both arrangements, not just the one on screen: the full-detail one the
+  // document opened with is still the reader's, and a file that kept only the
+  // last would lose it the moment they pressed `D`.
+  await expect(editor).toContainText("FullDetails");
+
+  // Full detail written last, for a reader that predates the level field: it
+  // keeps whichever entry it saw last, and that one has to be the arrangement
+  // with room enough to be drawn at any level.
+  const text = (await editor.innerText()).replace(/\s/g, "");
+  expect(text.lastIndexOf("FullDetails")).toBeGreaterThan(
+    text.lastIndexOf("HeaderOnly"),
+  );
 });
