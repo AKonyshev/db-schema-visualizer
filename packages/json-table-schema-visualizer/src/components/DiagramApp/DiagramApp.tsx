@@ -34,6 +34,11 @@ interface DiagramAppProps {
    * find it — the embedded frame in a documentation page. See `DiagramWrapper`.
    */
   fitOnLoad?: boolean;
+  /**
+   * Keep the toolbar hidden until the pointer is over the diagram, for the same
+   * host as `fitOnLoad`. See `DiagramWrapper`.
+   */
+  revealToolbarOnHover?: boolean;
 }
 
 // The composition both hosts share. It reads nothing from `window` and knows
@@ -52,6 +57,7 @@ const DiagramApp = ({
   syncEffects,
   hostActions,
   fitOnLoad,
+  revealToolbarOnHover,
 }: DiagramAppProps) => {
   if (schemaErrorMessage !== null && schema === null) {
     return <ErrorMessage message={schemaErrorMessage} />;
@@ -71,6 +77,7 @@ const DiagramApp = ({
           syncEffects={syncEffects?.(schema) ?? null}
           hostActions={hostActions}
           fitOnLoad={fitOnLoad}
+          revealToolbarOnHover={revealToolbarOnHover}
         />
       </ScrollDirectionProvider>
     </ThemeProvider>

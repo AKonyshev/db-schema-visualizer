@@ -131,6 +131,29 @@ test("the diagram arrives already framed", async ({ page }) => {
     .toBe(0);
 });
 
+test("the toolbar stays out of the diagram until the reader reaches for it", async ({
+  page,
+}) => {
+  await serveModel(page);
+  await page.goto("/embed.html?src=acl.dbml");
+  await expect(canvasOf(page)).toBeVisible();
+
+  // A frame is as tall as the page's author made it, and a toolbar sitting on
+  // top of a 500px one covers the bottom fifth of the diagram it came to show.
+  const fit = page.getByRole("button", { name: "Fit to view" });
+  await expect(fit).toBeHidden();
+
+  // `mouse.move` rather than `hover()`: the canvas animates its relations, so
+  // Playwright can wait forever for it to be "stable" enough to hover.
+  const box = await canvasOf(page).boundingBox();
+  await page.mouse.move(
+    (box?.x ?? 0) + (box?.width ?? 0) / 2,
+    (box?.y ?? 0) + (box?.height ?? 0) / 2,
+  );
+
+  await expect(fit).toBeVisible();
+});
+
 test("a name that is in no table is said out loud", async ({ page }) => {
   await serveModel(page);
   await page.goto("/embed.html?src=acl.dbml&tables=analisys");

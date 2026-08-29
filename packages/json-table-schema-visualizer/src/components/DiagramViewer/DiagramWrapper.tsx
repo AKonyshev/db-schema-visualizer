@@ -61,6 +61,21 @@ interface DiagramWrapperProps {
    * whatever the author's `height=` gave them.
    */
   fitOnLoad?: boolean;
+  /**
+   * Keep the toolbar out of sight until the pointer is over the diagram, for
+   * the same host and the same reason as `fitOnLoad`.
+   *
+   * The toolbar floats over the bottom of the diagram. In a window that costs
+   * a strip of empty canvas; in a 500px frame it covers the bottom fifth of the
+   * thing the page put there to be looked at, and on a narrow one it wraps to
+   * two rows and covers a third.
+   *
+   * Hidden with `visibility`, not opacity: an invisible row of buttons that
+   * still answers the pointer and still reads out to a screen reader is worse
+   * than one that is honestly not there. The shortcuts keep working either way
+   * — `F`, `L` and `D` are bound to the document, not to these buttons.
+   */
+  revealToolbarOnHover?: boolean;
 }
 
 interface PendingWheelEvent {
@@ -77,6 +92,7 @@ const DiagramWrapper = ({
   refs,
   hostActions = null,
   fitOnLoad = false,
+  revealToolbarOnHover = false,
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
@@ -517,7 +533,10 @@ const DiagramWrapper = ({
     // page, and `overflow-hidden` so a stage mid-resize cannot widen the
     // document. Both matter only once the diagram shares a page with something
     // else, which is exactly when they stop being cosmetic.
-    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+    <div
+      ref={containerRef}
+      className={`relative h-full w-full overflow-hidden ${revealToolbarOnHover ? "group/diagram" : ""}`}
+    >
       <Stage
         draggable
         ref={stageRef}
@@ -543,19 +562,29 @@ const DiagramWrapper = ({
         </Layer>
       </Stage>
 
-      <Toolbar
-        onFitToView={fitToView}
-        onDownloadPng={onDownloadPng}
-        onDownloadSvg={() => {
-          void onDownloadSvg();
-        }}
-        onDownloadAdoc={onDownloadAdoc}
-        onDownloadMarkdown={onDownloadMarkdown}
-        onShowLegend={() => {
-          setIsLegendOpen(true);
-        }}
-        hostActions={hostActions}
-      />
+      {/* A plain wrapper, with no positioning of its own, so the toolbar inside
+          still anchors to the container above rather than to this. */}
+      <div
+        className={
+          revealToolbarOnHover
+            ? "invisible opacity-0 transition-opacity duration-150 group-hover/diagram:visible group-hover/diagram:opacity-100 group-focus-within/diagram:visible group-focus-within/diagram:opacity-100"
+            : ""
+        }
+      >
+        <Toolbar
+          onFitToView={fitToView}
+          onDownloadPng={onDownloadPng}
+          onDownloadSvg={() => {
+            void onDownloadSvg();
+          }}
+          onDownloadAdoc={onDownloadAdoc}
+          onDownloadMarkdown={onDownloadMarkdown}
+          onShowLegend={() => {
+            setIsLegendOpen(true);
+          }}
+          hostActions={hostActions}
+        />
+      </div>
 
       {isLegendOpen && (
         <ShortcutsLegend

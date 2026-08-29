@@ -65,6 +65,9 @@ const Frame = ({
       // reading prose around it: whatever the diagram is, it has to be visible
       // without being hunted for.
       fitOnLoad
+      // And it must not spend a fifth of that height on buttons the reader has
+      // not reached for.
+      revealToolbarOnHover
     />
   );
 };
