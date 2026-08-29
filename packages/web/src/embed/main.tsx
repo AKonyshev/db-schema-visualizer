@@ -61,6 +61,10 @@ const Frame = ({
       themeColors={themeColors}
       setTheme={setTheme}
       scrollDirection={ScrollDirection.UpIn}
+      // The frame is as tall as the page's author made it, and the reader is
+      // reading prose around it: whatever the diagram is, it has to be visible
+      // without being hunted for.
+      fitOnLoad
     />
   );
 };

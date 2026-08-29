@@ -29,6 +29,11 @@ interface DiagramAppProps {
    * as a file, and writing the layout into text it holds rather than a file on
    * disk. The extension passes nothing, because it has neither problem. */
   hostActions?: ReactNode;
+  /**
+   * Open with the whole diagram framed, for a host whose reader cannot pan to
+   * find it — the embedded frame in a documentation page. See `DiagramWrapper`.
+   */
+  fitOnLoad?: boolean;
 }
 
 // The composition both hosts share. It reads nothing from `window` and knows
@@ -46,6 +51,7 @@ const DiagramApp = ({
   scrollDirection,
   syncEffects,
   hostActions,
+  fitOnLoad,
 }: DiagramAppProps) => {
   if (schemaErrorMessage !== null && schema === null) {
     return <ErrorMessage message={schemaErrorMessage} />;
@@ -64,6 +70,7 @@ const DiagramApp = ({
           {...schema}
           syncEffects={syncEffects?.(schema) ?? null}
           hostActions={hostActions}
+          fitOnLoad={fitOnLoad}
         />
       </ScrollDirectionProvider>
     </ThemeProvider>

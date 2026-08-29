@@ -50,6 +50,17 @@ interface DiagramWrapperProps {
   refs: JSONTableRef[];
   /** Passed straight through to the toolbar; see `DiagramApp`. */
   hostActions?: ReactNode;
+  /**
+   * Frame the whole diagram on the first render instead of using the starting
+   * state, for a host whose reader cannot pan to find it.
+   *
+   * The embedded frame in a documentation page is that host: it can be a few
+   * hundred pixels tall, it opens on a slice of a model somebody chose, and the
+   * reader is reading prose around it rather than exploring a canvas. An
+   * application's reader has a whole window and a toolbar; a page's reader has
+   * whatever the author's `height=` gave them.
+   */
+  fitOnLoad?: boolean;
 }
 
 interface PendingWheelEvent {
@@ -65,6 +76,7 @@ const DiagramWrapper = ({
   tablesMeta,
   refs,
   hostActions = null,
+  fitOnLoad = false,
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
@@ -91,6 +103,67 @@ const DiagramWrapper = ({
     useCursorChanger("grabbing");
   const themeColors = useThemeColors();
 
+  /** Every table's box, drawn or not, in stage coordinates. */
+  const diagramBounds = (): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null => {
+    const coords = [...tableCoordsStore.getCurrentStoreValue().values()].filter(
+      (coord) => coord.w > 0 && coord.h > 0,
+    );
+    if (coords.length === 0) {
+      return null;
+    }
+
+    const left = Math.min(...coords.map((c) => c.x)) + DIAGRAM_PADDING;
+    const top = Math.min(...coords.map((c) => c.y)) + DIAGRAM_PADDING;
+    const right = Math.max(...coords.map((c) => c.x + c.w)) + DIAGRAM_PADDING;
+    const bottom = Math.max(...coords.map((c) => c.y + c.h)) + DIAGRAM_PADDING;
+
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  };
+
+  const fitToView = () => {
+    if (stageRef.current != null) {
+      const stage = stageRef.current;
+      const container = stage.container();
+      const containerWidth = container.offsetWidth;
+      const containerHeight = container.offsetHeight;
+
+      // Measured from the stored coordinates rather than from the stage: with
+      // off-screen tables unmounted, the stage only knows about the ones it is
+      // already showing, and fitting to those would frame a fraction of the
+      // diagram and call it the whole.
+      const contentBounds =
+        diagramBounds() ?? stage.getClientRect({ relativeTo: stage });
+      contentBounds.x = contentBounds.x - DIAGRAM_PADDING;
+      contentBounds.y = contentBounds.y - DIAGRAM_PADDING;
+      contentBounds.width = contentBounds.width + 2 * DIAGRAM_PADDING;
+      contentBounds.height = contentBounds.height + 2 * DIAGRAM_PADDING;
+      const scaleX = containerWidth / contentBounds.width;
+      const scaleY = containerHeight / contentBounds.height;
+      const scale = Math.min(scaleX, scaleY);
+
+      stage.scale({ x: scale, y: scale });
+      stage.position({
+        x:
+          (containerWidth - contentBounds.width * scale) / 2 -
+          contentBounds.x * scale,
+        y:
+          (containerHeight - contentBounds.height * scale) / 2 -
+          contentBounds.y * scale,
+      });
+      stage.batchDraw();
+      stageStateStore.set({ scale, position: stage.position() });
+      // After the position, never between it and the scale: a viewport
+      // published half-updated culls against a rectangle that never existed,
+      // and every table disappears.
+      publishViewport();
+    }
+  };
+
   // repositioning the stage only once
   const { scale: defaultStageScale, position: defaultStagePosition } =
     useStageStartingState({ width: viewWidth, height: viewHeight });
@@ -110,12 +183,29 @@ const DiagramWrapper = ({
       return;
     }
 
+    hasPositionedStage.current = true;
+
+    // A host that asked to open framed gets the same measurement the toolbar's
+    // fit button makes, rather than the starting state: the starting state
+    // takes its bounds from table coordinates alone, so a table's own width and
+    // height fall outside the box it computes, and the rightmost one is cut off
+    // by however wide it happens to be.
+    //
+    // Not done for every host, because for the other two it would be a
+    // regression: `useStageStartingState` returns a view the reader left behind
+    // when there is one, and overriding it would drop them somewhere they did
+    // not ask to be, every time they came back to a document.
+    if (fitOnLoad) {
+      // Fits and publishes the viewport itself.
+      fitToView();
+      return;
+    }
+
     stageRef.current.scale({
       x: defaultStageScale,
       y: defaultStageScale,
     });
     stageRef.current.position(defaultStagePosition);
-    hasPositionedStage.current = true;
     publishViewport();
   }, [
     defaultStageScale,
@@ -123,6 +213,7 @@ const DiagramWrapper = ({
     viewWidth,
     viewHeight,
     publishViewport,
+    fitOnLoad,
   ]);
 
   const pendingWheelRef = useRef<PendingWheelEvent | null>(null);
@@ -223,67 +314,6 @@ const DiagramWrapper = ({
     if (nodeBelongsToTable(e.target)) return;
     setHoveredTableName(null);
     setHighlightedColumns([]);
-  };
-
-  /** Every table's box, drawn or not, in stage coordinates. */
-  const diagramBounds = (): {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null => {
-    const coords = [...tableCoordsStore.getCurrentStoreValue().values()].filter(
-      (coord) => coord.w > 0 && coord.h > 0,
-    );
-    if (coords.length === 0) {
-      return null;
-    }
-
-    const left = Math.min(...coords.map((c) => c.x)) + DIAGRAM_PADDING;
-    const top = Math.min(...coords.map((c) => c.y)) + DIAGRAM_PADDING;
-    const right = Math.max(...coords.map((c) => c.x + c.w)) + DIAGRAM_PADDING;
-    const bottom = Math.max(...coords.map((c) => c.y + c.h)) + DIAGRAM_PADDING;
-
-    return { x: left, y: top, width: right - left, height: bottom - top };
-  };
-
-  const fitToView = () => {
-    if (stageRef.current != null) {
-      const stage = stageRef.current;
-      const container = stage.container();
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-
-      // Measured from the stored coordinates rather than from the stage: with
-      // off-screen tables unmounted, the stage only knows about the ones it is
-      // already showing, and fitting to those would frame a fraction of the
-      // diagram and call it the whole.
-      const contentBounds =
-        diagramBounds() ?? stage.getClientRect({ relativeTo: stage });
-      contentBounds.x = contentBounds.x - DIAGRAM_PADDING;
-      contentBounds.y = contentBounds.y - DIAGRAM_PADDING;
-      contentBounds.width = contentBounds.width + 2 * DIAGRAM_PADDING;
-      contentBounds.height = contentBounds.height + 2 * DIAGRAM_PADDING;
-      const scaleX = containerWidth / contentBounds.width;
-      const scaleY = containerHeight / contentBounds.height;
-      const scale = Math.min(scaleX, scaleY);
-
-      stage.scale({ x: scale, y: scale });
-      stage.position({
-        x:
-          (containerWidth - contentBounds.width * scale) / 2 -
-          contentBounds.x * scale,
-        y:
-          (containerHeight - contentBounds.height * scale) / 2 -
-          contentBounds.y * scale,
-      });
-      stage.batchDraw();
-      stageStateStore.set({ scale, position: stage.position() });
-      // After the position, never between it and the scale: a viewport
-      // published half-updated culls against a rectangle that never existed,
-      // and every table disappears.
-      publishViewport();
-    }
   };
 
   /**

@@ -111,6 +111,26 @@ test("the filter reaches the drawing", async ({ page }) => {
   expect(Buffer.compare(whole, filtered)).not.toBe(0);
 });
 
+test("the diagram arrives already framed", async ({ page }) => {
+  await serveModel(page);
+  await page.goto("/embed.html?src=acl.dbml");
+  await expect(canvasOf(page)).toBeVisible();
+
+  const onArrival = await canvasOf(page).screenshot();
+
+  // Pressing fit-to-view is the definition of framed, so a frame that arrives
+  // framed is one the keypress cannot improve. Asserted this way round because
+  // the canvas carries no text and no numbers to read: "unchanged by F" is the
+  // one thing about the framing a browser can state exactly.
+  await page.keyboard.press("f");
+
+  await expect
+    .poll(async () =>
+      Buffer.compare(await canvasOf(page).screenshot(), onArrival),
+    )
+    .toBe(0);
+});
+
 test("a name that is in no table is said out loud", async ({ page }) => {
   await serveModel(page);
   await page.goto("/embed.html?src=acl.dbml&tables=analisys");

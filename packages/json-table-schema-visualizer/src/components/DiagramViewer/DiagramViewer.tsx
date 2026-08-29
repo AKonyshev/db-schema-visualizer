@@ -26,6 +26,8 @@ interface DiagramViewerProps {
   documentKey?: string | null;
   syncEffects?: ReactNode;
   hostActions?: ReactNode;
+  /** Passed straight through to the wrapper; see `DiagramWrapper`. */
+  fitOnLoad?: boolean;
 }
 
 const DiagramViewer = ({
@@ -35,6 +37,7 @@ const DiagramViewer = ({
   documentKey = null,
   syncEffects = null,
   hostActions = null,
+  fitOnLoad = false,
 }: DiagramViewerProps) => {
   const { theme } = useThemeContext();
 
@@ -60,6 +63,7 @@ const DiagramViewer = ({
 
             <DiagramWrapper
               hostActions={hostActions}
+              fitOnLoad={fitOnLoad}
               tablesMeta={tables}
               refs={refs}
               connections={
