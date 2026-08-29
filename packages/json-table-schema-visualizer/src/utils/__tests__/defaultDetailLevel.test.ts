@@ -1,5 +1,6 @@
 import {
   FULL_DETAIL_COLUMN_BUDGET,
+  FULL_DETAIL_TALLEST_TABLE_BUDGET,
   defaultDetailLevelFor,
 } from "../defaultDetailLevel";
 
@@ -35,15 +36,71 @@ describe("defaultDetailLevelFor", () => {
     expect(defaultDetailLevelFor(many)).toBe(TableDetailLevel.FullDetails);
   });
 
-  test("holds full detail right up to the budget", () => {
-    expect(defaultDetailLevelFor([tableWith(FULL_DETAIL_COLUMN_BUDGET)])).toBe(
-      TableDetailLevel.FullDetails,
-    );
+  // Both budgets are probed with tables narrow enough that the other one has
+  // nothing to say: a single table wide enough to reach the total on its own
+  // would be over the tallest-table budget many times before it got there, and
+  // the boundary under test would never be the one that decided.
+  const narrowTablesTotalling = (columns: number): JSONTableTable[] => {
+    const width = FULL_DETAIL_TALLEST_TABLE_BUDGET;
+    const whole = Math.floor(columns / width);
+    const rest = columns % width;
+
+    return [
+      ...Array.from({ length: whole }, (_, i) => tableWith(width, `t${i}`)),
+      ...(rest > 0 ? [tableWith(rest, "rest")] : []),
+    ];
+  };
+
+  test("holds full detail right up to the total budget", () => {
+    expect(
+      defaultDetailLevelFor(narrowTablesTotalling(FULL_DETAIL_COLUMN_BUDGET)),
+    ).toBe(TableDetailLevel.FullDetails);
   });
 
-  test("drops to headers one column past the budget", () => {
+  test("drops to headers one column past the total budget", () => {
     expect(
-      defaultDetailLevelFor([tableWith(FULL_DETAIL_COLUMN_BUDGET + 1)]),
+      defaultDetailLevelFor(
+        narrowTablesTotalling(FULL_DETAIL_COLUMN_BUDGET + 1),
+      ),
+    ).toBe(TableDetailLevel.HeaderOnly);
+  });
+
+  test("holds full detail right up to the tallest-table budget", () => {
+    expect(
+      defaultDetailLevelFor([tableWith(FULL_DETAIL_TALLEST_TABLE_BUDGET)]),
+    ).toBe(TableDetailLevel.FullDetails);
+  });
+
+  test("drops to headers one column past the tallest-table budget", () => {
+    expect(
+      defaultDetailLevelFor([tableWith(FULL_DETAIL_TALLEST_TABLE_BUDGET + 1)]),
+    ).toBe(TableDetailLevel.HeaderOnly);
+  });
+
+  test("judges the tallest table, not the average one", () => {
+    // Forty small tables and one very wide one. Every count but the tallest
+    // says this schema is small, and the wide table is the whole of the
+    // problem: framing it is what shrinks the other forty out of legibility.
+    const mixed = [
+      ...Array.from({ length: 40 }, (_, i) => tableWith(8, `small${i}`)),
+      tableWith(166, "history_gas_condensate_intercept"),
+    ];
+
+    expect(defaultDetailLevelFor(mixed)).toBe(TableDetailLevel.HeaderOnly);
+  });
+
+  test("drops to headers for a handful of very wide tables", () => {
+    // tech_mode.dbml, the three result tables a documentation page embeds:
+    // 458 columns between them, which is well inside the total budget, and
+    // each one over six thousand pixels tall. Framing them fits the tallest
+    // into the viewport and everything else goes with it — in a 500px frame,
+    // three vertical hairlines with no readable character in them.
+    expect(
+      defaultDetailLevelFor([
+        tableWith(204, "oil_tech_mode_calc_result"),
+        tableWith(136, "gas_condensate_tech_mode_calc_result"),
+        tableWith(118, "injection_tech_mode_calc_result"),
+      ]),
     ).toBe(TableDetailLevel.HeaderOnly);
   });
 
