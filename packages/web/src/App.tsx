@@ -314,11 +314,17 @@ const App = ({
         return current;
       }
 
+      // See `getCoordEntriesForMetaInfo`: at a reduced detail level there may
+      // be no full-detail arrangement to write, and a file's layout block only
+      // ever holds that one. Nothing to say, so nothing is said — rather than
+      // the block being emptied.
+      const coords = tableCoordsStore.getCoordEntriesForMetaInfo();
+      if (coords === null) {
+        return current;
+      }
+
       const contents = documentText(current, loadedRef.current, id);
-      const updated = writeLayoutIntoText(
-        contents,
-        tableCoordsStore.getCoordEntriesForMetaInfo(),
-      );
+      const updated = writeLayoutIntoText(contents, coords);
 
       return updated === contents
         ? current

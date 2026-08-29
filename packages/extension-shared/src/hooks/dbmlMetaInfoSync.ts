@@ -31,10 +31,15 @@ export const useDbmlMetaInfoSync = (
       const uri = documentKeyRef.current;
       if (content == null || uri == null) return;
 
-      const updated = upsertMetaInfoInDbml(
-        content,
-        tableCoordsStore.getCoordEntriesForMetaInfo(),
-      );
+      // `null` means the reader is looking at the schema at a reduced detail
+      // level and has no full-detail arrangement stored for it. There is
+      // nothing to write that would still be true the next time the file is
+      // opened, and writing the reduced one would overwrite a layout the reader
+      // never asked to change.
+      const coords = tableCoordsStore.getCoordEntriesForMetaInfo();
+      if (coords === null) return;
+
+      const updated = upsertMetaInfoInDbml(content, coords);
 
       if (updated === content) return;
 

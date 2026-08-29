@@ -92,7 +92,15 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
           }
         }
       } else {
-        const hasMetaInfo = tables.some((t) => t.fromMetaInfo === true);
+        // A file's own coordinates are a full-detail arrangement — that is the
+        // only kind written back into one, see `getCoordEntriesForMetaInfo`.
+        // Laying headers out on them would space them as though every column
+        // were still there, which is the arrangement this level exists to get
+        // away from, so at a reduced level they are passed over for a computed
+        // one.
+        const hasMetaInfo =
+          detailLevel === TableDetailLevel.FullDetails &&
+          tables.some((t) => t.fromMetaInfo === true);
         if (hasMetaInfo) {
           tables.forEach((table) => {
             if (table.fromMetaInfo === true && tablesPos.has(table.name)) {
@@ -269,16 +277,53 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     this.tableCoords.delete(table);
   }
 
+  /**
+   * The arrangement to write into the file, or `null` when there is none to
+   * write.
+   *
+   * A file holds one set of coordinates and cannot say which detail level they
+   * were made at, so they have to mean the same thing every time they are read.
+   * They mean the full-detail arrangement: it is the roomiest of the three, and
+   * it is the only one that can be laid out again at any level without tables
+   * landing on top of each other.
+   *
+   * So a reader at a reduced level writes nothing of their own. If they have a
+   * full-detail layout stored for this document it goes out unchanged — moving
+   * headers about does not disturb it — and if they have never opened the
+   * document at full detail there is nothing honest to write, and this says so.
+   *
+   * `null` rather than an empty list, because the two are opposite
+   * instructions: `upsertMetaInfoInDbml` given an empty list replaces the
+   * file's coordinate block with an empty one, which would delete the layout
+   * the reader is trying not to touch.
+   */
   public getCoordEntriesForMetaInfo(): Array<{
     name: string;
     x: number;
     y: number;
-  }> {
-    return Array.from(this.tableCoords.entries()).map(([name, value]) => ({
-      name,
-      x: value.x,
-      y: value.y,
-    }));
+  }> | null {
+    const entriesOf = (
+      coords: Map<string, XYWHPosition>,
+    ): Array<{ name: string; x: number; y: number }> =>
+      Array.from(coords.entries()).map(([name, value]) => ({
+        name,
+        x: value.x,
+        y: value.y,
+      }));
+
+    if (
+      detailLevelStore.getCurrentDetailLevel() === TableDetailLevel.FullDetails
+    ) {
+      return entriesOf(this.tableCoords);
+    }
+
+    const stored = this.retrieve(
+      storeKeyFor(this.currentDocumentKey, TableDetailLevel.FullDetails),
+    ) as Array<[string, XYWHPosition]> | null;
+
+    return stored === null || !Array.isArray(stored)
+      ? null
+      : entriesOf(new Map(stored));
   }
 }
 
