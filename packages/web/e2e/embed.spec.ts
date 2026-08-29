@@ -82,6 +82,18 @@ const isSameOrigin = (request: Request, origin: string): boolean => {
 const canvasOf = (page: Page): Locator =>
   page.locator(".konvajs-content canvas").first();
 
+// Konva publishes its stages on `window.Konva`; nothing in the application puts
+// them there. Reaching for them is what lets a test say how far the diagram is
+// zoomed, which is not a thing a screenshot of a canvas can be asked.
+declare global {
+  interface Window {
+    Konva?: { stages: Array<{ scaleX: () => number }> };
+  }
+}
+
+const stageScale = async (page: Page): Promise<number> =>
+  await page.evaluate(() => window.Konva?.stages[0]?.scaleX() ?? 0);
+
 test("the frame draws the model named in its query, and asks for nothing else", async ({
   page,
   baseURL,
@@ -155,32 +167,50 @@ test("the diagram arrives already framed", async ({ page }) => {
     .toBe(0);
 });
 
-test("fit-to-view follows a change of detail level", async ({ page }) => {
+test("a change of detail level re-frames the diagram", async ({ page }) => {
   await serveModel(page);
+
+  // The shape these props exist for: a frame a few hundred pixels tall in a
+  // page of prose. It matters to what is measured below and not only to
+  // realism — on a desktop-shaped viewport this diagram is fitted by its width,
+  // which no detail level changes, and the scale barely moves however right the
+  // framing is.
+  await page.setViewportSize({ width: 900, height: 500 });
   await page.goto("/embed.html?src=wide.dbml");
   await expect(canvasOf(page)).toBeVisible();
 
-  // `D` shortens every table to its header. The view does not move with them,
-  // so what is on screen now is a headers-only drawing framed for a full-detail
-  // one — a small thing adrift in a large empty canvas.
+  const atFullDetail = await stageScale(page);
+
+  // `D` shortens every table to its header — a fiftieth of what the tall one
+  // was — so the framing that arrived with the page is now framing something
+  // that is not there any more, and the reader is left looking at a smear in
+  // the middle of an empty canvas until they think to press `F`.
   await page.keyboard.press("d");
-  const unfit = await canvasOf(page).screenshot();
 
-  // Fit-to-view has to measure the tables as they are drawn now. Measuring the
-  // heights the layout stored — which never change with the detail level — puts
-  // it back at exactly the scale it is already at, and the keypress does
-  // nothing at all.
+  // Read as a scale rather than compared as an image, which is the one thing
+  // about the framing a screenshot cannot state: shrinking the tables changes
+  // the picture whether or not the view followed them, so "the picture
+  // changed" is true in both worlds and says nothing. The number separates
+  // them. `window.Konva` is Konva's own global, not a handle the app adds for
+  // testing.
+  //
+  // Half again is a floor, not the expected figure — the measured jump is a
+  // little under twofold. It is not larger because only the tables shrink: the
+  // gaps between them were computed by the layout at full detail and stay that
+  // size, so a diagram of two headers is still some seven hundred units tall
+  // and the fit is still decided by its height. What the floor rules out is the
+  // view not moving at all, which is what every way of getting this wrong looks
+  // like.
+  await expect
+    .poll(async () => await stageScale(page))
+    .toBeGreaterThan(atFullDetail * 1.5);
+
+  // And where it landed is a framing, by the same measure the arrival uses:
+  // one that pressing fit-to-view cannot improve.
+  const framed = await canvasOf(page).screenshot();
   await page.keyboard.press("f");
   await expect
-    .poll(async () => Buffer.compare(await canvasOf(page).screenshot(), unfit))
-    .not.toBe(0);
-
-  // And what it moved to is a framing, by the same measure as on arrival: one
-  // that pressing fit-to-view again cannot improve.
-  const fitted = await canvasOf(page).screenshot();
-  await page.keyboard.press("f");
-  await expect
-    .poll(async () => Buffer.compare(await canvasOf(page).screenshot(), fitted))
+    .poll(async () => Buffer.compare(await canvasOf(page).screenshot(), framed))
     .toBe(0);
 });
 

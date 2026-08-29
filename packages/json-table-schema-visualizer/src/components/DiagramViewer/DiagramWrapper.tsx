@@ -362,6 +362,42 @@ const DiagramWrapper = ({
     // captured here stays correct for the life of the component.
   }, []);
 
+  /**
+   * A different amount of table gets a fresh view.
+   *
+   * Changing the detail level does not move a single table, but it changes how
+   * much of one there is to look at by a factor of fifty on a wide schema, and
+   * the view does not follow. Dropping to headers on a diagram framed for full
+   * detail leaves the reader with everything they asked to see crammed into a
+   * band across the middle of an empty canvas; going back the other way runs
+   * the tables off the bottom of it. Both are recoverable by pressing `F`, and
+   * both look like the level change having gone wrong until you do.
+   *
+   * Same reasoning as the auto-arrange path above, and the same cost: a reader
+   * zoomed into one table to read its columns is returned to the whole diagram.
+   * That is the trade — `D` is a request to see the schema at a different
+   * grain, and the framing for one grain is not the framing for another.
+   *
+   * The guard is what keeps this from firing on mount, where it would override
+   * the starting state `hasPositionedStage` just set and take away the view a
+   * reader left behind. The viewer is keyed by document, so a document switch
+   * mounts a fresh one and lands here too.
+   *
+   * No `requestAnimationFrame`, unlike the auto-arrange path: an effect already
+   * runs after React has re-rendered, and the bounds come from the coordinate
+   * store and `tablesMeta` rather than from the stage, so there is nothing left
+   * to wait for.
+   */
+  const framedAtDetailLevel = useRef(detailLevel);
+  useEffect(() => {
+    if (framedAtDetailLevel.current === detailLevel) {
+      return;
+    }
+
+    framedAtDetailLevel.current = detailLevel;
+    fitToView();
+  }, [detailLevel]);
+
   const [, setColorRelations] = useLocalStorage<boolean>(
     STORAGE_KEYS.COLOR_RELATIONS,
     false,
