@@ -10,6 +10,19 @@ const table = (name: string): JSONTableSchema["tables"][number] => ({
   y: 0,
 });
 
+/** A table the file holds a place for, as one parsed from a layout block is. */
+const arranged = (
+  name: string,
+  x: number,
+  y: number,
+): JSONTableSchema["tables"][number] => ({
+  ...table(name),
+  x,
+  y,
+  fromMetaInfo: true,
+  metaInfoPositions: { FullDetails: { x, y } },
+});
+
 const ref = (from: string, to: string): JSONTableSchema["refs"][number] => ({
   name: `${from}_${to}`,
   endpoints: [
@@ -106,5 +119,52 @@ describe("filterSchema", () => {
       ok: false,
       error: { kind: "noTablesLeft" },
     });
+  });
+
+  it("drops the file's own layout when it has left tables out", () => {
+    // A layout block describes where the tables sat among all the others. Keep
+    // it for a subset and the three that survive stay at the coordinates they
+    // held in a diagram of thirty, which is a frame of white with something
+    // small in two of its corners — see the arrangement computed instead.
+    const arrangedSchema: JSONTableSchema = {
+      ...schema,
+      tables: [
+        arranged("acl.analysis", 0, 0),
+        arranged("acl.analysis_liquid", 4000, 9000),
+        arranged("acl.gas_dynamic_research", 12000, 300),
+      ],
+    };
+
+    const result = filterSchema(arrangedSchema, ["acl.analysis"]);
+
+    expect(result.ok).toBe(true);
+
+    const kept = result.ok ? result.schema.tables : [];
+
+    expect(kept.map((t) => t.name)).toEqual(["acl.analysis"]);
+    expect(kept[0]).not.toHaveProperty("fromMetaInfo");
+    expect(kept[0]).not.toHaveProperty("metaInfoPositions");
+  });
+
+  it("keeps the file's layout when the filter named every table", () => {
+    // Nothing was left out, so the arrangement still describes this diagram.
+    const arrangedSchema: JSONTableSchema = {
+      ...schema,
+      tables: [
+        arranged("acl.analysis", 10, 20),
+        arranged("acl.analysis_liquid", 30, 40),
+        arranged("acl.gas_dynamic_research", 50, 60),
+      ],
+    };
+
+    const result = filterSchema(arrangedSchema, [
+      "acl.analysis",
+      "acl.analysis_liquid",
+      "acl.gas_dynamic_research",
+    ]);
+
+    expect(result.ok && result.schema.tables[0]).toEqual(
+      expect.objectContaining({ fromMetaInfo: true, x: 10, y: 20 }),
+    );
   });
 });

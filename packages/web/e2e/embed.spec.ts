@@ -55,6 +55,32 @@ ${Array.from({ length: 120 }, (_, i) => `  c${i} integer`).join("\n")}
 }
 `;
 
+// A model that carries its own layout, as every model in a real project does
+// once anyone has arranged one. The coordinates are the whole model's: three
+// tables, thousands of units apart.
+const ARRANGED = `
+Table "arr"."left" {
+  id integer [pk]
+}
+
+Table "arr"."middle" {
+  id integer [pk]
+  left_id integer
+}
+
+Table "arr"."right" {
+  id integer [pk]
+}
+
+Ref: "arr"."left"."id" < "arr"."middle"."left_id"
+
+/*MetaInfo
+[{"name":"arr.left","x":0,"y":0},
+{"name":"arr.middle","x":6000,"y":4000},
+{"name":"arr.right","x":12000,"y":9000}]
+MetaInfo*/
+`;
+
 // The built site has no catalogue in it — nginx is what puts one at these paths
 // in the container. Same-origin, so fulfilling them here keeps the promise the
 // smoke test checks: nothing the page asks for leaves the origin.
@@ -69,7 +95,9 @@ const serveModel = async (page: Page): Promise<void> => {
           ? WIDE
           : path === "/schemas/tall.dbml"
             ? TALL
-            : null;
+            : path === "/schemas/arranged.dbml"
+              ? ARRANGED
+              : null;
 
     await (model === null
       ? route.fulfill({ status: 404, body: "not found" })
@@ -110,6 +138,29 @@ const stageScale = async (page: Page): Promise<number> =>
 
 const drawnTextCount = async (page: Page): Promise<number> =>
   await page.evaluate(() => window.Konva?.stages[0]?.find("Text").length ?? 0);
+
+/** How far apart the tables are, in diagram units rather than pixels. */
+const tableSpan = async (page: Page): Promise<number> =>
+  await page.evaluate(() => {
+    const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
+      name: () => string;
+      x: () => number;
+      y: () => number;
+    }>;
+    const tables = groups.filter((g) => String(g.name()).startsWith("table-"));
+
+    if (tables.length === 0) {
+      return 0;
+    }
+
+    const xs = tables.map((t) => t.x());
+    const ys = tables.map((t) => t.y());
+
+    return Math.max(
+      Math.max(...xs) - Math.min(...xs),
+      Math.max(...ys) - Math.min(...ys),
+    );
+  });
 
 test("the frame draws the model named in its query, and asks for nothing else", async ({
   page,
@@ -274,6 +325,21 @@ test("a small schema draws its columns however far out it is fitted", async ({
   await expect
     .poll(async () => await drawnTextCount(page))
     .toBeGreaterThan(100);
+});
+
+test("a filtered diagram is arranged as itself, not as part of the model", async ({
+  page,
+}) => {
+  await serveModel(page);
+  await page.setViewportSize({ width: 900, height: 500 });
+  await page.goto("/embed.html?src=arranged.dbml&tables=left,middle");
+  await expect(canvasOf(page)).toBeVisible();
+
+  // The file puts these two six thousand units apart, because that is where
+  // they sit in a diagram of the whole model. Two tables out of three is not
+  // that diagram: kept, those coordinates frame the empty rectangle between
+  // them and the page shows two specks in opposite corners.
+  await expect.poll(async () => await tableSpan(page)).toBeLessThan(2000);
 });
 
 test("the toolbar stays out of the diagram until the reader reaches for it", async ({

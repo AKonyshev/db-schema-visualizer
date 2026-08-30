@@ -74,10 +74,38 @@ export const filterSchema = (
     return { ok: false, error: { kind: "noTablesLeft" } };
   }
 
+  /**
+   * A layout the file carries is an arrangement of the whole model, and this is
+   * no longer the whole model.
+   *
+   * Kept, the tables that survive hold the coordinates they had among all the
+   * others: three tables out of thirty, still hundreds of table-widths apart,
+   * with the frame fitted to the empty rectangle they span. That is a page of
+   * white with something small in two of its corners — and it is what a
+   * documentation page gets by default, because every model in the project
+   * carries such a block.
+   *
+   * Dropped, the tables are arranged as what they now are: a diagram of three.
+   * Only when something was actually left out — a filter that names every table
+   * has not made a different diagram, and the file still describes it.
+   */
+  const isSubset = keep.size < schema.tables.length;
+  const kept = schema.tables
+    .filter((table) => keep.has(table.name))
+    .map((table) => {
+      if (!isSubset) {
+        return table;
+      }
+
+      const { fromMetaInfo, metaInfoPositions, ...rest } = table;
+
+      return rest;
+    });
+
   return {
     ok: true,
     schema: {
-      tables: schema.tables.filter((table) => keep.has(table.name)),
+      tables: kept,
       // Both ends, not either: an edge to a table that is not on the diagram
       // leads the reader's eye off the canvas for no reason.
       refs: schema.refs.filter((relation) =>
