@@ -45,6 +45,16 @@ Table "wide"."note" {
 Ref: "wide"."reading"."c0" < "wide"."note"."reading_id"
 `;
 
+// One table tall enough that fitting it into a page-sized frame puts its rows
+// below the size at which they would once have stopped being drawn. Two
+// hundred-odd columns in the whole model, which is nothing to draw — that is
+// the point.
+const TALL = `
+Table "tall"."reading" {
+${Array.from({ length: 120 }, (_, i) => `  c${i} integer`).join("\n")}
+}
+`;
+
 // The built site has no catalogue in it — nginx is what puts one at these paths
 // in the container. Same-origin, so fulfilling them here keeps the promise the
 // smoke test checks: nothing the page asks for leaves the origin.
@@ -57,7 +67,9 @@ const serveModel = async (page: Page): Promise<void> => {
         ? ACL
         : path === "/schemas/wide.dbml"
           ? WIDE
-          : null;
+          : path === "/schemas/tall.dbml"
+            ? TALL
+            : null;
 
     await (model === null
       ? route.fulfill({ status: 404, body: "not found" })
@@ -87,12 +99,17 @@ const canvasOf = (page: Page): Locator =>
 // zoomed, which is not a thing a screenshot of a canvas can be asked.
 declare global {
   interface Window {
-    Konva?: { stages: Array<{ scaleX: () => number }> };
+    Konva?: {
+      stages: Array<{ scaleX: () => number; find: (s: string) => unknown[] }>;
+    };
   }
 }
 
 const stageScale = async (page: Page): Promise<number> =>
   await page.evaluate(() => window.Konva?.stages[0]?.scaleX() ?? 0);
+
+const drawnTextCount = async (page: Page): Promise<number> =>
+  await page.evaluate(() => window.Konva?.stages[0]?.find("Text").length ?? 0);
 
 test("the frame draws the model named in its query, and asks for nothing else", async ({
   page,
@@ -225,6 +242,38 @@ test("a change of detail level re-frames the diagram", async ({ page }) => {
   await page.keyboard.press("d");
 
   await expect.poll(async () => await stageScale(page)).toBe(atFullDetail);
+});
+
+test("a small schema draws its columns however far out it is fitted", async ({
+  page,
+}) => {
+  await serveModel(page);
+  await page.setViewportSize({ width: 900, height: 500 });
+  await page.goto("/embed.html?src=tall.dbml");
+  await expect(canvasOf(page)).toBeVisible();
+
+  // To full detail. One table of a hundred and twenty columns opens with its
+  // header alone, so two presses of `D` — headers, keys, all of it.
+  const box = await canvasOf(page).boundingBox();
+  await page.mouse.click(
+    (box?.x ?? 0) + (box?.width ?? 0) / 2,
+    (box?.y ?? 0) + (box?.height ?? 0) / 2,
+  );
+  await page.keyboard.press("d");
+  await page.keyboard.press("d");
+
+  // Fitted into a frame this size, a column row is a few pixels tall — under
+  // the size at which drawing the rows stops paying for itself on a schema big
+  // enough for that to matter.
+  await expect.poll(async () => (await stageScale(page)) * 30).toBeLessThan(6);
+
+  // Drawn all the same, because this schema is not big enough for that to
+  // matter. Hiding them here saves nothing and leaves the reader looking at an
+  // empty box in a frame they cannot zoom, which is the one thing the filter in
+  // the query was for.
+  await expect
+    .poll(async () => await drawnTextCount(page))
+    .toBeGreaterThan(100);
 });
 
 test("the toolbar stays out of the diagram until the reader reaches for it", async ({

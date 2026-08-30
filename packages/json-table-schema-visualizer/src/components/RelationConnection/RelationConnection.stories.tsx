@@ -17,6 +17,11 @@ export default meta;
 
 type Story = StoryObj<typeof RelationConnection>;
 
+const exampleColumns = exampleData.tables.reduce(
+  (total, table) => total + table.fields.length,
+  0,
+);
+
 export const RelationConnectionStory: Story = {
   render: (props) => (
     <TablesPositionsProvider
@@ -26,11 +31,13 @@ export const RelationConnectionStory: Story = {
       <MainProviders enums={exampleData.enums} tables={exampleData.tables}>
         <RelationConnection {...props} />
 
-        <Table {...exampleData.tables[0]} />
+        {/* The example schema is small, so its rows are drawn at any zoom —
+            which is what the story wants to show. */}
+        <Table {...exampleData.tables[0]} schemaColumns={exampleColumns} />
 
-        <Table {...exampleData.tables[1]} />
+        <Table {...exampleData.tables[1]} schemaColumns={exampleColumns} />
 
-        <Table {...exampleData.tables[2]} />
+        <Table {...exampleData.tables[2]} schemaColumns={exampleColumns} />
       </MainProviders>
     </TablesPositionsProvider>
   ),

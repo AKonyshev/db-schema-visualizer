@@ -28,9 +28,17 @@ import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
 import computeFieldDisplayTypeName from "@/utils/getFieldType";
 import { drawnTableHeight } from "@/utils/drawnTableHeight";
 
-interface TableProps extends JSONTableTable {}
+interface TableProps extends JSONTableTable {
+  /**
+   * How many columns the whole schema has, which decides whether the rows are
+   * drawn at every zoom or only when the reader is close enough. It is the
+   * schema that is affordable or not, not this table, so the count cannot come
+   * from `fields`.
+   */
+  schemaColumns: number;
+}
 
-const Table = ({ fields, name }: TableProps) => {
+const Table = ({ fields, name, schemaColumns }: TableProps) => {
   const themeColors = useThemeColors();
   // The dashed outline marks a table whose relations are hidden — the same
   // state the header icon toggles, so the two always agree.
@@ -48,7 +56,7 @@ const Table = ({ fields, name }: TableProps) => {
   // that changed height with zoom would move every connection anchor and shift
   // the bounds fit-to-view works from, which oscillates around the threshold.
   // Only whether the rows are drawn depends on how far out the reader is.
-  const rowsAreWorthDrawing = useAreRowsWorthDrawing();
+  const rowsAreWorthDrawing = useAreRowsWorthDrawing(schemaColumns);
   useEffect(() => {
     if (tableRef.current != null) {
       tableRef.current.x(tableX);

@@ -7,14 +7,16 @@ import TableDimensionProvider from "@/providers/TableDimension";
 
 interface TableWrapperProps {
   table: JSONTableTable;
+  /** Passed straight through to `Table`; see the prop there. */
+  schemaColumns: number;
 }
 
-const TableWrapper = ({ table }: TableWrapperProps) => {
+const TableWrapper = ({ table, schemaColumns }: TableWrapperProps) => {
   const width = useGetTableMinWidth(table);
 
   return (
     <TableDimensionProvider width={width}>
-      <Table {...table} />
+      <Table {...table} schemaColumns={schemaColumns} />
     </TableDimensionProvider>
   );
 };

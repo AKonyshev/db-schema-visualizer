@@ -9,6 +9,7 @@ import {
   TABLE_COLOR_HEIGHT,
 } from "@/constants/sizing";
 import { tableCoordsStore } from "@/stores/tableCoords";
+import { rowsAreWorthDrawing } from "@/utils/rowsWorthDrawing";
 import {
   type Rect,
   rectsIntersect,
@@ -16,37 +17,22 @@ import {
   visibleWorldRect,
 } from "@/stores/viewportStore";
 
-/**
- * How tall a column row must be on screen before the rows are drawn at all.
- *
- * Not a legibility threshold, which is what it was first set to: long before a
- * name can be read, the rows still say how big a table is, where its keys sit
- * and which of them a relation arrives at, and a reader zooming out wants to
- * keep that for as long as the machine can afford it. Six pixels is about two
- * rows to a table's worth of banding — enough to read structure from, well
- * before a name resolves.
- *
- * Affordable because of culling: at this zoom the viewport holds a fraction of
- * the schema, so the rows drawn are a fraction of its columns — on a
- * 5,676-column schema, thousands rather than all of them.
- */
-const ROW_WORTH_DRAWING_PX = 6;
-
 /** How much beyond the viewport stays mounted, in viewports per side. */
 const CULLING_MARGIN = 0.5;
 
 /**
- * Whether the columns are currently worth drawing.
+ * Whether the columns are currently worth drawing, given how many the schema
+ * has. See `rowsAreWorthDrawing` for what decides it.
  *
  * The table's footprint deliberately does not depend on this: heights that
  * changed with zoom would move every connection anchor and shift the bounds
  * that fit-to-view is computed from, which can oscillate around the threshold.
  * Only whether the rows are drawn depends on it.
  */
-export const useAreRowsWorthDrawing = (): boolean =>
+export const useAreRowsWorthDrawing = (columns: number): boolean =>
   useSyncExternalStore(
     viewportStore.subscribe,
-    () => viewportStore.get().scale * COLUMN_HEIGHT >= ROW_WORTH_DRAWING_PX,
+    () => rowsAreWorthDrawing({ scale: viewportStore.get().scale, columns }),
     () => true,
   );
 
