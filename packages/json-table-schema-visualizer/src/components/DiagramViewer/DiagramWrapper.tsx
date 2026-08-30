@@ -41,6 +41,7 @@ import useLocalStorage from "@/hooks/localStorage";
 import { useKeyboardShortcuts } from "@/hooks/keyboardShortcuts";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 import { computeWheelZoom } from "@/utils/computeWheelZoom";
+import { computeDiagramBounds } from "@/utils/diagramBounds";
 import { viewportStore } from "@/stores/viewportStore";
 
 interface DiagramWrapperProps {
@@ -50,6 +51,32 @@ interface DiagramWrapperProps {
   refs: JSONTableRef[];
   /** Passed straight through to the toolbar; see `DiagramApp`. */
   hostActions?: ReactNode;
+  /**
+   * Frame the whole diagram on the first render instead of using the starting
+   * state, for a host whose reader cannot pan to find it.
+   *
+   * The embedded frame in a documentation page is that host: it can be a few
+   * hundred pixels tall, it opens on a slice of a model somebody chose, and the
+   * reader is reading prose around it rather than exploring a canvas. An
+   * application's reader has a whole window and a toolbar; a page's reader has
+   * whatever the author's `height=` gave them.
+   */
+  fitOnLoad?: boolean;
+  /**
+   * Keep the toolbar out of sight until the pointer is over the diagram, for
+   * the same host and the same reason as `fitOnLoad`.
+   *
+   * The toolbar floats over the bottom of the diagram. In a window that costs
+   * a strip of empty canvas; in a 500px frame it covers the bottom fifth of the
+   * thing the page put there to be looked at, and on a narrow one it wraps to
+   * two rows and covers a third.
+   *
+   * Hidden with `visibility`, not opacity: an invisible row of buttons that
+   * still answers the pointer and still reads out to a screen reader is worse
+   * than one that is honestly not there. The shortcuts keep working either way
+   * — `F`, `L` and `D` are bound to the document, not to these buttons.
+   */
+  revealToolbarOnHover?: boolean;
 }
 
 interface PendingWheelEvent {
@@ -65,6 +92,8 @@ const DiagramWrapper = ({
   tablesMeta,
   refs,
   hostActions = null,
+  fitOnLoad = false,
+  revealToolbarOnHover = false,
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
@@ -91,6 +120,64 @@ const DiagramWrapper = ({
     useCursorChanger("grabbing");
   const themeColors = useThemeColors();
 
+  const { detailLevel, next: nextDetailLevel } = useTableDetailLevel();
+  // Read through a ref rather than closed over: `fitToView` is captured once,
+  // by the mount-time subscription below, and a captured detail level would be
+  // whatever it was when the document opened for the rest of the document's
+  // life.
+  const detailLevelRef = useRef(detailLevel);
+  detailLevelRef.current = detailLevel;
+
+  const diagramBounds = (): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null =>
+    computeDiagramBounds(
+      tableCoordsStore.getCurrentStoreValue(),
+      tablesMeta,
+      detailLevelRef.current,
+    );
+
+  const fitToView = () => {
+    if (stageRef.current != null) {
+      const stage = stageRef.current;
+      const container = stage.container();
+      const containerWidth = container.offsetWidth;
+      const containerHeight = container.offsetHeight;
+
+      // `diagramBounds` rather than the stage: see `computeDiagramBounds` for
+      // why the stage is the wrong thing to measure and why the stored heights
+      // are not the right ones either.
+      const contentBounds =
+        diagramBounds() ?? stage.getClientRect({ relativeTo: stage });
+      contentBounds.x = contentBounds.x - DIAGRAM_PADDING;
+      contentBounds.y = contentBounds.y - DIAGRAM_PADDING;
+      contentBounds.width = contentBounds.width + 2 * DIAGRAM_PADDING;
+      contentBounds.height = contentBounds.height + 2 * DIAGRAM_PADDING;
+      const scaleX = containerWidth / contentBounds.width;
+      const scaleY = containerHeight / contentBounds.height;
+      const scale = Math.min(scaleX, scaleY);
+
+      stage.scale({ x: scale, y: scale });
+      stage.position({
+        x:
+          (containerWidth - contentBounds.width * scale) / 2 -
+          contentBounds.x * scale,
+        y:
+          (containerHeight - contentBounds.height * scale) / 2 -
+          contentBounds.y * scale,
+      });
+      stage.batchDraw();
+      stageStateStore.set({ scale, position: stage.position() });
+      // After the position, never between it and the scale: a viewport
+      // published half-updated culls against a rectangle that never existed,
+      // and every table disappears.
+      publishViewport();
+    }
+  };
+
   // repositioning the stage only once
   const { scale: defaultStageScale, position: defaultStagePosition } =
     useStageStartingState({ width: viewWidth, height: viewHeight });
@@ -110,12 +197,29 @@ const DiagramWrapper = ({
       return;
     }
 
+    hasPositionedStage.current = true;
+
+    // A host that asked to open framed gets the same measurement the toolbar's
+    // fit button makes, rather than the starting state: the starting state
+    // takes its bounds from table coordinates alone, so a table's own width and
+    // height fall outside the box it computes, and the rightmost one is cut off
+    // by however wide it happens to be.
+    //
+    // Not done for every host, because for the other two it would be a
+    // regression: `useStageStartingState` returns a view the reader left behind
+    // when there is one, and overriding it would drop them somewhere they did
+    // not ask to be, every time they came back to a document.
+    if (fitOnLoad) {
+      // Fits and publishes the viewport itself.
+      fitToView();
+      return;
+    }
+
     stageRef.current.scale({
       x: defaultStageScale,
       y: defaultStageScale,
     });
     stageRef.current.position(defaultStagePosition);
-    hasPositionedStage.current = true;
     publishViewport();
   }, [
     defaultStageScale,
@@ -123,6 +227,7 @@ const DiagramWrapper = ({
     viewWidth,
     viewHeight,
     publishViewport,
+    fitOnLoad,
   ]);
 
   const pendingWheelRef = useRef<PendingWheelEvent | null>(null);
@@ -225,67 +330,6 @@ const DiagramWrapper = ({
     setHighlightedColumns([]);
   };
 
-  /** Every table's box, drawn or not, in stage coordinates. */
-  const diagramBounds = (): {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null => {
-    const coords = [...tableCoordsStore.getCurrentStoreValue().values()].filter(
-      (coord) => coord.w > 0 && coord.h > 0,
-    );
-    if (coords.length === 0) {
-      return null;
-    }
-
-    const left = Math.min(...coords.map((c) => c.x)) + DIAGRAM_PADDING;
-    const top = Math.min(...coords.map((c) => c.y)) + DIAGRAM_PADDING;
-    const right = Math.max(...coords.map((c) => c.x + c.w)) + DIAGRAM_PADDING;
-    const bottom = Math.max(...coords.map((c) => c.y + c.h)) + DIAGRAM_PADDING;
-
-    return { x: left, y: top, width: right - left, height: bottom - top };
-  };
-
-  const fitToView = () => {
-    if (stageRef.current != null) {
-      const stage = stageRef.current;
-      const container = stage.container();
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-
-      // Measured from the stored coordinates rather than from the stage: with
-      // off-screen tables unmounted, the stage only knows about the ones it is
-      // already showing, and fitting to those would frame a fraction of the
-      // diagram and call it the whole.
-      const contentBounds =
-        diagramBounds() ?? stage.getClientRect({ relativeTo: stage });
-      contentBounds.x = contentBounds.x - DIAGRAM_PADDING;
-      contentBounds.y = contentBounds.y - DIAGRAM_PADDING;
-      contentBounds.width = contentBounds.width + 2 * DIAGRAM_PADDING;
-      contentBounds.height = contentBounds.height + 2 * DIAGRAM_PADDING;
-      const scaleX = containerWidth / contentBounds.width;
-      const scaleY = containerHeight / contentBounds.height;
-      const scale = Math.min(scaleX, scaleY);
-
-      stage.scale({ x: scale, y: scale });
-      stage.position({
-        x:
-          (containerWidth - contentBounds.width * scale) / 2 -
-          contentBounds.x * scale,
-        y:
-          (containerHeight - contentBounds.height * scale) / 2 -
-          contentBounds.y * scale,
-      });
-      stage.batchDraw();
-      stageStateStore.set({ scale, position: stage.position() });
-      // After the position, never between it and the scale: a viewport
-      // published half-updated culls against a rectangle that never existed,
-      // and every table disappears.
-      publishViewport();
-    }
-  };
-
   /**
    * A fresh arrangement gets a fresh view.
    *
@@ -314,9 +358,44 @@ const DiagramWrapper = ({
         fitToView();
       });
     });
-    // `fitToView` reads nothing but `stageRef` and constants, so the copy
+    // `fitToView` reads nothing but `stageRef`, constants and refs, so the copy
     // captured here stays correct for the life of the component.
   }, []);
+
+  /**
+   * A different amount of table gets an arrangement of its own.
+   *
+   * The layout is computed from how tall the tables are drawn — the gaps
+   * between them are a share of their height, and the number of columns the
+   * diagram is broken into is chosen to bring the whole near `TARGET_ASPECT`.
+   * None of that survives the tables becoming a fortieth of their height, so
+   * headers left in a full-detail arrangement sit in a field of white with the
+   * relations running the length of it.
+   *
+   * `switchToDetailLevel` re-keys the store to this level and either recovers
+   * the arrangement the reader last had here or computes one. Announcing the
+   * coordinates as replaced is what moves the tables; the subscription above
+   * hears that too and would eventually frame them, but only on the next
+   * animation frame, and a frame that is off-screen or in a background tab is
+   * not given one. The framing is called for here instead, where it is
+   * immediate and certain — nothing is waited for, because the bounds are read
+   * from the coordinate store rather than measured off the stage.
+   *
+   * The guard keeps this off the mount, where it would arrange a document that
+   * `switchDocument` has just arranged and take away the view a returning
+   * reader left behind. The viewer is keyed by document, so a document switch
+   * mounts a fresh one and lands here too.
+   */
+  const arrangedAtDetailLevel = useRef(detailLevel);
+  useEffect(() => {
+    if (arrangedAtDetailLevel.current === detailLevel) {
+      return;
+    }
+
+    arrangedAtDetailLevel.current = detailLevel;
+    tableCoordsStore.switchToDetailLevel(tablesMeta, refs);
+    fitToView();
+  }, [detailLevel, tablesMeta, refs]);
 
   const [, setColorRelations] = useLocalStorage<boolean>(
     STORAGE_KEYS.COLOR_RELATIONS,
@@ -330,7 +409,6 @@ const DiagramWrapper = ({
     STORAGE_KEYS.SHORT_TABLE_NAME,
     false,
   );
-  const { next: nextDetailLevel } = useTableDetailLevel();
   const { resetPositions } = useTablePositionContext();
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 
@@ -487,7 +565,10 @@ const DiagramWrapper = ({
     // page, and `overflow-hidden` so a stage mid-resize cannot widen the
     // document. Both matter only once the diagram shares a page with something
     // else, which is exactly when they stop being cosmetic.
-    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+    <div
+      ref={containerRef}
+      className={`relative h-full w-full overflow-hidden ${revealToolbarOnHover ? "group/diagram" : ""}`}
+    >
       <Stage
         draggable
         ref={stageRef}
@@ -513,19 +594,29 @@ const DiagramWrapper = ({
         </Layer>
       </Stage>
 
-      <Toolbar
-        onFitToView={fitToView}
-        onDownloadPng={onDownloadPng}
-        onDownloadSvg={() => {
-          void onDownloadSvg();
-        }}
-        onDownloadAdoc={onDownloadAdoc}
-        onDownloadMarkdown={onDownloadMarkdown}
-        onShowLegend={() => {
-          setIsLegendOpen(true);
-        }}
-        hostActions={hostActions}
-      />
+      {/* A plain wrapper, with no positioning of its own, so the toolbar inside
+          still anchors to the container above rather than to this. */}
+      <div
+        className={
+          revealToolbarOnHover
+            ? "invisible opacity-0 transition-opacity duration-150 group-hover/diagram:visible group-hover/diagram:opacity-100 group-focus-within/diagram:visible group-focus-within/diagram:opacity-100"
+            : ""
+        }
+      >
+        <Toolbar
+          onFitToView={fitToView}
+          onDownloadPng={onDownloadPng}
+          onDownloadSvg={() => {
+            void onDownloadSvg();
+          }}
+          onDownloadAdoc={onDownloadAdoc}
+          onDownloadMarkdown={onDownloadMarkdown}
+          onShowLegend={() => {
+            setIsLegendOpen(true);
+          }}
+          hostActions={hostActions}
+        />
+      </div>
 
       {isLegendOpen && (
         <ShortcutsLegend

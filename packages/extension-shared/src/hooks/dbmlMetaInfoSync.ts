@@ -31,10 +31,14 @@ export const useDbmlMetaInfoSync = (
       const uri = documentKeyRef.current;
       if (content == null || uri == null) return;
 
-      const updated = upsertMetaInfoInDbml(
-        content,
-        tableCoordsStore.getCoordEntriesForMetaInfo(),
-      );
+      // Whatever the reader has arranged, at whichever detail level: the
+      // entries carry the level with them, so the file can be read back safely.
+      // Nothing to write only when there is no diagram yet — an empty list
+      // would replace the file's layout block with an empty one.
+      const coords = tableCoordsStore.getCoordEntriesForMetaInfo();
+      if (coords.length === 0) return;
+
+      const updated = upsertMetaInfoInDbml(content, coords);
 
       if (updated === content) return;
 

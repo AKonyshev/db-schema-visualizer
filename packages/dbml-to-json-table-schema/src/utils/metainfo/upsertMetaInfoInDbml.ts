@@ -8,6 +8,8 @@ export interface TableCoordEntry {
   name: string;
   x: number;
   y: number;
+  /** The detail level this arrangement was made at. See `MetaInfo`. */
+  detailLevel?: string;
 }
 
 export const upsertMetaInfoInDbml = (
@@ -21,8 +23,14 @@ export const upsertMetaInfoInDbml = (
   });
 
   const metaInfo: MetaInfo[] = coords.map(
-    ({ name, x, y }) =>
-      new MetaInfo(name, Math.round(x), Math.round(y), hiddenByName.get(name)),
+    ({ name, x, y, detailLevel }) =>
+      new MetaInfo(
+        name,
+        Math.round(x),
+        Math.round(y),
+        hiddenByName.get(name),
+        detailLevel,
+      ),
   );
 
   const mi = formatMetaInfoJson(metaInfo);

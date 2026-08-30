@@ -6,6 +6,24 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-08-30
+
+### Added
+
+- **A diagram can be put inside a documentation page.** A second entry point, `embed.html`, that is the diagram and nothing else — no editor, no file tree — reached with `?src=model.dbml` and, optionally, `?tables=a,b,c` to show a slice of a large model. It arrives already framed, because a page's author fixes the height and the reader cannot pan to find what was drawn off-screen, and the toolbar stays out of sight until the pointer is over the diagram, because in a 500px frame it covers the bottom fifth of the thing the page put there to be looked at. A name in `tables=` that is in no model is said out loud rather than quietly dropped. The frame leaves nothing in the browser's storage: the layout it computes is taken back out, and the reader's own theme, shared with the full application on the same origin, is not touched.
+- **A file remembers an arrangement for each detail level.** The layout block a `.dbml` file carries now records which detail level each arrangement was made at, and holds one per level. Tables are placed by the height they are drawn at, so an arrangement made with only the headers showing puts tables on top of one another if it is read back at full detail; recording the level is what lets an arrangement made at any level be saved and read back safely. Moving tables about with the columns hidden is written down like any other arrangement instead of being discarded. A block written before this — every block that exists today — is read as the full-detail arrangement it is, and the block stays a flat array, which is what a reader written before this parses it as.
+
+### Changed
+
+- **The diagram is arranged for the detail level it is drawn at.** The room left between tables is a share of their height and the shape the whole diagram is aimed at is chosen from their sizes, and both were computed once, at full detail. Headers left in a full-detail arrangement therefore sat in a field of white with the relations running the length of it. Pressing `D` now rearranges and re-frames: on a page-sized frame showing three tables from a real model, the diagram went from 0.39 to 1.42 of full size — table names that had been a smear are now readable.
+- **Whether a document opens with its columns showing is decided by how many columns it has**, and by the tallest table rather than the count alone. Three tables of 130 to 200 columns are a small schema by every measure except the one that matters: six thousand pixels tall, which in a documentation frame is three hairlines. A tall table only costs anything when there are other tables for it to shrink, so a diagram of one table opens with its columns however tall it is — 188 of the 394 diagrams in the documentation this was measured against show a single table, and a third of those are wider than the threshold.
+
+### Fixed
+
+- Fit-to-view measured the tables at the size the layout had made them rather than the size they were drawn at, so after switching to headers the diagram stayed at the scale computed for full detail: the reader asked for headers, got them, pressed fit-to-view and nothing moved.
+- A filtered frame was arranged as though it were still part of the whole model. The coordinates a file carries describe where its tables sit among all the others, so five tables out of a hundred and thirty-one kept places three thousand units apart and the frame fitted itself to the empty rectangle between them — a page of white with something small in two of its corners. A filter that leaves tables out now arranges what remains as the diagram it now is.
+- The column rows of a small schema are drawn however far out it is fitted. Hiding them as the reader zooms out is a budget for the redraw, and a schema inside the budget has nothing to save; the saving was being made exactly where it was worth least, in a frame a few hundred pixels tall showing the handful of tables a page asked for, where the reader has no way to zoom towards what was hidden.
+
 ## [0.15.0] - 2026-08-28
 
 ### Added

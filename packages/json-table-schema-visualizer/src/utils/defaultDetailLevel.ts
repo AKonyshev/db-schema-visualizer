@@ -3,7 +3,8 @@ import type { JSONTableTable } from "shared/types/tableSchema";
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 
 /**
- * Above this many columns, opening at full detail is not a view anyone can use.
+ * Above this many columns across the schema, opening at full detail is not a
+ * view anyone can use.
  *
  * Every column row costs about eight Konva nodes, and a redraw walks all of
  * them. Measured on a 117-table, 5,676-column schema: 46,210 nodes, ~74 ms to
@@ -15,6 +16,35 @@ import { TableDetailLevel } from "@/types/tableDetailLevel";
  * where a redraw stops fitting in a frame.
  */
 export const FULL_DETAIL_COLUMN_BUDGET = 1000;
+
+/**
+ * Above this many columns in one table, opening at full detail is not a view
+ * anyone can read — however few tables there are.
+ *
+ * The total above is a budget for the machine; this one is a budget for the
+ * eye, and they catch different schemas. A column row is `COLUMN_HEIGHT` = 30px
+ * tall, so a table of N columns is about 30N pixels — and fit-to-view shrinks
+ * the whole diagram until the *tallest* table fits, however small that leaves
+ * the rest. A column label is 15px, so it survives being halved and little
+ * more; past scale 0.5 it stops being letters. Half of a 900px window is
+ * 1,800px of diagram, which is 60 rows.
+ *
+ * The models this was measured against divide cleanly either side of it: a
+ * median table has 7 columns, while the wide ones run 92, 136, 169, 204. Three
+ * of those last make a schema that is small by every count except the one that
+ * matters — 458 columns in total, comfortably inside the budget above, and six
+ * thousand pixels tall, which in a 500px documentation frame is three
+ * hairlines.
+ *
+ * It applies only where there is something to protect. What a tall table costs
+ * is paid by the *other* tables, which are shrunk with it when the diagram is
+ * fitted; a diagram of one table has no others, and its columns are the whole
+ * of what the reader came to see. Of the 394 diagrams in the documentation this
+ * serves, 188 show a single table and 33 of those are wider than this budget —
+ * every one of which this rule, applied to them, would reduce to a name on a
+ * coloured bar.
+ */
+export const FULL_DETAIL_TALLEST_TABLE_BUDGET = 60;
 
 /**
  * Which detail level a document should open at when the reader has no saved
@@ -30,8 +60,15 @@ export const defaultDetailLevelFor = (
     (total, table) => total + table.fields.length,
     0,
   );
+  const tallest = tables.reduce(
+    (most, table) => Math.max(most, table.fields.length),
+    0,
+  );
 
-  return columns > FULL_DETAIL_COLUMN_BUDGET
+  const oneTallTableAmongOthers =
+    tables.length > 1 && tallest > FULL_DETAIL_TALLEST_TABLE_BUDGET;
+
+  return columns > FULL_DETAIL_COLUMN_BUDGET || oneTallTableAmongOthers
     ? TableDetailLevel.HeaderOnly
     : TableDetailLevel.FullDetails;
 };

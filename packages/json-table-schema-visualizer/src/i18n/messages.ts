@@ -47,6 +47,13 @@ export const MESSAGES_EN = {
   "files.show": "Show the file tree",
   "files.openFailed": "Could not open this file",
   "legend.title": "Keyboard shortcuts",
+  "embed.noTablesLeft": "None of the named tables are in this schema",
+  "embed.notFound": "Schema not found",
+  "embed.srcInvalid": "Invalid schema path",
+  "embed.srcMissing": "No schema given",
+  "embed.tableAmbiguous":
+    "This name belongs to more than one table — give the full name",
+  "embed.tableMissing": "Table not found",
   "message.noTables": "No table found",
   "message.noSchema": "No schema found",
   "search.tooltip": "Use ⌘+F or control+F command to search",

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { type JSONTableTable } from "shared/types/tableSchema";
 
 import TableWrapper from "../TableWrapper";
@@ -14,8 +15,21 @@ const Tables = ({ tables }: TablesProps) => {
   // them still know where to point.
   const visible = useVisibleTables(tables);
 
+  // Every column in the schema, not in the tables on screen: whether the rows
+  // are affordable to draw is a question about the whole drawing, and the
+  // answer must not change as the reader pans a cheap corner of an expensive
+  // schema into view.
+  const schemaColumns = useMemo(
+    () => tables.reduce((total, table) => total + table.fields.length, 0),
+    [tables],
+  );
+
   return visible.map((table) => (
-    <TableWrapper key={table.name} table={table} />
+    <TableWrapper
+      key={table.name}
+      table={table}
+      schemaColumns={schemaColumns}
+    />
   ));
 };
 

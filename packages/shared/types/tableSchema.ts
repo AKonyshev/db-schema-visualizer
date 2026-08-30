@@ -55,4 +55,10 @@ export interface JSONTableTable
   x: number;
   y: number;
   fromMetaInfo?: boolean;
+  /**
+   * The arrangements the file held for this table, keyed by the detail level
+   * each was made at. See `MetaInfo`: one set of coordinates cannot serve three
+   * levels, because tables are laid out by the height they are drawn at.
+   */
+  metaInfoPositions?: Record<string, { x: number; y: number }>;
 }

@@ -2,14 +2,30 @@ import { type JSONTableTable } from "shared/types/tableSchema";
 
 import { getTableLinesText } from "./tableWComputation/getTableLinesText";
 import { computeTablePreferredWidth } from "./tableWComputation/computeTablePreferredWidth";
+import { drawnTableHeight } from "./drawnTableHeight";
 
-import { COLUMN_HEIGHT, TABLE_HEADER_HEIGHT } from "@/constants/sizing";
+import { type TableDetailLevel } from "@/types/tableDetailLevel";
 import { type Dimension } from "@/types/dimension";
 
-export const computeTableDimension = (table: JSONTableTable): Dimension => {
+/**
+ * How much room a table takes on the canvas, for the layout to place it by.
+ *
+ * The height is the height it will be drawn at, which is why the detail level
+ * is not optional: it decided nothing here until the layout started being
+ * recomputed per level, and a default would have quietly gone on laying out
+ * headers as though every column were still there — the exact arrangement this
+ * argument exists to stop.
+ *
+ * The width does not move with the level. A table is drawn as wide as its
+ * widest column line whether or not the lines are showing, so that a table does
+ * not change width under the reader for a reason they cannot see.
+ */
+export const computeTableDimension = (
+  table: JSONTableTable,
+  detailLevel: TableDetailLevel,
+): Dimension => {
   const tableTexts = getTableLinesText(table.fields);
   const width = computeTablePreferredWidth(tableTexts, table.name);
-  const height = TABLE_HEADER_HEIGHT + COLUMN_HEIGHT * table.fields.length;
 
-  return { width, height };
+  return { width, height: drawnTableHeight(table.fields, detailLevel) };
 };

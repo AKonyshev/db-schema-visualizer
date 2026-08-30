@@ -179,3 +179,51 @@ test("a schema that does not parse can still be taken away", async ({
   // `invoices.dbml` in different folders must not download over each other.
   expect((await download).suggestedFilename()).toBe("billing-invoices.dbml");
 });
+
+test("a layout made with the columns hidden is saved, and says so", async ({
+  page,
+}) => {
+  await serveCatalogue(page);
+  await page.goto("/");
+
+  const editor = page.locator(".monaco-editor");
+  await expect(editor).toContainText("invoices");
+
+  // `D` down to headers only. The arrangement is computed from the height the
+  // tables are drawn at, so this is a different layout, not the same one drawn
+  // smaller.
+  //
+  // Clicked through `mouse` rather than `click()`, and clicked at all only to
+  // take the focus off the editor: the canvas animates its relations, so
+  // Playwright can wait for it to be "stable" enough to click until the test
+  // times out. The shortcut itself is bound to the document.
+  const canvas = page.locator(".konvajs-content canvas").first();
+  await expect(canvas).toBeVisible();
+  const box = await canvas.boundingBox();
+  await page.mouse.click(
+    (box?.x ?? 0) + (box?.width ?? 0) / 2,
+    (box?.y ?? 0) + (box?.height ?? 0) - 10,
+  );
+  await page.keyboard.press("d");
+
+  await page.getByRole("button", { name: "Save layout" }).click();
+
+  // Written like any other arrangement — and carrying the level it was made at,
+  // which is what stops it being read back as a full-detail one and piling
+  // every table on the next.
+  await expect(editor).toContainText("MetaInfo");
+  await expect(editor).toContainText("HeaderOnly");
+
+  // Both arrangements, not just the one on screen: the full-detail one the
+  // document opened with is still the reader's, and a file that kept only the
+  // last would lose it the moment they pressed `D`.
+  await expect(editor).toContainText("FullDetails");
+
+  // Full detail written last, for a reader that predates the level field: it
+  // keeps whichever entry it saw last, and that one has to be the arrangement
+  // with room enough to be drawn at any level.
+  const text = (await editor.innerText()).replace(/\s/g, "");
+  expect(text.lastIndexOf("FullDetails")).toBeGreaterThan(
+    text.lastIndexOf("HeaderOnly"),
+  );
+});
