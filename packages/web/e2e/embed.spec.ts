@@ -303,15 +303,9 @@ test("a small schema draws its columns however far out it is fitted", async ({
   await page.goto("/embed.html?src=tall.dbml");
   await expect(canvasOf(page)).toBeVisible();
 
-  // To full detail. One table of a hundred and twenty columns opens with its
-  // header alone, so two presses of `D` — headers, keys, all of it.
-  const box = await canvasOf(page).boundingBox();
-  await page.mouse.click(
-    (box?.x ?? 0) + (box?.width ?? 0) / 2,
-    (box?.y ?? 0) + (box?.height ?? 0) / 2,
-  );
-  await page.keyboard.press("d");
-  await page.keyboard.press("d");
+  // No keypress: a diagram of one table opens at full detail however tall the
+  // table is, because the budget that would otherwise send it to headers is
+  // there to protect the other tables and there are none.
 
   // Fitted into a frame this size, a column row is a few pixels tall — under
   // the size at which drawing the rows stops paying for itself on a schema big

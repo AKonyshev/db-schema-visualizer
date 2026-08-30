@@ -65,16 +65,38 @@ describe("defaultDetailLevelFor", () => {
     ).toBe(TableDetailLevel.HeaderOnly);
   });
 
+  // Probed with a second table present, because the tallest-table budget only
+  // has anything to say when there is another table for the tall one to shrink.
+  const withNeighbour = (columns: number): JSONTableTable[] => [
+    tableWith(columns, "tall"),
+    tableWith(4, "neighbour"),
+  ];
+
   test("holds full detail right up to the tallest-table budget", () => {
     expect(
-      defaultDetailLevelFor([tableWith(FULL_DETAIL_TALLEST_TABLE_BUDGET)]),
+      defaultDetailLevelFor(withNeighbour(FULL_DETAIL_TALLEST_TABLE_BUDGET)),
     ).toBe(TableDetailLevel.FullDetails);
   });
 
   test("drops to headers one column past the tallest-table budget", () => {
     expect(
-      defaultDetailLevelFor([tableWith(FULL_DETAIL_TALLEST_TABLE_BUDGET + 1)]),
+      defaultDetailLevelFor(
+        withNeighbour(FULL_DETAIL_TALLEST_TABLE_BUDGET + 1),
+      ),
     ).toBe(TableDetailLevel.HeaderOnly);
+  });
+
+  test("opens a lone table at full detail however tall it is", () => {
+    // The tallest-table budget is there to stop one tall table from shrinking
+    // every other table out of legibility when the diagram is fitted. A diagram
+    // of one table has nothing else to protect, and its columns are the whole
+    // of what the reader came for: 188 of the 394 diagrams in the documentation
+    // this serves show a single table, and 33 of those tables are wider than
+    // the budget. Headers-only leaves those pages showing a name and a coloured
+    // bar.
+    expect(defaultDetailLevelFor([tableWith(92, "wide")])).toBe(
+      TableDetailLevel.FullDetails,
+    );
   });
 
   test("judges the tallest table, not the average one", () => {

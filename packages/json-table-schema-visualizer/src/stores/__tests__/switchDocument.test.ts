@@ -68,8 +68,15 @@ describe("switchDocument", () => {
     });
   });
 
+  // A neighbour beside the wide one, because a table with nothing to shrink but
+  // itself opens at full detail however tall it is — see `defaultDetailLevelFor`.
+  const wideSchema = (): JSONTableTable[] => [
+    tableWith("wide", 200),
+    tableWith("neighbour", 4),
+  ];
+
   test("opens a schema of very wide tables at its default level", () => {
-    switchDocument("doc-wide", [tableWith("wide", 200)], []);
+    switchDocument("doc-wide", wideSchema(), []);
 
     expect(detailLevelStore.getCurrentDetailLevel()).toBe(
       TableDetailLevel.HeaderOnly,
@@ -82,7 +89,7 @@ describe("switchDocument", () => {
       TableDetailLevel.FullDetails,
     );
 
-    switchDocument("doc-wide", [tableWith("wide", 200)], []);
+    switchDocument("doc-wide", wideSchema(), []);
 
     // The layout is computed from the drawn height, so a document that opens
     // with headers must be arranged for headers. Arranged at the outgoing

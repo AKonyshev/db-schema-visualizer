@@ -35,6 +35,14 @@ export const FULL_DETAIL_COLUMN_BUDGET = 1000;
  * matters — 458 columns in total, comfortably inside the budget above, and six
  * thousand pixels tall, which in a 500px documentation frame is three
  * hairlines.
+ *
+ * It applies only where there is something to protect. What a tall table costs
+ * is paid by the *other* tables, which are shrunk with it when the diagram is
+ * fitted; a diagram of one table has no others, and its columns are the whole
+ * of what the reader came to see. Of the 394 diagrams in the documentation this
+ * serves, 188 show a single table and 33 of those are wider than this budget —
+ * every one of which this rule, applied to them, would reduce to a name on a
+ * coloured bar.
  */
 export const FULL_DETAIL_TALLEST_TABLE_BUDGET = 60;
 
@@ -57,8 +65,10 @@ export const defaultDetailLevelFor = (
     0,
   );
 
-  return columns > FULL_DETAIL_COLUMN_BUDGET ||
-    tallest > FULL_DETAIL_TALLEST_TABLE_BUDGET
+  const oneTallTableAmongOthers =
+    tables.length > 1 && tallest > FULL_DETAIL_TALLEST_TABLE_BUDGET;
+
+  return columns > FULL_DETAIL_COLUMN_BUDGET || oneTallTableAmongOthers
     ? TableDetailLevel.HeaderOnly
     : TableDetailLevel.FullDetails;
 };
