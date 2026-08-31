@@ -143,7 +143,7 @@ export async function importFromDatabase(
   // notices and the save prompt below — each step reports its own failure.
   try {
     await window.showTextDocument(target);
-    await commands.executeCommand("dbml-erd-visualizer.previewDiagrams");
+    await commands.executeCommand("dbmlStudio.previewDiagrams");
   } catch (error) {
     console.error("[dbml] failed to open the imported DBML file", error);
     void window.showErrorMessage(

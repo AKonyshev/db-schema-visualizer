@@ -1,7 +1,8 @@
-// In the text below, you may notice a spelling mistake: dblm instead of dbml.
-// It stays: this is the viewType of the diagram editor, and the webview keeps
-// table positions in localStorage, so renaming it reads as a brand new webview
-// and loses them. MetaInfo in the file is the durable copy; this is the cache.
-export const WEB_VIEW_NAME = "dblm-preview-webview";
+// The viewType of the diagram editor. The webview keeps table positions in
+// localStorage keyed by this name, so changing it reads as a brand new webview
+// and drops that cache; it was changed once, when the extension was republished
+// under its own identity, and there is no reason to change it again. MetaInfo
+// in the file is the durable copy of a layout — this is only the cache.
+export const WEB_VIEW_NAME = "dbml-studio-diagram";
 
-export const EXTENSION_CONFIG_SESSION = "dbmlERDPreviewer";
+export const EXTENSION_CONFIG_SESSION = "dbmlStudio";

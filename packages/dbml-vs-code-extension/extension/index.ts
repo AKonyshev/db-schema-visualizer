@@ -24,9 +24,7 @@ import type { PanelNode } from "./panelNodes";
 
 export function activate(context: ExtensionContext): void {
   const treeProvider = new ConnectionsTreeProvider(context.secrets);
-  const diagnostics = languages.createDiagnosticCollection(
-    "dbml-erd-visualizer",
-  );
+  const diagnostics = languages.createDiagnosticCollection("dbml-studio");
 
   const { provider, registration } = DiagramEditorProvider.register(
     WEB_VIEW_NAME,
@@ -93,20 +91,17 @@ export function activate(context: ExtensionContext): void {
   context.subscriptions.push(
     registration,
     diagnostics,
-    window.registerTreeDataProvider("dbml-erd-visualizer.panel", treeProvider),
+    window.registerTreeDataProvider("dbmlStudio.panel", treeProvider),
     context.secrets.onDidChange(() => {
       treeProvider.refresh();
     }),
-    commands.registerCommand("dbml-erd-visualizer.previewDiagrams", () => {
+    commands.registerCommand("dbmlStudio.previewDiagrams", () => {
       void openDiagram(ViewColumn.Beside);
     }),
-    commands.registerCommand(
-      "dbml-erd-visualizer.previewDiagramsInPlace",
-      () => {
-        void openDiagram(ViewColumn.Active);
-      },
-    ),
-    commands.registerCommand("dbml-erd-visualizer.showSource", () => {
+    commands.registerCommand("dbmlStudio.previewDiagramsInPlace", () => {
+      void openDiagram(ViewColumn.Active);
+    }),
+    commands.registerCommand("dbmlStudio.showSource", () => {
       const view = provider.getActiveView();
       if (view === undefined) {
         return;
@@ -122,32 +117,32 @@ export function activate(context: ExtensionContext): void {
         await closeTabFor(uri, WEB_VIEW_NAME);
       })();
     }),
-    commands.registerCommand("dbml-erd-visualizer.importFromDatabase", () => {
+    commands.registerCommand("dbmlStudio.importFromDatabase", () => {
       void importFromDatabase(context);
     }),
-    commands.registerCommand("dbml-erd-visualizer.compareWithDatabase", () => {
+    commands.registerCommand("dbmlStudio.compareWithDatabase", () => {
       void compareWithDatabase(context);
     }),
-    commands.registerCommand("dbml-erd-visualizer.addConnection", () => {
+    commands.registerCommand("dbmlStudio.addConnection", () => {
       void addConnection(context, treeProvider);
     }),
-    commands.registerCommand("dbml-erd-visualizer.refreshConnections", () => {
+    commands.registerCommand("dbmlStudio.refreshConnections", () => {
       treeProvider.refresh();
     }),
     commands.registerCommand(
-      "dbml-erd-visualizer.deleteConnection",
+      "dbmlStudio.deleteConnection",
       (node?: PanelNode) => {
         void deleteConnectionCommand(context, treeProvider, node);
       },
     ),
     commands.registerCommand(
-      "dbml-erd-visualizer.importFromConnection",
+      "dbmlStudio.importFromConnection",
       (node?: PanelNode) => {
         void importFromConnection(context, node);
       },
     ),
     commands.registerCommand(
-      "dbml-erd-visualizer.compareWithConnection",
+      "dbmlStudio.compareWithConnection",
       (node?: PanelNode) => {
         void compareWithConnection(context, node);
       },

@@ -42,7 +42,7 @@ const deps = (): DiagramViewDeps => ({
     clear: jest.fn(),
     dispose: jest.fn(),
   } as never,
-  extensionConfigSession: "dbmlERDPreviewer",
+  extensionConfigSession: "dbmlStudio",
   parser: () => emptySchema,
   fileExt: "dbml",
   supportsDbmlFileSync: true,
@@ -55,10 +55,10 @@ beforeAll(() => {
 
 describe("DiagramEditorProvider", () => {
   test("registers with retained context and one editor per document", () => {
-    DiagramEditorProvider.register("dblm-preview-webview", deps());
+    DiagramEditorProvider.register("dbml-studio-diagram", deps());
 
     expect(window.registerCustomEditorProvider).toHaveBeenCalledWith(
-      "dblm-preview-webview",
+      "dbml-studio-diagram",
       expect.any(DiagramEditorProvider),
       {
         webviewOptions: { retainContextWhenHidden: true },

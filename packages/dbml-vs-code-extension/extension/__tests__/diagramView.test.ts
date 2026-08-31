@@ -41,7 +41,7 @@ const makeDeps = (
     clear: jest.fn(),
     dispose: jest.fn(),
   } as never,
-  extensionConfigSession: "dbmlERDPreviewer",
+  extensionConfigSession: "dbmlStudio",
   parser,
   fileExt: "dbml",
   supportsDbmlFileSync: true,

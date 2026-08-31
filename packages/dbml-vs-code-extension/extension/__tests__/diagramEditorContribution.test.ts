@@ -40,10 +40,10 @@ describe("custom editor contribution", () => {
   test("the preview and source buttons are mutually exclusive", () => {
     const titleMenu = manifest().contributes.menus["editor/title"];
     const preview = titleMenu.find(
-      (item) => item.command === "dbml-erd-visualizer.previewDiagrams",
+      (item) => item.command === "dbmlStudio.previewDiagrams",
     );
     const source = titleMenu.find(
-      (item) => item.command === "dbml-erd-visualizer.showSource",
+      (item) => item.command === "dbmlStudio.showSource",
     );
 
     // Without the negation both would show at once: resourceLangId stays `dbml`
@@ -52,7 +52,7 @@ describe("custom editor contribution", () => {
       `resourceLangId == dbml && activeCustomEditorId != '${WEB_VIEW_NAME}'`,
     );
     expect(source?.when).toBe(`activeCustomEditorId == '${WEB_VIEW_NAME}'`);
-    expect(preview?.alt).toBe("dbml-erd-visualizer.previewDiagramsInPlace");
+    expect(preview?.alt).toBe("dbmlStudio.previewDiagramsInPlace");
   });
 
   test("the workbench contributes no Alt+H binding", () => {

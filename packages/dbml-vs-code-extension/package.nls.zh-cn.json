@@ -1,5 +1,5 @@
 {
-  "viewsContainer.title": "DBML Schema Visualizer",
+  "viewsContainer.title": "DBML Studio",
   "command.previewDiagrams": "显示关系图",
   "command.previewDiagramsInPlace": "在此选项卡中显示关系图",
   "command.showSource": "显示 DBML 源代码",
@@ -11,5 +11,5 @@
   "command.deleteConnection": "DBML：删除连接",
   "command.importFromConnection": "DBML：从此连接导入",
   "command.compareWithConnection": "DBML：与此连接比较",
-  "configuration.title": "DBML 实体关系图"
+  "configuration.title": "DBML Studio"
 }

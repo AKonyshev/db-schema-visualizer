@@ -113,7 +113,7 @@ the ticket comments in the local tracker for the measurements.
 `packages/dbml-vs-code-extension` has a third suite, also outside the sweep:
 
 ```bash
-yarn workspace dbml-schema-visualizer test:integration
+yarn workspace dbml-studio test:integration
 ```
 
 It launches a real VS Code with the extension loaded and drives it from the

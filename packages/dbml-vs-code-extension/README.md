@@ -1,21 +1,26 @@
-# DBML ERD Visualizer
+# DBML Studio
 
-Visualize a database schema as an entity-relationship diagram from a `.dbml` file in VS Code.
+A DBML workbench for VS Code: read a schema as an entity-relationship diagram, import one from a live PostgreSQL database, and diff a `.dbml` file against the database it describes.
 
-> **Unofficial fork.** Not affiliated with, or endorsed by, the authors of the original project. Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) ([MIT License](./LICENCE)); maintained independently by [AKonyshev](https://github.com/AKonyshev).
+> **Unofficial fork.** Not affiliated with, or endorsed by, the authors of the original project. Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) ([MIT License](./LICENCE)); maintained independently by [AKonyshev](https://github.com/AKonyshev). This is a separate extension with its own identifier, commands, and settings — installing it leaves the original alone.
 
-## Features
+## What this fork adds
+
+- **Import from PostgreSQL** — command palette → **DBML: Import from database**. Connections are saved in the DBML side bar and their credentials go to the VS Code secret store.
+- **Compare with a live database** — open a `.dbml` file, then **DBML: Compare with database**, and see where the file and the database have drifted apart.
+- **A layout that lives in the file** — drag tables about and the positions are written into a `MetaInfo` block in the DBML itself, one arrangement per detail level, so the diagram opens as you left it on any machine.
+- **Export** the diagram as PNG, SVG, AsciiDoc, or Markdown.
+- **Interface in English, Russian, and Simplified Chinese**, following your VS Code display language.
+- **Keyboard shortcuts** for every view action, with a built-in legend (`?`).
+
+## Diagram
 
 - Entity-relationship diagram from your DBML file
-- Drag tables; positions can be stored in a `MetaInfo` block inside the DBML file
 - Light and dark themes
 - Display modes: all columns, relational columns only, or table headers only
-- Export diagram as PNG, SVG, AsciiDoc, or Markdown
 - Hide/show relations per table via the icon in the table header; **Alt+H** comments refs in DBML for the table under the cursor
 - Colored relations: either one neutral colour for all of them, or each relation painted in its source table's colour
 - Relation animation: the relations of the table under the cursor animate to show their direction
-- **Import from PostgreSQL** — command palette → **DBML: Import from database**
-- **Compare with database** — open a `.dbml` file, then **DBML: Compare with database**
 
 ## Keyboard shortcuts
 
@@ -44,8 +49,8 @@ The Chinese translation is a community contribution and has not been reviewed by
 
 ## Extension settings
 
-- `dbmlERDPreviewer.preferredTheme` — `light` or `dark` (default: `dark`)
-- `dbmlERDPreviewer.scrollDirection` — `up-out` or `up-in` (default: `up-out`)
+- `dbmlStudio.preferredTheme` — `light` or `dark` (default: `dark`)
+- `dbmlStudio.scrollDirection` — `up-out` or `up-in` (default: `up-out`)
 
 ## Release notes
 
@@ -53,9 +58,9 @@ The Chinese translation is a community contribution and has not been reviewed by
 
 ## Attribution
 
-|               |                                                                                                                                   |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Upstream**  | [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) by [@BOCOVO](https://github.com/BOCOVO)             |
-| **This fork** | [AKonyshev/db-schema-visualizer](https://github.com/AKonyshev/db-schema-visualizer) by [@AKonyshev](https://github.com/AKonyshev) |
+|               |                                                                                                                       |
+| ------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Upstream**  | [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) by [@BOCOVO](https://github.com/BOCOVO) |
+| **This fork** | [AKonyshev/dbml-studio](https://github.com/AKonyshev/dbml-studio) by [@AKonyshev](https://github.com/AKonyshev)       |
 
 Licensed under the [MIT License](./LICENCE).

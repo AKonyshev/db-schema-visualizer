@@ -1,10 +1,15 @@
 # Change Log
 
-All notable changes to the "dbml-schema-visualizer" extension will be documented in this file.
+All notable changes to the "dbml-studio" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+
+### Changed
+
+- **The extension is now DBML Studio, and carries its own identity throughout.** It was published as a fork that had kept the original's name, identifier, command namespace and settings keys verbatim, and the Marketplace removed it as an extension resembling another one. The identifier is now `konyshevav.dbml-studio`, the commands are `dbmlStudio.*`, the settings are `dbmlStudio.preferredTheme` and `dbmlStudio.scrollDirection`, the diagram editor's viewType is `dbml-studio-diagram`, and the listing describes what this fork actually does rather than restating the original's feature list. The upstream project is still credited, in the listing and in the repository, as the work it is built on.
+- **Settings written under the old keys are not carried over.** `dbmlERDPreviewer.preferredTheme` and `dbmlERDPreviewer.scrollDirection` are read by nothing now; set the two `dbmlStudio.*` keys instead. A diagram's table positions kept in the webview's local cache are dropped for the same reason, but a layout saved into a file's `MetaInfo` block is untouched and still read.
 
 ## [0.16.0] - 2026-08-30
 

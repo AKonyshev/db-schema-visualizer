@@ -5,8 +5,8 @@ import * as path from "path";
 
 import * as vscode from "vscode";
 
-const EXTENSION_ID = "konyshevav.dbml-schema-visualizer";
-const DIAGRAM_VIEW_TYPE = "dblm-preview-webview";
+const EXTENSION_ID = "konyshevav.dbml-studio";
+const DIAGRAM_VIEW_TYPE = "dbml-studio-diagram";
 
 const SAMPLE_DBML = `Table users {
   id uuid [pk]
@@ -94,9 +94,7 @@ suite("text/diagram toggle", () => {
     await vscode.window.showTextDocument(document);
     await waitFor("the text tab", () => tabsFor(uri).length === 1);
 
-    await vscode.commands.executeCommand(
-      "dbml-erd-visualizer.previewDiagramsInPlace",
-    );
+    await vscode.commands.executeCommand("dbmlStudio.previewDiagramsInPlace");
 
     await waitFor(
       "the diagram tab",
@@ -110,15 +108,13 @@ suite("text/diagram toggle", () => {
   test("showing the source replaces the diagram tab with the text", async () => {
     const document = await vscode.workspace.openTextDocument(uri);
     await vscode.window.showTextDocument(document);
-    await vscode.commands.executeCommand(
-      "dbml-erd-visualizer.previewDiagramsInPlace",
-    );
+    await vscode.commands.executeCommand("dbmlStudio.previewDiagramsInPlace");
     await waitFor(
       "the diagram tab",
       () => tabsFor(uri, DIAGRAM_VIEW_TYPE).length === 1,
     );
 
-    await vscode.commands.executeCommand("dbml-erd-visualizer.showSource");
+    await vscode.commands.executeCommand("dbmlStudio.showSource");
 
     await waitFor("the text tab", () => tabsFor(uri).length === 1);
     await waitFor(
@@ -132,7 +128,7 @@ suite("text/diagram toggle", () => {
     const document = await vscode.workspace.openTextDocument(uri);
     await vscode.window.showTextDocument(document);
 
-    await vscode.commands.executeCommand("dbml-erd-visualizer.previewDiagrams");
+    await vscode.commands.executeCommand("dbmlStudio.previewDiagrams");
 
     await waitFor(
       "the diagram tab",

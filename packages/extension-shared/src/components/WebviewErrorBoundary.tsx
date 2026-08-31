@@ -22,7 +22,7 @@ class WebviewErrorBoundary extends Component<
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("[dbml-erd-visualizer]", error, errorInfo);
+    console.error("[dbml-studio]", error, errorInfo);
   }
 
   public render(): ReactNode {
