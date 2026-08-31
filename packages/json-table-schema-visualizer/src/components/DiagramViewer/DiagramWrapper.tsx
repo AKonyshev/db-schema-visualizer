@@ -46,18 +46,7 @@ import { computeWheelZoom } from "@/utils/computeWheelZoom";
 import { computeDiagramBounds } from "@/utils/diagramBounds";
 import { viewportStore } from "@/stores/viewportStore";
 import { toggleInteractionMode } from "@/stores/interactionModeStore";
-import { useIsSelectMode } from "@/hooks/selection";
-import {
-  isSpaceActivatedTarget,
-  isTypingTarget,
-  type TypingTarget,
-} from "@/utils/isTypingTarget";
-import { selectionStore } from "@/stores/selectionStore";
-import {
-  normalizeMarquee,
-  selectionFromMarquee,
-  type Marquee,
-} from "@/utils/selectionFromMarquee";
+import { useMarqueeSelection } from "@/hooks/marqueeSelection";
 
 interface DiagramWrapperProps {
   connections: ReactNode;
@@ -118,25 +107,14 @@ const DiagramWrapper = ({
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
-  const isSelectMode = useIsSelectMode();
-  // The Group the tables live in. A pointer position read from it is already in
-  // the coordinates `tableCoordsStore` holds — the stage transform and this
-  // Group's own offset included — so nothing here has to undo either.
   const tablesGroupRef = useRef<null | CoreGroup>(null);
-  const [marquee, setMarquee] = useState<Marquee | null>(null);
-  // Where the drag began, and whether the modifier was down when it did: the
-  // reader may let Shift go halfway through, and the gesture they started is
-  // the one they meant.
-  const marqueeStartRef = useRef<{
-    x: number;
-    y: number;
-    additive: boolean;
-  } | null>(null);
-  // Konva has no filter for which mouse button starts a drag, so panning inside
-  // select mode is the stage being made draggable for the length of one gesture
-  // and put back afterwards.
-  const [isPanOverride, setIsPanOverride] = useState(false);
-  const isMiddleButtonDownRef = useRef(false);
+  const {
+    marquee,
+    stageIsDraggable,
+    isPanning,
+    onMouseDown: onMarqueeMouseDown,
+    onMouseMove: onMarqueeMouseMove,
+  } = useMarqueeSelection({ stageRef, tablesGroupRef });
   const { height: viewHeight, width: viewWidth } = useElementSize(containerRef);
   const { scrollDirection } = useScrollDirectionContext();
   // Konva is written to directly on pan and zoom, so this is the only thing
@@ -373,212 +351,6 @@ const DiagramWrapper = ({
     setHoveredTableName(null);
     setHighlightedColumns([]);
   };
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (
-        event.key !== "Escape" ||
-        selectionStore.getSelected().size === 0 ||
-        // The one definition of "the reader is busy with this key" — see
-        // `isTypingTarget`. Escape in the editor beside the diagram means
-        // "dismiss what you are showing me", not "drop my selection".
-        isTypingTarget(event.target as TypingTarget | null)
-      ) {
-        return;
-      }
-
-      // Marked as spent, the way the legend and the export menu mark theirs:
-      // the embedded frame reads exactly this to decide whether an Escape was
-      // the reader asking for the page back. Without it one keypress would both
-      // drop the selection and collapse an expanded frame.
-      event.preventDefault();
-      selectionStore.clear();
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, []);
-
-  useEffect(() => {
-    // An unmount cleanup rather than a watch on the document key: this
-    // component does not receive the key, and remounting is exactly what a
-    // document change does to it. Without this, opening another schema leaves a
-    // selection naming tables that are not on the canvas.
-    return () => {
-      selectionStore.clear();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isSelectMode) {
-      // A selection that outlived the mode would silently change what a plain
-      // drag does, in the mode whose whole point is that a drag moves the
-      // canvas. Panning stays reachable inside select mode, so nobody has to
-      // leave it mid-task.
-      selectionStore.clear();
-    }
-  }, [isSelectMode]);
-
-  useEffect(() => {
-    if (!isSelectMode) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (
-        event.code !== "Space" ||
-        isSpaceActivatedTarget(event.target as TypingTarget | null)
-      ) {
-        return;
-      }
-
-      // Otherwise the page around an embedded frame scrolls a screen down while
-      // the reader is holding the key to pan.
-      event.preventDefault();
-      setIsPanOverride(true);
-    };
-
-    const onKeyUp = (event: KeyboardEvent): void => {
-      if (event.code === "Space") {
-        setIsPanOverride(false);
-      }
-    };
-
-    // A reader who switches windows mid-pan never sends the key-up.
-    const onBlur = (): void => {
-      setIsPanOverride(false);
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    window.addEventListener("blur", onBlur);
-
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
-      window.removeEventListener("blur", onBlur);
-      setIsPanOverride(false);
-    };
-  }, [isSelectMode]);
-
-  const pointerInDiagram = (): { x: number; y: number } | null =>
-    tablesGroupRef.current?.getRelativePointerPosition() ?? null;
-
-  const handleMarqueeStart = (event: KonvaEventObject<MouseEvent>): void => {
-    // Only a drag that began on empty canvas. One that began on a table is that
-    // table being moved, which Konva is already handling.
-    if (event.target !== stageRef.current) {
-      return;
-    }
-
-    const point = pointerInDiagram();
-
-    if (point === null) {
-      return;
-    }
-
-    marqueeStartRef.current = { ...point, additive: event.evt.shiftKey };
-    setMarquee({ x: point.x, y: point.y, w: 0, h: 0 });
-  };
-
-  const handleMarqueeMove = (): void => {
-    const start = marqueeStartRef.current;
-    const point = pointerInDiagram();
-
-    if (start === null || point === null) {
-      return;
-    }
-
-    setMarquee({
-      x: start.x,
-      y: start.y,
-      w: point.x - start.x,
-      h: point.y - start.y,
-    });
-  };
-
-  /** What the stage's `draggable` prop says it should be right now. */
-  const stageIsDraggable = !isSelectMode || isPanOverride;
-
-  /**
-   * Ends whatever gesture was in flight, whichever way it ended.
-   *
-   * One function for both gestures and bound to every way a drag can stop —
-   * the button coming up, the pointer leaving the canvas, the window losing
-   * focus. A middle-button pan released outside the canvas used to send no
-   * mouse-up at all, so its flag stayed raised and the stage stayed draggable:
-   * select mode silently became pan mode, and the next drag both drew a marquee
-   * and moved the canvas.
-   *
-   * `draggable` is restored to what the prop says rather than to `false`.
-   * Konva is being written to directly here, and React will not re-apply a prop
-   * whose value has not changed — so hardcoding `false` left the stage
-   * undraggable while the reader was still holding space for it.
-   */
-  const endGesture = (): void => {
-    if (isMiddleButtonDownRef.current) {
-      isMiddleButtonDownRef.current = false;
-      stageRef.current?.stopDrag();
-      stageRef.current?.draggable(stageIsDraggable);
-    }
-
-    const start = marqueeStartRef.current;
-
-    if (start === null) {
-      return;
-    }
-
-    const point = pointerInDiagram();
-    const box: Marquee =
-      point === null
-        ? { x: start.x, y: start.y, w: 0, h: 0 }
-        : {
-            x: start.x,
-            y: start.y,
-            w: point.x - start.x,
-            h: point.y - start.y,
-          };
-
-    selectionStore.setSelected(
-      selectionFromMarquee(
-        tableCoordsStore.getCurrentStore(),
-        box,
-        start.additive,
-        selectionStore.getSelected(),
-      ),
-    );
-
-    marqueeStartRef.current = null;
-    setMarquee(null);
-  };
-
-  // Bound once, and read at the moment the gesture ends, so the listener below
-  // never needs re-attaching.
-  const endGestureRef = useRef(endGesture);
-  endGestureRef.current = endGesture;
-
-  useEffect(() => {
-    // On the window rather than on the stage, which is the whole point: Konva
-    // captures the pointer for the length of a stage drag, so the stage hears
-    // no `mouseleave` and — if the button comes up outside the canvas — no
-    // `mouseup` either. Listening here is the only way to be told the gesture
-    // is over wherever it ended. `blur` covers the reader switching apps
-    // mid-drag, which sends no pointer event at all.
-    const onEnd = (): void => {
-      endGestureRef.current();
-    };
-
-    window.addEventListener("mouseup", onEnd);
-    window.addEventListener("blur", onEnd);
-
-    return () => {
-      window.removeEventListener("mouseup", onEnd);
-      window.removeEventListener("blur", onEnd);
-    };
-  }, []);
 
   /**
    * A fresh arrangement gets a fresh view.
@@ -824,11 +596,11 @@ const DiagramWrapper = ({
       // wired to the stage's drag events, which a middle-button pan goes
       // through.
       className={`relative h-full w-full overflow-hidden ${
-        isSelectMode && isPanOverride ? "cursor-grab" : ""
+        isPanning ? "cursor-grab" : ""
       }`}
     >
       <Stage
-        draggable={!isSelectMode || isPanOverride}
+        draggable={stageIsDraggable}
         ref={stageRef}
         onDragStart={onGrabbing}
         onDragMove={publishViewport}
@@ -836,34 +608,9 @@ const DiagramWrapper = ({
         onWheel={handleZooming}
         onMouseDown={(event) => {
           handleStagePointerDown(event);
-
-          if (!isSelectMode) {
-            return;
-          }
-
-          // Space is held, so the stage is already draggable and Konva is
-          // about to pan with this very drag. Opening a marquee on top of it
-          // would end by committing an empty one: the tables move with the
-          // stage, so the pointer barely moves relative to them, and the box
-          // `endGesture` computes catches nothing — which clears the selection
-          // the reader held space to keep.
-          if (isPanOverride) {
-            return;
-          }
-
-          // 1 is the middle button. Konva cannot be told which buttons drag,
-          // so the stage is made draggable for the length of this gesture and
-          // `endGesture` puts it back.
-          if (event.evt.button === 1) {
-            isMiddleButtonDownRef.current = true;
-            stageRef.current?.draggable(true);
-            stageRef.current?.startDrag();
-            return;
-          }
-
-          handleMarqueeStart(event);
+          onMarqueeMouseDown?.(event);
         }}
-        onMouseMove={isSelectMode ? handleMarqueeMove : undefined}
+        onMouseMove={onMarqueeMouseMove}
         onTouchStart={handleStagePointerDown}
         width={viewWidth}
         height={viewHeight}
@@ -891,10 +638,10 @@ const DiagramWrapper = ({
           <Layer listening={false}>
             <Group offsetX={-DIAGRAM_PADDING} offsetY={-DIAGRAM_PADDING}>
               <Rect
-                x={normalizeMarquee(marquee).x}
-                y={normalizeMarquee(marquee).y}
-                width={normalizeMarquee(marquee).w}
-                height={normalizeMarquee(marquee).h}
+                x={marquee.x}
+                y={marquee.y}
+                width={marquee.w}
+                height={marquee.h}
                 fill={themeColors.selection.fill}
                 opacity={0.25}
                 stroke={themeColors.selection.stroke}
