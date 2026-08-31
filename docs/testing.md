@@ -116,6 +116,16 @@ the ticket comments in the local tracker for the measurements.
 yarn workspace dbml-studio test:integration
 ```
 
+`compile-tests` empties `out/` before it runs, which is not tidiness. `tsc`
+writes into that directory and never removes anything from it, `out/` is
+git-ignored, and the runner globs `out/**/*.test.js` — so a test file deleted
+from the source tree goes on being compiled once and executed for ever on the
+machine that built it. It happened: a suite removed with the feature it covered
+kept running against an extension identifier the rename had since changed, and
+failed with "extension konyshevav.dbml-schema-visualizer not found" on a working
+tree that contained no such string. A fresh clone passed, which is the worst
+shape a failure can take.
+
 It launches a real VS Code with the extension loaded and drives it from the
 inside — `vscode.commands.executeCommand` plus `vscode.window.tabGroups` — which
 is the only way to check the thing the text/diagram toggle is for: that switching
