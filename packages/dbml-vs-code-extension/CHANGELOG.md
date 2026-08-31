@@ -6,6 +6,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-09-01
+
+### Fixed
+
+- **Export → SVG produced a file holding the relation lines and no tables.** The exporter records the canvas by swapping an SVG-writing context onto a layer and drawing; it took the first one, which was the whole diagram until the zoom rewrite split connections and tables onto two. It has been the connections alone since, and it shipped that way in 0.16.0, 1.0.0 and 1.0.1. Nothing caught it because nothing opened the file: the download happened, the file was not empty, and a `.svg` full of lines looks like a working export right up until somebody views it. The browser suite opens what it downloads now — every table has to be named in the SVG, the AsciiDoc and the Markdown, and the PNG has to come out at the size of the model rather than of the window.
+
 ## [1.0.1] - 2026-08-31
 
 ### Added
