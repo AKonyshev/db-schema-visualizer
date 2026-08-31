@@ -24,3 +24,8 @@ playwright-report/
 # cache that this Yarn 1 repository never reads. Both arrived from upstream.
 yarn-error.log
 .yarn/
+
+# The packaged extension. Built on demand and attached to a GitHub release —
+# three and a half megabytes that would otherwise be committed by whoever ran
+# `create:package` last. See docs/releasing.md.
+*.vsix

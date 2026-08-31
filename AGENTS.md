@@ -17,6 +17,13 @@ The five canonical roles, used verbatim (`needs-triage`, `needs-info`,
 
 Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+## Releasing
+
+`docs/releasing.md` has the order: the version lives in the extension's
+`package.json`, the release commit carries it and a changelog entry, the tag
+goes on the merge commit, and every release carries a `.vsix`. Publishing to the
+Marketplace is the last step and a deliberate one.
+
 ## Type checking and tests
 
 `yarn typecheck` checks every package and `yarn test` runs every package's
