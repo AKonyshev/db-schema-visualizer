@@ -125,7 +125,3 @@ export const badgeLayout = (badges: FieldBadge[]): BadgeLayout => {
 
   return { totalWidth: badges.length === 0 ? 0 : x - BADGE.gap, pills };
 };
-
-/** What the badges take, for the code that only needs to reserve the room. */
-export const badgesWidth = (badges: FieldBadge[]): number =>
-  badgeLayout(badges).totalWidth;

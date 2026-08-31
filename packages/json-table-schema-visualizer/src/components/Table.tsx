@@ -12,6 +12,7 @@ import type Konva from "konva";
 import {
   COLUMN_HEIGHT,
   PADDINGS,
+  SELECTION_OUTLINE_INSET,
   TABLE_HEADER_HEIGHT,
 } from "@/constants/sizing";
 import { useThemeColors, useThemeContext } from "@/hooks/theme";
@@ -203,20 +204,12 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
 
     // Konva raises `click` only when the pointer did not drag, so there is
     // nothing to tell a click from a move by hand.
-    if (!event.evt.shiftKey) {
-      selectionStore.setSelected(new Set([name]));
+    if (event.evt.shiftKey) {
+      selectionStore.toggle(name);
       return;
     }
 
-    const selected = new Set(selectionStore.getSelected());
-
-    if (selected.has(name)) {
-      selected.delete(name);
-    } else {
-      selected.add(name);
-    }
-
-    selectionStore.setSelected(selected);
+    selectionStore.setSelected(new Set([name]));
   };
 
   return (
@@ -268,10 +261,10 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
           // query, and picking these out by stroke width catches every other
           // outline on the diagram too.
           name={SELECTED_OUTLINE_NAME}
-          x={-3}
-          y={-3}
-          width={tablePreferredWidth + 6}
-          height={tableHeight + 6}
+          x={-SELECTION_OUTLINE_INSET}
+          y={-SELECTION_OUTLINE_INSET}
+          width={tablePreferredWidth + SELECTION_OUTLINE_INSET * 2}
+          height={tableHeight + SELECTION_OUTLINE_INSET * 2}
           stroke={themeColors.selection.stroke}
           strokeWidth={2}
           fill="transparent"
