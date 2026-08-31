@@ -2,6 +2,10 @@
 
 A DBML workbench for VS Code: read a schema as an entity-relationship diagram, import one from a live PostgreSQL database, and diff a `.dbml` file against the database it describes.
 
+![DBML Studio: a DBML file on the left, its diagram on the right — tables chosen with a marquee and moved together, keys and mandatory columns marked, relations painted by their source table](https://raw.githubusercontent.com/AKonyshev/dbml-studio/main/assets/demo.gif)
+
+_A fictional library schema — the model is in [`examples/library.dbml`](https://github.com/AKonyshev/dbml-studio/blob/main/examples/library.dbml)._
+
 > **Unofficial fork.** Not affiliated with, or endorsed by, the authors of the original project. Based on [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) ([MIT License](./LICENCE)); maintained independently by [AKonyshev](https://github.com/AKonyshev). This is a separate extension with its own identifier, commands, and settings — installing it leaves the original alone.
 
 ## What this fork adds
