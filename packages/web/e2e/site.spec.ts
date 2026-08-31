@@ -249,3 +249,45 @@ test("shift adds one table to the selection and takes it away again", async ({
 
   await expect.poll(async () => await selectedTableCount(page)).toBe(0);
 });
+
+test("the diagram recovers after its container had no size", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(canvasOf(page)).toBeVisible();
+
+  const stageSize = async (): Promise<{ w: number; h: number }> =>
+    await page.evaluate(() => {
+      const stage = window.Konva?.stages[0] as unknown as {
+        width: () => number;
+        height: () => number;
+      };
+      return { w: stage.width(), h: stage.height() };
+    });
+
+  expect((await stageSize()).w).toBeGreaterThan(0);
+
+  // The container loses its box. Not a contrivance: the extension's webview is
+  // laid out at nothing while its tab is in the background, and a pane the
+  // reader collapses does the same. What the diagram must not do is stay
+  // collapsed once the box comes back.
+  await page.evaluate(() => {
+    const el = document
+      .querySelector(".konvajs-content")
+      ?.closest("main") as HTMLElement | null;
+    if (el?.parentElement != null) el.parentElement.style.display = "none";
+  });
+  await page.waitForTimeout(500);
+  expect((await stageSize()).w).toBe(0);
+
+  // And gets it back.
+  await page.evaluate(() => {
+    const el = document
+      .querySelector(".konvajs-content")
+      ?.closest("main") as HTMLElement | null;
+    if (el?.parentElement != null) el.parentElement.style.display = "";
+  });
+  await page.waitForTimeout(800);
+
+  expect((await stageSize()).w).toBeGreaterThan(0);
+});
