@@ -6,6 +6,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+### Added
+
+- **The listing shows the extension working.** A recorded demonstration — arranging a schema, cycling the detail level, finding a table by name, catching a group with a marquee and moving it, colouring and animating the relations, reading the notation up close, and turning the whole page over to the dark theme. It runs on a schema written for it, a fictional public library kept in `examples/library.dbml`: no real database of anyone's is in the picture, and nothing on screen belongs to a person. The recording lives in the repository rather than in the package, so the listing loads it without every install carrying it.
+- **Categories and keywords that say what this is.** The extension was filed under `Other` alone and found by two words. It is now also under `Visualization` and `Programming Languages` — it contributes the DBML language and its grammar — and answers to the terms someone would actually search: `erd`, `entity relationship diagram`, `database schema`, `postgresql`, `schema diff`, `data model`.
+
 ## [1.0.0] - 2026-08-31
 
 The extension is republished under its own name. What it does was never the

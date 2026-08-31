@@ -2,6 +2,10 @@
 
 A DBML workbench for VS Code — ERD diagrams, PostgreSQL import, and live database comparison — plus the same diagram as a website you can host yourself and embed in documentation.
 
+![DBML Studio](./assets/demo.gif)
+
+_A fictional library schema — the model is in [`examples/library.dbml`](./examples/library.dbml)._
+
 > **Fork notice.** This repository is a fork of [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer), maintained independently under the [MIT License](./LICENSE). The original project and its authors are credited below; modifications in this fork are maintained by [AKonyshev](https://github.com/AKonyshev).
 
 ## Features

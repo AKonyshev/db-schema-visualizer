@@ -10,7 +10,18 @@
     "vscode": "^1.87.0"
   },
   "categories": [
+    "Visualization",
+    "Programming Languages",
     "Other"
+  ],
+  "keywords": [
+    "dbml",
+    "erd",
+    "entity relationship diagram",
+    "database schema",
+    "postgresql",
+    "schema diff",
+    "data model"
   ],
   "activationEvents": [],
   "main": "./dist/extension/index.js",

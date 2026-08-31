@@ -1,0 +1,99 @@
+// A small, entirely fictional schema for a public library.
+// It exists to demonstrate the diagram: keys, optional columns, enums and
+// relations of every cardinality, in a domain anyone can read at a glance.
+
+Enum membership_status {
+  active
+  lapsed
+  suspended
+}
+
+Enum copy_condition {
+  new
+  good
+  worn
+  withdrawn
+}
+
+Table branch {
+  id integer [pk]
+  name varchar(120) [not null]
+  address varchar(200) [not null]
+  opened_on date [not null]
+  closed_on date // a branch that is still open has none
+
+  Note: 'A physical library building.'
+}
+
+Table member {
+  id integer [pk]
+  membership_no varchar(16) [unique, not null]
+  display_name varchar(120) [not null]
+  email varchar(200) [unique]
+  home_branch_id integer [not null]
+  status membership_status [not null, default: 'active']
+  joined_on date [not null]
+
+  Note: 'Someone who may borrow. Email is optional: a card can be issued at a desk.'
+}
+
+Table author {
+  id integer [pk]
+  name varchar(160) [not null]
+  born_in integer
+  died_in integer
+}
+
+Table book {
+  id integer [pk]
+  isbn varchar(17) [unique]
+  title varchar(300) [not null]
+  author_id integer [not null]
+  published_in integer
+  language varchar(8) [not null, default: 'en']
+
+  Note: 'A work. What sits on a shelf is a copy of one.'
+}
+
+Table copy {
+  id integer [pk]
+  book_id integer [not null]
+  branch_id integer [not null]
+  shelf_code varchar(24) [not null]
+  condition copy_condition [not null, default: 'good']
+  acquired_on date [not null]
+
+  indexes {
+    (branch_id, shelf_code) [unique]
+  }
+}
+
+Table loan {
+  id integer [pk]
+  copy_id integer [not null]
+  member_id integer [not null]
+  taken_on date [not null]
+  due_on date [not null]
+  returned_on date // still out on loan while this is empty
+
+  Note: 'One copy, out with one member, for a while.'
+}
+
+Table reservation {
+  id integer [pk]
+  book_id integer [not null]
+  member_id integer [not null]
+  placed_at timestamp [not null]
+  expires_at timestamp [not null]
+  fulfilled_by_loan_id integer
+}
+
+Ref: member.home_branch_id > branch.id
+Ref: book.author_id > author.id
+Ref: copy.book_id > book.id
+Ref: copy.branch_id > branch.id
+Ref: loan.copy_id > copy.id
+Ref: loan.member_id > member.id
+Ref: reservation.book_id > book.id
+Ref: reservation.member_id > member.id
+Ref: reservation.fulfilled_by_loan_id - loan.id
