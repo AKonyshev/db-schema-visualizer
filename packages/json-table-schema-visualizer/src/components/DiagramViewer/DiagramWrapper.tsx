@@ -1,4 +1,4 @@
-import { Group, Layer, Stage } from "react-konva";
+import { Group, Layer, Rect, Stage } from "react-konva";
 import {
   useCallback,
   useEffect,
@@ -16,6 +16,7 @@ import Toolbar from "../Toolbar/Toolbar";
 import ShortcutsLegend from "../ShortcutsLegend/ShortcutsLegend";
 
 import type { Stage as CoreStage } from "konva/lib/Stage";
+import type { Group as CoreGroup } from "konva/lib/Group";
 
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { useElementSize } from "@/hooks/elementSize";
@@ -45,6 +46,13 @@ import { computeWheelZoom } from "@/utils/computeWheelZoom";
 import { computeDiagramBounds } from "@/utils/diagramBounds";
 import { viewportStore } from "@/stores/viewportStore";
 import { toggleInteractionMode } from "@/stores/interactionModeStore";
+import { useIsSelectMode } from "@/hooks/selection";
+import { selectionStore } from "@/stores/selectionStore";
+import {
+  normalizeMarquee,
+  selectionFromMarquee,
+  type Marquee,
+} from "@/utils/selectionFromMarquee";
 
 interface DiagramWrapperProps {
   connections: ReactNode;
@@ -105,6 +113,20 @@ const DiagramWrapper = ({
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
+  const isSelectMode = useIsSelectMode();
+  // The Group the tables live in. A pointer position read from it is already in
+  // the coordinates `tableCoordsStore` holds — the stage transform and this
+  // Group's own offset included — so nothing here has to undo either.
+  const tablesGroupRef = useRef<null | CoreGroup>(null);
+  const [marquee, setMarquee] = useState<Marquee | null>(null);
+  // Where the drag began, and whether the modifier was down when it did: the
+  // reader may let Shift go halfway through, and the gesture they started is
+  // the one they meant.
+  const marqueeStartRef = useRef<{
+    x: number;
+    y: number;
+    additive: boolean;
+  } | null>(null);
   const { height: viewHeight, width: viewWidth } = useElementSize(containerRef);
   const { scrollDirection } = useScrollDirectionContext();
   // Konva is written to directly on pan and zoom, so this is the only thing
@@ -340,6 +362,73 @@ const DiagramWrapper = ({
     if (nodeBelongsToTable(e.target)) return;
     setHoveredTableName(null);
     setHighlightedColumns([]);
+  };
+
+  const pointerInDiagram = (): { x: number; y: number } | null =>
+    tablesGroupRef.current?.getRelativePointerPosition() ?? null;
+
+  const handleMarqueeStart = (event: KonvaEventObject<MouseEvent>): void => {
+    // Only a drag that began on empty canvas. One that began on a table is that
+    // table being moved, which Konva is already handling.
+    if (event.target !== stageRef.current) {
+      return;
+    }
+
+    const point = pointerInDiagram();
+
+    if (point === null) {
+      return;
+    }
+
+    marqueeStartRef.current = { ...point, additive: event.evt.shiftKey };
+    setMarquee({ x: point.x, y: point.y, w: 0, h: 0 });
+  };
+
+  const handleMarqueeMove = (): void => {
+    const start = marqueeStartRef.current;
+    const point = pointerInDiagram();
+
+    if (start === null || point === null) {
+      return;
+    }
+
+    setMarquee({
+      x: start.x,
+      y: start.y,
+      w: point.x - start.x,
+      h: point.y - start.y,
+    });
+  };
+
+  const handleMarqueeEnd = (): void => {
+    const start = marqueeStartRef.current;
+
+    if (start === null) {
+      return;
+    }
+
+    const point = pointerInDiagram();
+    const box: Marquee =
+      point === null
+        ? { x: start.x, y: start.y, w: 0, h: 0 }
+        : {
+            x: start.x,
+            y: start.y,
+            w: point.x - start.x,
+            h: point.y - start.y,
+          };
+
+    selectionStore.setSelected(
+      selectionFromMarquee(
+        tableCoordsStore.getCurrentStore(),
+        box,
+        start.additive,
+        selectionStore.getSelected(),
+      ),
+    );
+
+    marqueeStartRef.current = null;
+    setMarquee(null);
   };
 
   /**
@@ -580,13 +669,25 @@ const DiagramWrapper = ({
     // else, which is exactly when they stop being cosmetic.
     <div ref={containerRef} className="relative h-full w-full overflow-hidden">
       <Stage
-        draggable
+        draggable={!isSelectMode}
         ref={stageRef}
         onDragStart={onGrabbing}
         onDragMove={publishViewport}
         onDragEnd={onGrabRelease}
         onWheel={handleZooming}
-        onMouseDown={handleStagePointerDown}
+        onMouseDown={(event) => {
+          handleStagePointerDown(event);
+
+          if (isSelectMode) {
+            handleMarqueeStart(event);
+          }
+        }}
+        onMouseMove={isSelectMode ? handleMarqueeMove : undefined}
+        onMouseUp={isSelectMode ? handleMarqueeEnd : undefined}
+        // Closes the gesture when the pointer leaves the canvas mid-drag;
+        // without it the marquee stays on screen and the next click finishes a
+        // drag the reader abandoned.
+        onMouseLeave={isSelectMode ? handleMarqueeEnd : undefined}
         onTouchStart={handleStagePointerDown}
         width={viewWidth}
         height={viewHeight}
@@ -598,10 +699,37 @@ const DiagramWrapper = ({
           </Group>
         </Layer>
         <Layer>
-          <Group offsetX={-DIAGRAM_PADDING} offsetY={-DIAGRAM_PADDING}>
+          <Group
+            ref={tablesGroupRef}
+            offsetX={-DIAGRAM_PADDING}
+            offsetY={-DIAGRAM_PADDING}
+          >
             {tables}
           </Group>
         </Layer>
+
+        {marquee !== null && (
+          // Its own layer, above the tables: the marquee is drawn over whatever
+          // it is catching. Deaf to the pointer, so the rectangle under it
+          // cannot swallow the mouse-up that ends the gesture.
+          <Layer listening={false}>
+            <Group offsetX={-DIAGRAM_PADDING} offsetY={-DIAGRAM_PADDING}>
+              <Rect
+                x={normalizeMarquee(marquee).x}
+                y={normalizeMarquee(marquee).y}
+                width={normalizeMarquee(marquee).w}
+                height={normalizeMarquee(marquee).h}
+                fill={themeColors.selection.fill}
+                opacity={0.25}
+                stroke={themeColors.selection.stroke}
+                // Divided by the scale so the outline stays a hairline however
+                // far out the reader has zoomed.
+                strokeWidth={1 / (stageRef.current?.scaleX() ?? 1)}
+                dash={[4, 3]}
+              />
+            </Group>
+          </Layer>
+        )}
       </Stage>
 
       {/* A plain wrapper, with no positioning of its own, so the toolbar inside
