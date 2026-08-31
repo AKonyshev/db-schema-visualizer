@@ -427,3 +427,60 @@ test("an exported file names every table in the model", async ({ page }) => {
     expect(markdown, `Markdown is missing ${table}`).toContain(table);
   }
 });
+
+/**
+ * The schema as the file would be written.
+ *
+ * Through the app's own Download rather than by reading Monaco: the editor is
+ * bundled and puts nothing on `window`, its DOM only holds the lines currently
+ * scrolled into view, and what matters here is the text that would reach the
+ * file — which is exactly what Download hands over.
+ */
+const schemaText = async (page: Page): Promise<string> =>
+  (
+    await download(page, async () => {
+      await page.getByRole("button", { name: /^Download/ }).click();
+    })
+  ).toString("utf8");
+
+const drawnRelations = async (page: Page): Promise<number> =>
+  await page.evaluate(() => window.Konva?.stages[0]?.find("Path").length ?? 0);
+
+test("hiding a table's relations changes the view and not the file", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(canvasOf(page)).toBeVisible();
+
+  const before = await schemaText(page);
+  expect(before).toContain("Ref:");
+  expect(await drawnRelations(page)).toBeGreaterThan(0);
+
+  const names = Object.keys(await tablePositions(page));
+  const grip = await pointOnTable(page, names[0]);
+
+  // Alt+H acts on whatever the pointer is over, so the pointer has to be over
+  // something first.
+  await page.mouse.move(grip.x, grip.y);
+  await page.keyboard.press("Alt+KeyH");
+
+  await expect.poll(async () => await drawnRelations(page)).toBe(0);
+
+  // The one thing this feature promises: it is a view, not an edit. A `Ref`
+  // commented out to hide a line would be a data loss the reader never asked
+  // for, and it would travel to everyone else through the file.
+  expect(await schemaText(page)).toBe(before);
+
+  // Remembered per document, in the browser.
+  await page.reload();
+  await expect(canvasOf(page)).toBeVisible();
+  expect(await drawnRelations(page)).toBe(0);
+
+  // And it comes back the same way it went.
+  const gripAgain = await pointOnTable(page, names[0]);
+  await page.mouse.move(gripAgain.x, gripAgain.y);
+  await page.keyboard.press("Alt+KeyH");
+
+  await expect.poll(async () => await drawnRelations(page)).toBeGreaterThan(0);
+  expect(await schemaText(page)).toBe(before);
+});

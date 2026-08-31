@@ -6,6 +6,14 @@ import {
   type Request,
 } from "@playwright/test";
 
+// Relative paths rather than the package name: Playwright's loader resolves the
+// workspace symlink but will not add the `.ts` extension across it. Read from
+// the catalogues rather than written out here — English is this repository's
+// source language, and a Russian string in a spec file is both a rule broken
+// and a translation free to drift.
+import { MESSAGES_EN } from "../../json-table-schema-visualizer/src/i18n/messages";
+import { MESSAGES_RU } from "../../json-table-schema-visualizer/src/i18n/locales/ru";
+
 import { canvasOf } from "./diagram";
 
 // Three tables and two relations, so that a filter naming two of them has
@@ -83,6 +91,28 @@ Ref: "arr"."left"."id" < "arr"."middle"."left_id"
 MetaInfo*/
 `;
 
+// A model of the size the layout is really asked to handle. One busy table with
+// a hundred and fifty others hanging off it is the shape that broke the old
+// layered drawer: it packs a shared rank along one axis and turns a schema like
+// this into a strip. The measured one came out 1,980 wide by 145,826 tall, at
+// which fit-to-view shows a blank canvas — see `computeTablesPositions`.
+const LARGE = `
+Table "big"."hub" {
+  id integer [pk]
+}
+
+${Array.from(
+  { length: 150 },
+  (_, i) => `Table "big"."spoke_${i}" {
+  id integer [pk]
+  hub_id integer
+  note varchar
+}`,
+).join("\n\n")}
+
+${Array.from({ length: 150 }, (_, i) => `Ref: "big"."hub"."id" < "big"."spoke_${i}"."hub_id"`).join("\n")}
+`;
+
 // The built site has no catalogue in it — nginx is what puts one at these paths
 // in the container. Same-origin, so fulfilling them here keeps the promise the
 // smoke test checks: nothing the page asks for leaves the origin.
@@ -99,7 +129,9 @@ const serveModel = async (page: Page): Promise<void> => {
             ? TALL
             : path === "/schemas/arranged.dbml"
               ? ARRANGED
-              : null;
+              : path === "/schemas/large.dbml"
+                ? LARGE
+                : null;
 
     await (model === null
       ? route.fulfill({ status: 404, body: "not found" })
@@ -622,4 +654,118 @@ test("the reader can put the diagram across the page, and Escape puts it back", 
   await expect
     .poll(async () => await embeddedStageScale(page))
     .toBe(fittedSmall);
+});
+
+test("a model of a hundred and fifty tables opens, framed and not as a strip", async ({
+  page,
+}) => {
+  await serveModel(page);
+
+  const started = Date.now();
+  await page.goto("/embed.html?src=large.dbml");
+  await expect(canvasOf(page)).toBeVisible();
+
+  const spread = await page.evaluate(() => {
+    const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
+      name: () => string;
+      x: () => number;
+      y: () => number;
+    }>;
+    const tables = groups.filter((group) =>
+      String(group.name()).startsWith("table-"),
+    );
+    const xs = tables.map((table) => table.x());
+    const ys = tables.map((table) => table.y());
+
+    return {
+      count: tables.length,
+      width: Math.max(...xs) - Math.min(...xs),
+      height: Math.max(...ys) - Math.min(...ys),
+    };
+  });
+
+  const opened = Date.now() - started;
+
+  // Every table, not the first screenful.
+  expect(spread.count).toBe(151);
+
+  // And laid out as a shape a reader can look at. The failure this guards is
+  // not slowness but a strip: a hundred and fifty tables sharing one rank,
+  // stacked down a single column, which fit-to-view then shows as an empty
+  // canvas. Ten to one is far looser than the layout aims for and still an
+  // order of magnitude tighter than that.
+  const ratio =
+    Math.max(spread.width, spread.height) /
+    Math.max(1, Math.min(spread.width, spread.height));
+  expect(ratio).toBeLessThan(10);
+
+  // A budget, not a benchmark: it is here to fail on a change that turns the
+  // arrangement quadratic, not to measure this machine.
+  expect(opened).toBeLessThan(15_000);
+});
+
+test("the theme in the query reaches the canvas, not only the chrome", async ({
+  page,
+}) => {
+  await serveModel(page);
+
+  const background = async (): Promise<string> =>
+    await page.evaluate(() => {
+      const stage = window.Konva?.stages[0] as unknown as {
+        container: () => HTMLElement;
+      };
+      return getComputedStyle(stage.container()).backgroundColor;
+    });
+
+  await page.goto("/embed.html?src=acl.dbml&theme=light");
+  await expect(canvasOf(page)).toBeVisible();
+  const light = {
+    canvas: await background(),
+    root: await page.evaluate(() => document.documentElement.className),
+  };
+
+  await page.goto("/embed.html?src=acl.dbml&theme=dark");
+  await expect(canvasOf(page)).toBeVisible();
+  const dark = {
+    canvas: await background(),
+    root: await page.evaluate(() => document.documentElement.className),
+  };
+
+  // The canvas takes its colours from a palette the chrome cannot reach — Konva
+  // is given hex strings, not classes — so the two are separately capable of
+  // being wrong. Checking the class alone would pass on a dark page with a
+  // white diagram in it.
+  expect(dark.canvas).not.toBe(light.canvas);
+  expect(dark.root).toContain("dark");
+  expect(light.root).not.toContain("dark");
+});
+
+test.describe("in a browser that asks for Russian", () => {
+  test.use({ locale: "ru-RU" });
+
+  test("the interface answers in Russian", async ({ page }) => {
+    await serveModel(page);
+    await page.goto("/embed.html?src=acl.dbml");
+    await expect(canvasOf(page)).toBeVisible();
+
+    // The frame follows the browser rather than a setting: a documentation page
+    // has no preferences screen to put one on.
+    await expect(
+      page.getByPlaceholder(MESSAGES_RU["search.placeholder"]),
+    ).toBeAttached();
+  });
+});
+
+test.describe("in a browser that asks for a language nobody has", () => {
+  test.use({ locale: "is-IS" });
+
+  test("the interface answers in English", async ({ page }) => {
+    await serveModel(page);
+    await page.goto("/embed.html?src=acl.dbml");
+    await expect(canvasOf(page)).toBeVisible();
+
+    await expect(
+      page.getByPlaceholder(MESSAGES_EN["search.placeholder"]),
+    ).toBeAttached();
+  });
 });

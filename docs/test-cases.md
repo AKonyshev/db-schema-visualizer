@@ -34,15 +34,15 @@ yarn workspace dbml-studio test:integration
 
 ## 1. Reading a schema
 
-| #   | Case                                   | Steps                                            | Expected                                                                     | Automated                              |
-| --- | -------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------- | -------------------------------------- |
-| 1.1 | A valid file draws                     | Open a `.dbml` file with two related tables      | Both tables are drawn, with a line between them                              | `site.spec.ts` — built site works      |
-| 1.2 | A syntax error is named, not swallowed | Type `Table {` into the editor                   | The message names the line and column; the last good diagram stays on screen | Manual                                 |
-| 1.3 | An empty file                          | Open a file with no tables                       | An empty-state message, no canvas errors                                     | Manual                                 |
-| 1.4 | Enums draw                             | Open a file with an `Enum` used by a column      | The column's type shows the enum name; hovering it lists the values          | Manual                                 |
-| 1.5 | Notes draw                             | Give a column a `note`                           | Hovering the column shows the note                                           | Manual                                 |
-| 1.6 | Schema-qualified names                 | Two tables of the same name in different schemas | Both are drawn, each headed with its schema                                  | `dbml-to-json-table-schema` unit tests |
-| 1.7 | A large model opens                    | Open a model of 100+ tables                      | It opens framed, and panning stays responsive                                | Manual                                 |
+| #   | Case                                   | Steps                                            | Expected                                                                      | Automated                                  |
+| --- | -------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------ |
+| 1.1 | A valid file draws                     | Open a `.dbml` file with two related tables      | Both tables are drawn, with a line between them                               | `site.spec.ts` — built site works          |
+| 1.2 | A syntax error is named, not swallowed | Type `Table {` into the editor                   | The message names the line and column; the last good diagram stays on screen  | Manual                                     |
+| 1.3 | An empty file                          | Open a file with no tables                       | An empty-state message, no canvas errors                                      | Manual                                     |
+| 1.4 | Enums draw                             | Open a file with an `Enum` used by a column      | The column's type shows the enum name; hovering it lists the values           | Manual                                     |
+| 1.5 | Notes draw                             | Give a column a `note`                           | Hovering the column shows the note                                            | Manual                                     |
+| 1.6 | Schema-qualified names                 | Two tables of the same name in different schemas | Both are drawn, each headed with its schema                                   | `dbml-to-json-table-schema` unit tests     |
+| 1.7 | A large model opens                    | Open a model of 150 tables                       | Every table is laid out, in a shape that is not a strip, inside a time budget | `embed.spec.ts` — hundred and fifty tables |
 
 ## 2. Column notation — all hosts
 
@@ -100,24 +100,24 @@ legend; case 6.3 checks the two agree.
 
 ## 5. Detail levels, relations and appearance — all hosts
 
-| #    | Case                                        | Steps                                        | Expected                                                                           | Automated                               |
-| ---- | ------------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------- |
-| 5.1  | Detail level cycles                         | Press `D` three times                        | Full → headers → keys → full                                                       | Manual                                  |
-| 5.2  | Each level has its own layout               | Arrange at full detail, press `D`, come back | The arrangement you made is back, exactly                                          | `detailLevelLayout.test.ts`             |
-| 5.3  | Changing level re-frames                    | Press `D` in a short frame                   | The diagram is framed for what is now drawn                                        | `embed.spec.ts` — re-frames the diagram |
-| 5.4  | Table widths do not move with the level     | Press `D`                                    | Tables keep their width; only height changes                                       | `computeTableDimension.test.ts`         |
-| 5.5  | Relation style                              | Toggle right angles / curves                 | Lines redraw, and auto-arrange leaves more room for right angles                   | `computeOrthogonalEdge.test.ts`         |
-| 5.6  | Hide one table's relations                  | Click the link glyph in a table header       | Its relations vanish, the glyph is struck through, the table gets a dashed outline | Manual                                  |
-| 5.7  | `Alt+H` does the same                       | Hover a table, press `Alt+H`                 | Exactly as 5.6                                                                     | `matchesToggleRefsShortcut.test.ts`     |
-| 5.8  | Hiding relations writes nothing to the file | Watch the editor through 5.6                 | The text is untouched; no `Ref` is commented out                                   | Manual                                  |
-| 5.9  | Hidden relations survive a reload           | Hide, reload                                 | Still hidden — remembered per document, not in the file                            | Manual                                  |
-| 5.10 | Coloured relations                          | Press `C`                                    | Every relation takes its source table's colour                                     | Manual                                  |
-| 5.11 | Animation                                   | Press `A`, hover a table                     | Its relations show travelling dashes; others stay still                            | Manual                                  |
-| 5.12 | Short table names                           | Press `S`                                    | Schema prefixes drop from the headers                                              | Manual                                  |
-| 5.13 | Hover highlight                             | Hover a table                                | It and its related columns are picked out                                          | Manual — see gap 6                      |
-| 5.14 | Always-hover setting                        | Turn it on                                   | Highlighting stays without the pointer                                             | Manual                                  |
-| 5.15 | Theme                                       | Toggle light / dark                          | Canvas, toolbar and legend all change together                                     | Manual                                  |
-| 5.16 | Jump along a relation                       | Click the disc on a relation line            | The view moves to the other end                                                    | Manual                                  |
+| #    | Case                                        | Steps                                        | Expected                                                                                       | Automated                                           |
+| ---- | ------------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| 5.1  | Detail level cycles                         | Press `D` three times                        | Full → headers → keys → full                                                                   | Manual                                              |
+| 5.2  | Each level has its own layout               | Arrange at full detail, press `D`, come back | The arrangement you made is back, exactly                                                      | `detailLevelLayout.test.ts`                         |
+| 5.3  | Changing level re-frames                    | Press `D` in a short frame                   | The diagram is framed for what is now drawn                                                    | `embed.spec.ts` — re-frames the diagram             |
+| 5.4  | Table widths do not move with the level     | Press `D`                                    | Tables keep their width; only height changes                                                   | `computeTableDimension.test.ts`                     |
+| 5.5  | Relation style                              | Toggle right angles / curves                 | Lines redraw, and auto-arrange leaves more room for right angles                               | `computeOrthogonalEdge.test.ts`                     |
+| 5.6  | Hide one table's relations                  | Click the link glyph in a table header       | Its relations vanish, the glyph is struck through, the table gets a dashed outline             | `site.spec.ts` — changes the view and not the file  |
+| 5.7  | `Alt+H` does the same                       | Hover a table, press `Alt+H`                 | Exactly as 5.6                                                                                 | `matchesToggleRefsShortcut.test.ts`, `site.spec.ts` |
+| 5.8  | Hiding relations writes nothing to the file | Watch the editor through 5.6                 | The text is untouched; no `Ref` is commented out                                               | `site.spec.ts`                                      |
+| 5.9  | Hidden relations survive a reload           | Hide, reload                                 | Still hidden — remembered per document, not in the file                                        | `site.spec.ts`                                      |
+| 5.10 | Coloured relations                          | Press `C`                                    | Every relation takes its source table's colour                                                 | Manual                                              |
+| 5.11 | Animation                                   | Press `A`, hover a table                     | Its relations show travelling dashes; others stay still                                        | Manual                                              |
+| 5.12 | Short table names                           | Press `S`                                    | Schema prefixes drop from the headers                                                          | Manual                                              |
+| 5.13 | Hover highlight                             | Hover a table                                | It and its related columns are picked out                                                      | `shouldHighLightCol.test.ts`                        |
+| 5.14 | Always-hover setting                        | Turn it on                                   | Highlighting stays without the pointer                                                         | Manual                                              |
+| 5.15 | Theme                                       | Toggle light / dark                          | Canvas and chrome change together — the canvas has its own palette and can be wrong on its own | `embed.spec.ts` — theme reaches the canvas          |
+| 5.16 | Jump along a relation                       | Click the disc on a relation line            | The view moves to the other end                                                                | Manual                                              |
 
 ## 6. Search and legend — all hosts
 
@@ -132,32 +132,32 @@ legend; case 6.3 checks the two agree.
 
 ## 7. Export and layout — web app and extension
 
-| #    | Case                                                | Steps                                                     | Expected                                                                              | Automated                                    |
-| ---- | --------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------- |
-| 7.1  | PNG                                                 | Export → PNG                                              | A `.png` downloads showing the whole diagram, not just the visible part               | Manual                                       |
-| 7.2  | SVG                                                 | Export → SVG                                              | A `.svg` downloads and opens in a browser                                             | Manual                                       |
-| 7.3  | AsciiDoc                                            | Export → AsciiDoc                                         | Tables and columns are listed as an AsciiDoc table                                    | `exportAsciiDoc.test.ts`                     |
-| 7.4  | Markdown                                            | Export → Markdown                                         | The same, as Markdown                                                                 | `exportMarkdown.test.ts`                     |
-| 7.5  | Download the schema                                 | Web app → Download                                        | The `.dbml` matches the editor's text                                                 | Manual                                       |
-| 7.6  | Save the layout                                     | Arrange tables, Save layout                               | A `/*MetaInfo … MetaInfo*/` block appears at the end of the text with the coordinates | `writeLayoutIntoText.test.ts`                |
-| 7.7  | A layout is per detail level                        | Save at two levels                                        | The block holds a set of coordinates for each                                         | `tableCoordsMetaInfo.test.ts`                |
-| 7.8  | A saved layout is read back                         | Reopen a file carrying MetaInfo                           | Tables are where they were saved                                                      | `catalog.spec.ts` — layout saved and says so |
-| 7.9  | A layout written at another level is not misapplied | Open a file whose MetaInfo is header-only, at full detail | Tables are arranged afresh, not piled on each other                                   | `detailLevelLayout.test.ts`                  |
-| 7.10 | Undo                                                | In the extension, save a layout then press Undo           | The MetaInfo block reverts                                                            | Manual                                       |
+| #    | Case                                                | Steps                                                     | Expected                                                                              | Automated                                        |
+| ---- | --------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 7.1  | PNG                                                 | Export → PNG                                              | A `.png` downloads showing the whole diagram, not just the visible part               | `site.spec.ts` — exported image                  |
+| 7.2  | SVG                                                 | Export → SVG                                              | A `.svg` downloads naming every table                                                 | `site.spec.ts` — exported file names every table |
+| 7.3  | AsciiDoc                                            | Export → AsciiDoc                                         | Tables and columns are listed as an AsciiDoc table                                    | `exportAsciiDoc.test.ts`, `site.spec.ts`         |
+| 7.4  | Markdown                                            | Export → Markdown                                         | The same, as Markdown                                                                 | `exportMarkdown.test.ts`, `site.spec.ts`         |
+| 7.5  | Download the schema                                 | Web app → Download                                        | The `.dbml` matches the editor's text                                                 | Manual                                           |
+| 7.6  | Save the layout                                     | Arrange tables, Save layout                               | A `/*MetaInfo … MetaInfo*/` block appears at the end of the text with the coordinates | `writeLayoutIntoText.test.ts`                    |
+| 7.7  | A layout is per detail level                        | Save at two levels                                        | The block holds a set of coordinates for each                                         | `tableCoordsMetaInfo.test.ts`                    |
+| 7.8  | A saved layout is read back                         | Reopen a file carrying MetaInfo                           | Tables are where they were saved                                                      | `catalog.spec.ts` — layout saved and says so     |
+| 7.9  | A layout written at another level is not misapplied | Open a file whose MetaInfo is header-only, at full detail | Tables are arranged afresh, not piled on each other                                   | `detailLevelLayout.test.ts`                      |
+| 7.10 | Undo                                                | In the extension, save a layout then press Undo           | The MetaInfo block reverts                                                            | Manual                                           |
 
 ## 8. Web app — files and sessions
 
-| #   | Case                                      | Steps                                          | Expected                                                       | Automated                      |
-| --- | ----------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------- | ------------------------------ |
-| 8.1 | Open a local file                         | Open `.dbml`                                   | It is added to the tree and drawn                              | Manual                         |
-| 8.2 | Project catalogue                         | Deploy with `/schemas/`                        | The tree lists the project's models, and choosing one opens it | `catalog.spec.ts`              |
-| 8.3 | A reader's edit of a project file is kept | Edit a project file, reload                    | The edit is still there, marked as the reader's own            | `catalog.spec.ts`              |
-| 8.4 | Give a project file back                  | Use the revert action                          | The project's version returns                                  | `catalog.spec.ts`              |
-| 8.5 | Remove a file                             | Remove one from the tree                       | It goes, including one that never parsed                       | `catalog.spec.ts`              |
-| 8.6 | The tree can be hidden                    | Collapse the tree                              | The diagram takes the room, and the collapse survives a reload | Manual                         |
-| 8.7 | The session survives a reload             | Open two files, reload                         | Both are still open, with the same one active                  | `session.test.ts`              |
-| 8.8 | Nothing is fetched from the network       | Load the site with devtools open               | No request leaves the origin                                   | `site.spec.ts`                 |
-| 8.9 | Interface language                        | Set the browser to ru / zh-CN / something else | The interface follows, falling back to English                 | `resolveBrowserLocale.test.ts` |
+| #   | Case                                      | Steps                                          | Expected                                                       | Automated                                       |
+| --- | ----------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------- |
+| 8.1 | Open a local file                         | Open `.dbml`                                   | It is added to the tree and drawn                              | Manual                                          |
+| 8.2 | Project catalogue                         | Deploy with `/schemas/`                        | The tree lists the project's models, and choosing one opens it | `catalog.spec.ts`                               |
+| 8.3 | A reader's edit of a project file is kept | Edit a project file, reload                    | The edit is still there, marked as the reader's own            | `catalog.spec.ts`                               |
+| 8.4 | Give a project file back                  | Use the revert action                          | The project's version returns                                  | `catalog.spec.ts`                               |
+| 8.5 | Remove a file                             | Remove one from the tree                       | It goes, including one that never parsed                       | `catalog.spec.ts`                               |
+| 8.6 | The tree can be hidden                    | Collapse the tree                              | The diagram takes the room, and the collapse survives a reload | Manual                                          |
+| 8.7 | The session survives a reload             | Open two files, reload                         | Both are still open, with the same one active                  | `session.test.ts`                               |
+| 8.8 | Nothing is fetched from the network       | Load the site with devtools open               | No request leaves the origin                                   | `site.spec.ts`                                  |
+| 8.9 | Interface language                        | Set the browser to ru / zh-CN / something else | The interface follows, falling back to English                 | `resolveBrowserLocale.test.ts`, `embed.spec.ts` |
 
 ## 9. Embedded frame
 
@@ -183,24 +183,24 @@ deployed.
 
 ## 10. VS Code extension — DBML Studio
 
-| #     | Case                                    | Steps                                    | Expected                                                      | Automated                      |
-| ----- | --------------------------------------- | ---------------------------------------- | ------------------------------------------------------------- | ------------------------------ |
-| 10.1  | `.dbml` opens as text                   | Open the file                            | Text editor, language `dbml`, one title button — Show diagram | `test:integration`             |
-| 10.2  | Open the diagram in place               | Alt-click the button                     | The diagram replaces the tab                                  | `test:integration`             |
-| 10.3  | Open beside                             | Plain click                              | Text and diagram side by side                                 | `test:integration`             |
-| 10.4  | Back to source                          | Show DBML source                         | The text replaces the diagram tab                             | `test:integration`             |
-| 10.5  | Reopen Editor With…                     | Use the menu                             | Both the text editor and DBML Diagram are offered             | `test:integration`             |
-| 10.6  | A dirty file switches without prompting | Edit, then switch views both ways        | No save prompt, and the dirty marker stays                    | Manual                         |
-| 10.7  | Two diagrams at once                    | Open two files, break one                | The other's Problems entries are untouched                    | Manual                         |
-| 10.8  | Live update                             | Edit the text with the diagram beside it | The diagram follows the text                                  | Manual                         |
-| 10.9  | Theme setting                           | Change `dbmlStudio.preferredTheme`       | The diagram follows                                           | Manual                         |
-| 10.10 | Scroll direction setting                | Change `dbmlStudio.scrollDirection`      | Zoom direction follows                                        | Manual                         |
-| 10.11 | Add a connection                        | Add a PostgreSQL connection              | It appears in the DBML Studio view                            | `connectionStore.test.ts`      |
-| 10.12 | Import from a database                  | Import from a connection                 | A `.dbml` is produced from the live schema                    | `importFromDatabase.test.ts`   |
-| 10.13 | A bad connection is explained           | Import with wrong credentials            | The message says what failed, without the password in it      | `dbImportErrorMessage.test.ts` |
-| 10.14 | Compare with a database                 | Compare a file against a connection      | A Markdown report of what differs                             | `compareWithDatabase.test.ts`  |
-| 10.15 | Delete a connection                     | Delete it                                | It goes from the view and from storage                        | `connectionStore.test.ts`      |
-| 10.16 | Commands are namespaced                 | Open the palette, type "DBML"            | Every command is `dbmlStudio.*`                               | Manual                         |
+| #     | Case                                    | Steps                                    | Expected                                                      | Automated                                             |
+| ----- | --------------------------------------- | ---------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------- |
+| 10.1  | `.dbml` opens as text                   | Open the file                            | Text editor, language `dbml`, one title button — Show diagram | `test:integration`                                    |
+| 10.2  | Open the diagram in place               | Alt-click the button                     | The diagram replaces the tab                                  | `test:integration`                                    |
+| 10.3  | Open beside                             | Plain click                              | Text and diagram side by side                                 | `test:integration`                                    |
+| 10.4  | Back to source                          | Show DBML source                         | The text replaces the diagram tab                             | `test:integration`                                    |
+| 10.5  | Reopen Editor With…                     | Use the menu                             | Both the text editor and DBML Diagram are offered             | `test:integration`                                    |
+| 10.6  | A dirty file switches without prompting | Edit, then switch views both ways        | No save prompt, and the dirty marker stays                    | Manual                                                |
+| 10.7  | Two diagrams at once                    | Open two files, break one                | The other's Problems entries are untouched                    | Manual                                                |
+| 10.8  | Live update                             | Edit the text with the diagram beside it | The diagram follows the text                                  | Manual                                                |
+| 10.9  | Theme setting                           | Change `dbmlStudio.preferredTheme`       | The diagram follows                                           | Manual                                                |
+| 10.10 | Scroll direction setting                | Change `dbmlStudio.scrollDirection`      | Zoom direction follows                                        | Manual                                                |
+| 10.11 | Add a connection                        | Add a PostgreSQL connection              | It appears in the DBML Studio view                            | `connectionStore.test.ts`                             |
+| 10.12 | Import from a database                  | Import from a connection                 | A `.dbml` is produced from the live schema                    | `importFromDatabase.test.ts`, `liveDatabase.test.ts`  |
+| 10.13 | A bad connection is explained           | Import with wrong credentials            | The message says what failed, without the password in it      | `dbImportErrorMessage.test.ts`                        |
+| 10.14 | Compare with a database                 | Compare a file against a connection      | A Markdown report of what differs                             | `compareWithDatabase.test.ts`, `liveDatabase.test.ts` |
+| 10.15 | Delete a connection                     | Delete it                                | It goes from the view and from storage                        | `connectionStore.test.ts`                             |
+| 10.16 | Commands are namespaced                 | Open the palette, type "DBML"            | Every command is `dbmlStudio.*`                               | Manual                                                |
 
 ## 11. Libraries
 
@@ -231,25 +231,16 @@ Covered by their own suites; listed so the coverage is visible in one place.
 
 ## Gaps worth closing
 
-Ordered by what would hurt most to get wrong.
+All six this catalogue opened with are closed, and closing the first found a
+bug: Export → SVG had been writing a file with the relation lines and no tables
+since the zoom rewrite split the canvas onto two layers. What is left is
+thinner:
 
-1. **Export files are never opened.** 7.1 and 7.2 check that a download happens;
-   nothing checks that the PNG holds the whole diagram or that the SVG opens.
-   Both have gone wrong before in this kind of code.
-2. **The extension's database features are unit-tested but never run against a
-   database.** 10.12 and 10.14 mock the connector. A container with PostgreSQL
-   in CI would turn six manual cases automatic.
-3. **Themes and languages are eyeballed.** 5.15 and 8.9 have unit tests for the
-   choosing, none for the result. Screenshot comparison over the four
-   combinations would cover a lot of 5.10–5.15 at once.
-4. **The relation-visibility feature is entirely manual** (5.6–5.9) apart from
-   the shortcut matcher, and it is the one feature that deliberately writes
-   nothing to the file — a regression there is silent.
-5. **Nothing exercises a large model.** 1.7 is manual and vague. A fixture of a
-   few hundred tables, opened with a time budget, would catch the layout
-   regressions that only show at scale.
-6. **`shouldHighLightCol` has no test at all.** It decides whether a column is
-   painted as highlighted and is called for every column on every pointer move —
-   the hot path the `hoverStore` rewrite was built around. `hoverStore.test.ts`
-   covers the store beneath it and nothing covers the predicate itself. It is a
-   pure function of six arguments; it should be the easiest thing here to test.
+1. **The extension's own features are still mostly manual** — 10.6 to 10.10 and
+   10.16. The integration suite can drive a real VS Code, so they are reachable;
+   nobody has written them.
+2. **The live-database suites are opt-in.** They pass, but only when somebody
+   remembers to raise a database. In CI they would run on every change; see
+   `docs/testing.md`.
+3. **The container is only checked by its manifest script.** 12.4 asserts what
+   the scanner produces, not that a built image serves it.
