@@ -13,11 +13,17 @@ export async function exportStageSVG(
   stage: Stage,
   blob = false,
 ): Promise<string | Blob> {
-  const layer = stage.getLayers()[0];
+  // Every layer, not the first one. The diagram draws its relations on one and
+  // its tables on another — they were one layer until the zoom rewrite split
+  // them — and recording only `getLayers()[0]` produced an SVG holding the
+  // relation lines and no tables at all. It looked like a working export right
+  // up until somebody opened the file.
+  const layers = stage.getLayers();
+  const oldContexts = layers.map((layer) => layer.canvas.context._context);
 
   await sleep(200);
 
-  const oldContext = layer.canvas.context._context;
+  const oldContext = oldContexts[0];
   const oldPosition = stage.getAbsolutePosition();
   const oldScale = stage.getAbsoluteScale();
 
@@ -41,8 +47,12 @@ export async function exportStageSVG(
   // at this one line is the point: declaring the shim as a full
   // CanvasRenderingContext2D instead would hand the same false promise to every
   // future caller. See svgcanvas.esm.d.ts.
-  layer.canvas.context._context = c2s as unknown as CanvasRenderingContext2D;
+  layers.forEach((layer) => {
+    layer.canvas.context._context = c2s as unknown as CanvasRenderingContext2D;
+  });
 
+  // Draws the layers in order, so what the reader sees behind what, the file
+  // keeps.
   stage.draw();
 
   const svg = c2s.getSerializedSvg();
@@ -51,7 +61,9 @@ export async function exportStageSVG(
     ? new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
     : svg;
 
-  layer.canvas.context._context = oldContext;
+  layers.forEach((layer, index) => {
+    layer.canvas.context._context = oldContexts[index];
+  });
   stage.position(oldPosition);
   stage.scale(oldScale);
 

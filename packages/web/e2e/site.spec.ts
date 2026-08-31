@@ -1,4 +1,6 @@
-import { expect, test, type Request } from "@playwright/test";
+import { readFileSync } from "node:fs";
+
+import { expect, test, type Page, type Request } from "@playwright/test";
 
 // A relative path rather than the package name the rest of this package uses:
 // Playwright's loader resolves the workspace symlink but will not add the `.ts`
@@ -290,4 +292,138 @@ test("the diagram recovers after its container had no size", async ({
   await page.waitForTimeout(800);
 
   expect((await stageSize()).w).toBeGreaterThan(0);
+});
+
+/**
+ * The width and height an encoded PNG declares.
+ *
+ * Read out of the IHDR chunk, which is fixed at the front of every PNG: eight
+ * bytes of signature, four of length, four of type, then the two dimensions as
+ * big-endian 32-bit integers. Decoding the image would answer the same question
+ * and pull in a dependency to do it.
+ */
+const pngSize = (bytes: Buffer): { width: number; height: number } => {
+  expect(bytes.subarray(0, 8)).toEqual(
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  );
+  expect(bytes.subarray(12, 16).toString("latin1")).toBe("IHDR");
+
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+};
+
+const download = async (
+  page: Page,
+  open: () => Promise<void>,
+): Promise<Buffer> => {
+  const [downloaded] = await Promise.all([
+    page.waitForEvent("download"),
+    open(),
+  ]);
+  const path = await downloaded.path();
+
+  return readFileSync(path);
+};
+
+const exportAs = async (page: Page, format: string): Promise<Buffer> =>
+  await download(page, async () => {
+    await page.getByRole("button", { name: /^Export/ }).click();
+    await page.getByRole("button", { name: format, exact: true }).click();
+  });
+
+test("an exported image holds the whole diagram, not the part on screen", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(canvasOf(page)).toBeVisible();
+
+  // Zoom in and pan away, so that what is on screen is a fraction of the model.
+  // An export that took the viewport would come out at the size of the canvas.
+  await page.evaluate(() => {
+    const stage = window.Konva?.stages[0] as unknown as {
+      scale: (s: { x: number; y: number }) => void;
+      position: (p: { x: number; y: number }) => void;
+      batchDraw: () => void;
+    };
+    stage.scale({ x: 3, y: 3 });
+    stage.position({ x: -400, y: -300 });
+    stage.batchDraw();
+  });
+
+  // What the whole diagram measures, in its own units. The export squares off
+  // the larger side and draws at twice the resolution.
+  const expected = await page.evaluate(() => {
+    const stage = window.Konva?.stages[0] as unknown as {
+      scaleX: () => number;
+      scale: (s: { x: number; y: number }) => void;
+      position: (p: { x: number; y: number }) => void;
+      getClientRect: (o: { relativeTo: unknown }) => {
+        width: number;
+        height: number;
+      };
+      x: () => number;
+      y: () => number;
+    };
+    const scale = stage.scaleX();
+    const at = { x: stage.x(), y: stage.y() };
+
+    stage.scale({ x: 1, y: 1 });
+    stage.position({ x: 0, y: 0 });
+    const bounds = stage.getClientRect({ relativeTo: stage });
+    stage.scale({ x: scale, y: scale });
+    stage.position(at);
+
+    return Math.round(Math.max(bounds.width, bounds.height) * 2);
+  });
+
+  const view = await page.evaluate(() => {
+    const stage = window.Konva?.stages[0] as unknown as {
+      scaleX: () => number;
+      x: () => number;
+      y: () => number;
+    };
+    return { scale: stage.scaleX(), x: stage.x(), y: stage.y() };
+  });
+
+  const png = pngSize(await exportAs(page, "PNG"));
+
+  // Square, and the size of the model rather than of the window.
+  expect(png.width).toBe(png.height);
+  expect(Math.abs(png.width - expected)).toBeLessThanOrEqual(2);
+
+  // And the reader is left looking at what they were looking at: the export
+  // moves the stage to measure it and has to put it back.
+  const after = await page.evaluate(() => {
+    const stage = window.Konva?.stages[0] as unknown as {
+      scaleX: () => number;
+      x: () => number;
+      y: () => number;
+    };
+    return { scale: stage.scaleX(), x: stage.x(), y: stage.y() };
+  });
+  expect(after).toEqual(view);
+});
+
+test("an exported file names every table in the model", async ({ page }) => {
+  await page.goto("/");
+  await expect(canvasOf(page)).toBeVisible();
+
+  const tables = Object.keys(await tablePositions(page)).map((name) =>
+    name.replace(/^table-/, ""),
+  );
+  expect(tables.length).toBeGreaterThan(1);
+
+  // Three formats, one question each time: is the model actually in there. A
+  // download that arrives empty or holding one table looks exactly like a
+  // download that worked.
+  const svg = (await exportAs(page, "SVG")).toString("utf8");
+  expect(svg).toContain("<svg");
+
+  const adoc = (await exportAs(page, "AsciiDoc")).toString("utf8");
+  const markdown = (await exportAs(page, "Markdown")).toString("utf8");
+
+  for (const table of tables) {
+    expect(svg, `SVG is missing ${table}`).toContain(table);
+    expect(adoc, `AsciiDoc is missing ${table}`).toContain(table);
+    expect(markdown, `Markdown is missing ${table}`).toContain(table);
+  }
 });
