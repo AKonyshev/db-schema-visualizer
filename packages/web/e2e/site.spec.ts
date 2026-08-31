@@ -1,16 +1,20 @@
-import {
-  expect,
-  test,
-  type Locator,
-  type Page,
-  type Request,
-} from "@playwright/test";
+import { readFileSync } from "node:fs";
+
+import { expect, test, type Page, type Request } from "@playwright/test";
 
 // A relative path rather than the package name the rest of this package uses:
 // Playwright's loader resolves the workspace symlink but will not add the `.ts`
 // extension across it, and this file is compiled by Playwright rather than Vite.
 import { MESSAGES_EN } from "../../json-table-schema-visualizer/src/i18n/messages";
-import { SELECTED_OUTLINE_NAME } from "../../json-table-schema-visualizer/src/constants/selection";
+
+import {
+  canvasOf,
+  pointOnTable,
+  selectEverything,
+  selectedTableCount,
+  stageIsDraggable,
+  tablePositions,
+} from "./diagram";
 
 // Everything the page is allowed to talk to. `blob:` and `data:` are the site
 // handing bytes to itself — the download path builds a blob URL on purpose —
@@ -28,53 +32,6 @@ const isSameOrigin = (request: Request, origin: string): boolean => {
   } catch {
     return false;
   }
-};
-
-/**
- * How many tables are drawn as selected.
- *
- * Counted off the canvas, because a canvas has no DOM to query and the
- * selection store is not on `window`. By the node's name rather than by how it
- * is drawn: a count built on stroke width matches the hidden-relations outline
- * and the search highlight too, and answers the same number whatever is
- * selected — which is an assertion that passes for ever.
- */
-const selectedTableCount = async (page: Page): Promise<number> =>
-  await page.evaluate(
-    (name) => window.Konva?.stages[0]?.find(`.${name}`).length ?? 0,
-    SELECTED_OUTLINE_NAME,
-  );
-
-const stageIsDraggable = async (page: Page): Promise<boolean> =>
-  await page.evaluate(() => window.Konva?.stages[0]?.draggable() ?? false);
-
-/** The diagram canvas, and a point on it that no table covers. */
-const canvasOf = (page: Page): Locator =>
-  page.locator(".konvajs-content canvas").first();
-
-/**
- * Opens the site in select mode with every table caught by a marquee.
- *
- * The click first is not ceremony: the page opens with the editor holding the
- * focus, and a shortcut is ignored while a text field has it.
- */
-const selectEverything = async (page: Page): Promise<void> => {
-  await page.goto("/");
-  await expect(canvasOf(page)).toBeVisible();
-
-  const box = await canvasOf(page).boundingBox();
-  const left = box?.x ?? 0;
-  const top = box?.y ?? 0;
-  const right = left + (box?.width ?? 0);
-  const bottom = top + (box?.height ?? 0);
-
-  await page.mouse.click(right - 20, bottom - 20);
-  await page.keyboard.press("v");
-
-  await page.mouse.move(left + 2, top + 2);
-  await page.mouse.down();
-  await page.mouse.move(right - 2, bottom - 2, { steps: 10 });
-  await page.mouse.up();
 };
 
 test("the built site works, and asks the network for nothing", async ({
@@ -155,79 +112,22 @@ test("the built site works, and asks the network for nothing", async ({
 test("a marquee selects several tables and drags them together", async ({
   page,
 }) => {
-  await page.goto("/");
+  await selectEverything(page);
 
-  const canvas = page.locator(".konvajs-content canvas").first();
-  await expect(canvas).toBeVisible();
-
-  const positions = async (): Promise<
-    Record<string, { x: number; y: number }>
-  > =>
-    await page.evaluate(() => {
-      const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
-        name: () => string;
-        x: () => number;
-        y: () => number;
-      }>;
-
-      return Object.fromEntries(
-        groups
-          .filter((group) => String(group.name()).startsWith("table-"))
-          .map((group) => [group.name(), { x: group.x(), y: group.y() }]),
-      );
-    });
-
-  const before = await positions();
+  const before = await tablePositions(page);
   const names = Object.keys(before);
   expect(names.length).toBeGreaterThan(1);
+  // The marquee covered the canvas, so it should have caught all of them.
+  expect(await selectedTableCount(page)).toBe(names.length);
 
-  const box = await canvas.boundingBox();
-  const left = box?.x ?? 0;
-  const top = box?.y ?? 0;
-  const right = left + (box?.width ?? 0);
-  const bottom = top + (box?.height ?? 0);
+  const grip = await pointOnTable(page, names[0]);
 
-  // Into the canvas first: the shortcut is ignored while a text field has the
-  // focus, and the page opens with the editor holding it.
-  await page.mouse.click(right - 20, bottom - 20);
-  await page.keyboard.press("v");
-
-  // A marquee over the whole canvas catches every table.
-  await page.mouse.move(left + 2, top + 2);
+  await page.mouse.move(grip.x, grip.y);
   await page.mouse.down();
-  await page.mouse.move(right - 2, bottom - 2, { steps: 10 });
+  await page.mouse.move(grip.x + 80, grip.y + 40, { steps: 10 });
   await page.mouse.up();
 
-  // Take hold of one table by its header. `boundingBox` is the canvas, so the
-  // point has to be computed: table coordinates sit inside a Group offset by
-  // the diagram padding, and the stage transform turns the result into pixels.
-  const stage = await page.evaluate(() => {
-    const konvaStage = window.Konva?.stages[0] as unknown as {
-      scaleX: () => number;
-      x: () => number;
-      y: () => number;
-    };
-
-    return {
-      scale: konvaStage.scaleX(),
-      x: konvaStage.x(),
-      y: konvaStage.y(),
-    };
-  });
-
-  const first = before[names[0]];
-  const DIAGRAM_PADDING = 60;
-  const screenX =
-    left + (first.x + DIAGRAM_PADDING) * stage.scale + stage.x + 30;
-  const screenY =
-    top + (first.y + DIAGRAM_PADDING) * stage.scale + stage.y + 15;
-
-  await page.mouse.move(screenX, screenY);
-  await page.mouse.down();
-  await page.mouse.move(screenX + 80, screenY + 40, { steps: 10 });
-  await page.mouse.up();
-
-  const after = await positions();
+  const after = await tablePositions(page);
 
   const deltas = names.map((name) => ({
     x: after[name].x - before[name].x,
@@ -251,7 +151,7 @@ test("a marquee selects several tables and drags them together", async ({
   await page.reload();
   await expect(canvasOf(page)).toBeVisible();
 
-  const restored = await positions();
+  const restored = await tablePositions(page);
 
   for (const name of names) {
     expect(restored[name].x).toBeCloseTo(after[name].x, 0);
@@ -335,53 +235,252 @@ test("shift adds one table to the selection and takes it away again", async ({
   page,
 }) => {
   await selectEverything(page);
-  const all = await selectedTableCount(page);
-  expect(all).toBeGreaterThan(1);
+  expect(await selectedTableCount(page)).toBeGreaterThan(1);
 
-  const first = await page.evaluate(() => {
-    const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
-      name: () => string;
-      x: () => number;
-      y: () => number;
-    }>;
-    const table = groups.find((group) =>
-      String(group.name()).startsWith("table-"),
-    );
-    const stage = window.Konva?.stages[0];
-
-    return {
-      x: table?.x() ?? 0,
-      y: table?.y() ?? 0,
-      scale: stage?.scaleX() ?? 1,
-      stageX: stage?.x() ?? 0,
-      stageY: stage?.y() ?? 0,
-    };
-  });
-
-  const box = await canvasOf(page).boundingBox();
-  // Table coordinates sit inside a Group offset by the diagram padding, and the
-  // stage transform turns the result into pixels. The offsets land the pointer
-  // inside the table's header.
-  const DIAGRAM_PADDING = 60;
-  const x =
-    (box?.x ?? 0) +
-    (first.x + DIAGRAM_PADDING) * first.scale +
-    first.stageX +
-    30;
-  const y =
-    (box?.y ?? 0) +
-    (first.y + DIAGRAM_PADDING) * first.scale +
-    first.stageY +
-    15;
+  const names = Object.keys(await tablePositions(page));
+  const grip = await pointOnTable(page, names[0]);
 
   // A plain click narrows the selection to the one table under it.
-  await page.mouse.click(x, y);
+  await page.mouse.click(grip.x, grip.y);
   await expect.poll(async () => await selectedTableCount(page)).toBe(1);
 
   // Shift takes that one back out, leaving nothing selected.
   await page.keyboard.down("Shift");
-  await page.mouse.click(x, y);
+  await page.mouse.click(grip.x, grip.y);
   await page.keyboard.up("Shift");
 
   await expect.poll(async () => await selectedTableCount(page)).toBe(0);
+});
+
+test("the diagram recovers after its container had no size", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(canvasOf(page)).toBeVisible();
+
+  const stageSize = async (): Promise<{ w: number; h: number }> =>
+    await page.evaluate(() => {
+      const stage = window.Konva?.stages[0] as unknown as {
+        width: () => number;
+        height: () => number;
+      };
+      return { w: stage.width(), h: stage.height() };
+    });
+
+  expect((await stageSize()).w).toBeGreaterThan(0);
+
+  // The container loses its box. Not a contrivance: the extension's webview is
+  // laid out at nothing while its tab is in the background, and a pane the
+  // reader collapses does the same. What the diagram must not do is stay
+  // collapsed once the box comes back.
+  await page.evaluate(() => {
+    const el = document
+      .querySelector(".konvajs-content")
+      ?.closest("main") as HTMLElement | null;
+    if (el?.parentElement != null) el.parentElement.style.display = "none";
+  });
+  await page.waitForTimeout(500);
+  expect((await stageSize()).w).toBe(0);
+
+  // And gets it back.
+  await page.evaluate(() => {
+    const el = document
+      .querySelector(".konvajs-content")
+      ?.closest("main") as HTMLElement | null;
+    if (el?.parentElement != null) el.parentElement.style.display = "";
+  });
+  await page.waitForTimeout(800);
+
+  expect((await stageSize()).w).toBeGreaterThan(0);
+});
+
+/**
+ * The width and height an encoded PNG declares.
+ *
+ * Read out of the IHDR chunk, which is fixed at the front of every PNG: eight
+ * bytes of signature, four of length, four of type, then the two dimensions as
+ * big-endian 32-bit integers. Decoding the image would answer the same question
+ * and pull in a dependency to do it.
+ */
+const pngSize = (bytes: Buffer): { width: number; height: number } => {
+  expect(bytes.subarray(0, 8)).toEqual(
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  );
+  expect(bytes.subarray(12, 16).toString("latin1")).toBe("IHDR");
+
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+};
+
+const download = async (
+  page: Page,
+  open: () => Promise<void>,
+): Promise<Buffer> => {
+  const [downloaded] = await Promise.all([
+    page.waitForEvent("download"),
+    open(),
+  ]);
+  const path = await downloaded.path();
+
+  return readFileSync(path);
+};
+
+const exportAs = async (page: Page, format: string): Promise<Buffer> =>
+  await download(page, async () => {
+    await page.getByRole("button", { name: /^Export/ }).click();
+    await page.getByRole("button", { name: format, exact: true }).click();
+  });
+
+test("an exported image holds the whole diagram, not the part on screen", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(canvasOf(page)).toBeVisible();
+
+  // Zoom in and pan away, so that what is on screen is a fraction of the model.
+  // An export that took the viewport would come out at the size of the canvas.
+  await page.evaluate(() => {
+    const stage = window.Konva?.stages[0] as unknown as {
+      scale: (s: { x: number; y: number }) => void;
+      position: (p: { x: number; y: number }) => void;
+      batchDraw: () => void;
+    };
+    stage.scale({ x: 3, y: 3 });
+    stage.position({ x: -400, y: -300 });
+    stage.batchDraw();
+  });
+
+  // What the whole diagram measures, in its own units. The export squares off
+  // the larger side and draws at twice the resolution.
+  const expected = await page.evaluate(() => {
+    const stage = window.Konva?.stages[0] as unknown as {
+      scaleX: () => number;
+      scale: (s: { x: number; y: number }) => void;
+      position: (p: { x: number; y: number }) => void;
+      getClientRect: (o: { relativeTo: unknown }) => {
+        width: number;
+        height: number;
+      };
+      x: () => number;
+      y: () => number;
+    };
+    const scale = stage.scaleX();
+    const at = { x: stage.x(), y: stage.y() };
+
+    stage.scale({ x: 1, y: 1 });
+    stage.position({ x: 0, y: 0 });
+    const bounds = stage.getClientRect({ relativeTo: stage });
+    stage.scale({ x: scale, y: scale });
+    stage.position(at);
+
+    return Math.round(Math.max(bounds.width, bounds.height) * 2);
+  });
+
+  const view = await page.evaluate(() => {
+    const stage = window.Konva?.stages[0] as unknown as {
+      scaleX: () => number;
+      x: () => number;
+      y: () => number;
+    };
+    return { scale: stage.scaleX(), x: stage.x(), y: stage.y() };
+  });
+
+  const png = pngSize(await exportAs(page, "PNG"));
+
+  // Square, and the size of the model rather than of the window.
+  expect(png.width).toBe(png.height);
+  expect(Math.abs(png.width - expected)).toBeLessThanOrEqual(2);
+
+  // And the reader is left looking at what they were looking at: the export
+  // moves the stage to measure it and has to put it back.
+  const after = await page.evaluate(() => {
+    const stage = window.Konva?.stages[0] as unknown as {
+      scaleX: () => number;
+      x: () => number;
+      y: () => number;
+    };
+    return { scale: stage.scaleX(), x: stage.x(), y: stage.y() };
+  });
+  expect(after).toEqual(view);
+});
+
+test("an exported file names every table in the model", async ({ page }) => {
+  await page.goto("/");
+  await expect(canvasOf(page)).toBeVisible();
+
+  const tables = Object.keys(await tablePositions(page)).map((name) =>
+    name.replace(/^table-/, ""),
+  );
+  expect(tables.length).toBeGreaterThan(1);
+
+  // Three formats, one question each time: is the model actually in there. A
+  // download that arrives empty or holding one table looks exactly like a
+  // download that worked.
+  const svg = (await exportAs(page, "SVG")).toString("utf8");
+  expect(svg).toContain("<svg");
+
+  const adoc = (await exportAs(page, "AsciiDoc")).toString("utf8");
+  const markdown = (await exportAs(page, "Markdown")).toString("utf8");
+
+  for (const table of tables) {
+    expect(svg, `SVG is missing ${table}`).toContain(table);
+    expect(adoc, `AsciiDoc is missing ${table}`).toContain(table);
+    expect(markdown, `Markdown is missing ${table}`).toContain(table);
+  }
+});
+
+/**
+ * The schema as the file would be written.
+ *
+ * Through the app's own Download rather than by reading Monaco: the editor is
+ * bundled and puts nothing on `window`, its DOM only holds the lines currently
+ * scrolled into view, and what matters here is the text that would reach the
+ * file — which is exactly what Download hands over.
+ */
+const schemaText = async (page: Page): Promise<string> =>
+  (
+    await download(page, async () => {
+      await page.getByRole("button", { name: /^Download/ }).click();
+    })
+  ).toString("utf8");
+
+const drawnRelations = async (page: Page): Promise<number> =>
+  await page.evaluate(() => window.Konva?.stages[0]?.find("Path").length ?? 0);
+
+test("hiding a table's relations changes the view and not the file", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(canvasOf(page)).toBeVisible();
+
+  const before = await schemaText(page);
+  expect(before).toContain("Ref:");
+  expect(await drawnRelations(page)).toBeGreaterThan(0);
+
+  const names = Object.keys(await tablePositions(page));
+  const grip = await pointOnTable(page, names[0]);
+
+  // Alt+H acts on whatever the pointer is over, so the pointer has to be over
+  // something first.
+  await page.mouse.move(grip.x, grip.y);
+  await page.keyboard.press("Alt+KeyH");
+
+  await expect.poll(async () => await drawnRelations(page)).toBe(0);
+
+  // The one thing this feature promises: it is a view, not an edit. A `Ref`
+  // commented out to hide a line would be a data loss the reader never asked
+  // for, and it would travel to everyone else through the file.
+  expect(await schemaText(page)).toBe(before);
+
+  // Remembered per document, in the browser.
+  await page.reload();
+  await expect(canvasOf(page)).toBeVisible();
+  expect(await drawnRelations(page)).toBe(0);
+
+  // And it comes back the same way it went.
+  const gripAgain = await pointOnTable(page, names[0]);
+  await page.mouse.move(gripAgain.x, gripAgain.y);
+  await page.keyboard.press("Alt+KeyH");
+
+  await expect.poll(async () => await drawnRelations(page)).toBeGreaterThan(0);
+  expect(await schemaText(page)).toBe(before);
 });

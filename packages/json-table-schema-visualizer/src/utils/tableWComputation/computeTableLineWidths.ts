@@ -2,7 +2,7 @@ import { type JSONTableTable } from "shared/types/tableSchema";
 import { computeRelationalFieldKey } from "shared/utils/computeRelationalFieldKey";
 
 import { computeTextSize } from "../computeTextSize";
-import { badgesWidth, computeFieldMarks, fieldTypeText } from "../fieldMarks";
+import { badgeLayout, computeFieldMarks, fieldTypeText } from "../fieldMarks";
 
 /**
  * How wide each of a table's column lines wants to be.
@@ -25,5 +25,5 @@ export const computeTableLineWidths = (
 
     const { width } = computeTextSize(`${field.name} ${fieldTypeText(marks)}`);
 
-    return width + badgesWidth(marks.badges);
+    return width + badgeLayout(marks.badges).totalWidth;
   });

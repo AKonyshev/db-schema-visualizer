@@ -220,7 +220,7 @@
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",
-    "compile-tests": "tsc -p tsconfig.tests.json",
+    "compile-tests": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\" && tsc -p tsconfig.tests.json",
     "watch-tests": "tsc -p tsconfig.tests.json -w",
     "pretest": "yarn run lint",
     "lint": "eslint extension --ext ts",

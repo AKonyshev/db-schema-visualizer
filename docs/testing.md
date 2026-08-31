@@ -20,6 +20,47 @@ Two things follow from where it sits:
   does not. `yarn test` tests the working tree rather than the staged snapshot,
   so with a dirty tree it can pass on code the commit does not contain.
 
+## Two suites want a database, and skip without one
+
+`packages/db-to-dbml` and `packages/schema-diff` each have a
+`liveDatabase.test.ts` that talks to a real PostgreSQL. Everything else in those
+packages hands the connector a fixture, which proves the translation and nothing
+about the query that feeds it — the shape of `information_schema`, that a column
+written `serial` comes back as `int4` with `increment`, that a foreign key
+arrives with the table it points at. Those are the things a fixture agrees with
+by construction.
+
+They are skipped unless `DBML_TEST_DATABASE_URL` is set, so the sweep on every
+commit stays offline and needs nothing installed. To run them:
+
+```bash
+docker run -d --name dbml-test-pg -e POSTGRES_PASSWORD=test \
+  -e POSTGRES_DB=dbmltest -p 55432:5432 postgres:16-alpine
+
+docker exec -i dbml-test-pg psql -U postgres -d dbmltest <<'SQL'
+CREATE TABLE authors (
+  id serial PRIMARY KEY,
+  email varchar(255) NOT NULL UNIQUE,
+  bio text
+);
+CREATE TABLE books (
+  id serial PRIMARY KEY,
+  author_id integer NOT NULL REFERENCES authors(id),
+  title varchar(255) NOT NULL
+);
+SQL
+
+DBML_TEST_DATABASE_URL=postgresql://postgres:test@localhost:55432/dbmltest \
+  yarn workspace db-to-dbml test
+DBML_TEST_DATABASE_URL=postgresql://postgres:test@localhost:55432/dbmltest \
+  yarn workspace schema-diff test
+
+docker rm -f dbml-test-pg
+```
+
+The schema above is what the assertions are written against; changing it means
+changing them.
+
 ## One suite in the sweep is not pure
 
 `packages/web/src/catalog/__tests__/schemaManifestScript.test.ts` runs the
@@ -115,6 +156,16 @@ the ticket comments in the local tracker for the measurements.
 ```bash
 yarn workspace dbml-studio test:integration
 ```
+
+`compile-tests` empties `out/` before it runs, which is not tidiness. `tsc`
+writes into that directory and never removes anything from it, `out/` is
+git-ignored, and the runner globs `out/**/*.test.js` — so a test file deleted
+from the source tree goes on being compiled once and executed for ever on the
+machine that built it. It happened: a suite removed with the feature it covered
+kept running against an extension identifier the rename had since changed, and
+failed with "extension konyshevav.dbml-schema-visualizer not found" on a working
+tree that contained no such string. A fresh clone passed, which is the worst
+shape a failure can take.
 
 It launches a real VS Code with the extension loaded and drives it from the
 inside — `vscode.commands.executeCommand` plus `vscode.window.tabGroups` — which

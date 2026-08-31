@@ -2,7 +2,6 @@ import { type JSONTableField } from "shared/types/tableSchema";
 
 import {
   badgeLayout,
-  badgesWidth,
   computeFieldMarks,
   fieldTypeText,
   MANDATORY_MARK,
@@ -75,13 +74,15 @@ describe("fieldTypeText", () => {
   });
 });
 
-describe("badgesWidth", () => {
+describe("badgeLayout totals", () => {
   it("is nothing for a column with no badges", () => {
-    expect(badgesWidth([])).toBe(0);
+    expect(badgeLayout([]).totalWidth).toBe(0);
   });
 
   it("grows with each badge", () => {
-    expect(badgesWidth(["PK", "FK"])).toBeGreaterThan(badgesWidth(["PK"]));
+    expect(badgeLayout(["PK", "FK"]).totalWidth).toBeGreaterThan(
+      badgeLayout(["PK"]).totalWidth,
+    );
   });
 
   it("counts the pill and not only the letters in it", () => {
@@ -89,7 +90,7 @@ describe("badgesWidth", () => {
     // be 2. Anything at that number means the padding the pill is drawn with
     // was left out of the width the table is laid out at, and the badge would
     // hang over the edge of the box.
-    expect(badgesWidth(["PK"])).toBeGreaterThan(2);
+    expect(badgeLayout(["PK"]).totalWidth).toBeGreaterThan(2);
   });
 });
 
@@ -105,15 +106,13 @@ describe("badgeLayout", () => {
     expect(pills[1].x).toBeGreaterThanOrEqual(pills[0].x + pills[0].width);
   });
 
-  it("agrees with the width the table was measured by", () => {
-    // The one invariant this pair has to keep: what the layout reserved and
-    // what the renderer draws are the same number. Apart, the last pill hangs
-    // over the edge of the table.
+  it("keeps every pill inside the width it reserved", () => {
+    // The one invariant: what the table was laid out for and what the renderer
+    // draws are the same number. Apart, the last pill hangs over the edge.
     for (const badges of [["PK"], ["PK", "FK"], ["PK", "FK", "UK"]] as const) {
       const layout = badgeLayout([...badges]);
       const last = layout.pills[layout.pills.length - 1];
 
-      expect(badgesWidth([...badges])).toBe(layout.totalWidth);
       expect(last.x + last.width).toBeLessThanOrEqual(layout.totalWidth);
     }
   });

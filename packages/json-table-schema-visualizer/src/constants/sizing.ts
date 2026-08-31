@@ -34,6 +34,12 @@ export const BADGE = {
   radius: 3,
 };
 
+/**
+ * How far the outline around a selected table sits outside its box, so the
+ * table's own border is still visible under it.
+ */
+export const SELECTION_OUTLINE_INSET = 3;
+
 export const FONT_SIZES = {
   md: 15,
   lg: 18,

@@ -1,12 +1,23 @@
 import { type ReactNode } from "react";
 
+import { BADGE, FONT_SIZES } from "@/constants/sizing";
 import { t } from "@/i18n/t";
 import { type MessageKey } from "@/i18n/messages";
 import { MANDATORY_MARK, type FieldBadge } from "@/utils/fieldMarks";
 
-/** A pill, in the shape the canvas draws one. */
+/**
+ * A pill, in the shape the canvas draws one.
+ *
+ * The size and the corner come from the same constants the canvas draws with,
+ * through `style` rather than Tailwind classes: a class list can only hold
+ * literals, and `text-[10px] rounded-[3px]` was those two numbers written out a
+ * second time, free to drift from the badges it is supposed to explain.
+ */
 const Badge = ({ name }: { name: FieldBadge }) => (
-  <span className="rounded-[3px] bg-accent/15 px-1 py-0.5 text-[10px] font-bold text-accent">
+  <span
+    className="bg-accent/15 px-1 py-0.5 font-bold text-accent"
+    style={{ fontSize: FONT_SIZES.badge, borderRadius: BADGE.radius }}
+  >
     {name}
   </span>
 );

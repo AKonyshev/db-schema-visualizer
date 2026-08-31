@@ -47,6 +47,17 @@ class SelectionStore {
     this.emit();
   };
 
+  /** In if it was out, out if it was in. */
+  public readonly toggle = (name: string): void => {
+    const next = new Set(this.selected);
+
+    if (!next.delete(name)) {
+      next.add(name);
+    }
+
+    this.setSelected(next);
+  };
+
   public readonly clear = (): void => {
     this.setSelected(new Set<string>());
   };

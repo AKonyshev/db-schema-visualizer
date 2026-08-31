@@ -57,6 +57,19 @@ describe("selectionStore", () => {
     unsubscribe();
   });
 
+  it("toggles one table in and out", () => {
+    selectionStore.setSelected(new Set(["a"]));
+
+    selectionStore.toggle("b");
+    expect([...selectionStore.getSelected()].sort()).toEqual(["a", "b"]);
+
+    selectionStore.toggle("a");
+    expect([...selectionStore.getSelected()]).toEqual(["b"]);
+
+    selectionStore.toggle("b");
+    expect(selectionStore.getSelected().size).toBe(0);
+  });
+
   it("keeps the snapshot stable while the selection does not change", () => {
     // `useSyncExternalStore` compares snapshots by identity and throws on an
     // infinite render loop if a getter returns a new object every call.
