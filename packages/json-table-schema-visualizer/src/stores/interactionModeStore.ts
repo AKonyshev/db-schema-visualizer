@@ -52,6 +52,5 @@ class InteractionModeStore {
 
 export const interactionModeStore = new InteractionModeStore();
 
-export const getInteractionMode = interactionModeStore.getMode;
-export const setInteractionMode = interactionModeStore.setMode;
+/** Stable across renders, so the toolbar button never re-renders for it. */
 export const toggleInteractionMode = interactionModeStore.toggleMode;

@@ -59,8 +59,3 @@ class SelectionStore {
 }
 
 export const selectionStore = new SelectionStore();
-
-/** Stable across renders, so a component that only writes never re-renders. */
-export const setSelectedTables = selectionStore.setSelected;
-export const clearSelection = selectionStore.clear;
-export const getSelectedTables = selectionStore.getSelected;

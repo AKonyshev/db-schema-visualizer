@@ -1,6 +1,7 @@
 import { type JSONTableField } from "shared/types/tableSchema";
 
 import {
+  badgeLayout,
   badgesWidth,
   computeFieldMarks,
   fieldTypeText,
@@ -89,5 +90,45 @@ describe("badgesWidth", () => {
     // was left out of the width the table is laid out at, and the badge would
     // hang over the edge of the box.
     expect(badgesWidth(["PK"])).toBeGreaterThan(2);
+  });
+});
+
+describe("badgeLayout", () => {
+  it("is empty for a column with no badges", () => {
+    expect(badgeLayout([])).toEqual({ totalWidth: 0, pills: [] });
+  });
+
+  it("lays the pills out left to right without overlap", () => {
+    const { pills } = badgeLayout(["PK", "FK"]);
+
+    expect(pills.map((pill) => pill.badge)).toEqual(["PK", "FK"]);
+    expect(pills[1].x).toBeGreaterThanOrEqual(pills[0].x + pills[0].width);
+  });
+
+  it("agrees with the width the table was measured by", () => {
+    // The one invariant this pair has to keep: what the layout reserved and
+    // what the renderer draws are the same number. Apart, the last pill hangs
+    // over the edge of the table.
+    for (const badges of [["PK"], ["PK", "FK"], ["PK", "FK", "UK"]] as const) {
+      const layout = badgeLayout([...badges]);
+      const last = layout.pills[layout.pills.length - 1];
+
+      expect(badgesWidth([...badges])).toBe(layout.totalWidth);
+      expect(last.x + last.width).toBeLessThanOrEqual(layout.totalWidth);
+    }
+  });
+
+  it("measures each label once however often it is asked for", () => {
+    // Called for every column on every render, and the measurer clones a Konva
+    // node. There are three possible labels and one font size, so the answer
+    // cannot change between calls.
+    const measure = jest.requireMock("../computeTextSize")
+      .computeTextSize as jest.Mock;
+
+    badgeLayout(["PK", "FK", "UK"]);
+    measure.mockClear();
+    badgeLayout(["PK", "FK", "UK"]);
+
+    expect(measure).not.toHaveBeenCalled();
   });
 });

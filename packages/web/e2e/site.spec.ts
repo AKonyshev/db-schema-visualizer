@@ -1,9 +1,16 @@
-import { expect, test, type Request } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type Request,
+} from "@playwright/test";
 
 // A relative path rather than the package name the rest of this package uses:
 // Playwright's loader resolves the workspace symlink but will not add the `.ts`
 // extension across it, and this file is compiled by Playwright rather than Vite.
 import { MESSAGES_EN } from "../../json-table-schema-visualizer/src/i18n/messages";
+import { SELECTED_OUTLINE_NAME } from "../../json-table-schema-visualizer/src/constants/selection";
 
 // Everything the page is allowed to talk to. `blob:` and `data:` are the site
 // handing bytes to itself — the download path builds a blob URL on purpose —
@@ -21,6 +28,53 @@ const isSameOrigin = (request: Request, origin: string): boolean => {
   } catch {
     return false;
   }
+};
+
+/**
+ * How many tables are drawn as selected.
+ *
+ * Counted off the canvas, because a canvas has no DOM to query and the
+ * selection store is not on `window`. By the node's name rather than by how it
+ * is drawn: a count built on stroke width matches the hidden-relations outline
+ * and the search highlight too, and answers the same number whatever is
+ * selected — which is an assertion that passes for ever.
+ */
+const selectedTableCount = async (page: Page): Promise<number> =>
+  await page.evaluate(
+    (name) => window.Konva?.stages[0]?.find(`.${name}`).length ?? 0,
+    SELECTED_OUTLINE_NAME,
+  );
+
+const stageIsDraggable = async (page: Page): Promise<boolean> =>
+  await page.evaluate(() => window.Konva?.stages[0]?.draggable() ?? false);
+
+/** The diagram canvas, and a point on it that no table covers. */
+const canvasOf = (page: Page): Locator =>
+  page.locator(".konvajs-content canvas").first();
+
+/**
+ * Opens the site in select mode with every table caught by a marquee.
+ *
+ * The click first is not ceremony: the page opens with the editor holding the
+ * focus, and a shortcut is ignored while a text field has it.
+ */
+const selectEverything = async (page: Page): Promise<void> => {
+  await page.goto("/");
+  await expect(canvasOf(page)).toBeVisible();
+
+  const box = await canvasOf(page).boundingBox();
+  const left = box?.x ?? 0;
+  const top = box?.y ?? 0;
+  const right = left + (box?.width ?? 0);
+  const bottom = top + (box?.height ?? 0);
+
+  await page.mouse.click(right - 20, bottom - 20);
+  await page.keyboard.press("v");
+
+  await page.mouse.move(left + 2, top + 2);
+  await page.mouse.down();
+  await page.mouse.move(right - 2, bottom - 2, { steps: 10 });
+  await page.mouse.up();
 };
 
 test("the built site works, and asks the network for nothing", async ({
@@ -188,4 +242,118 @@ test("a marquee selects several tables and drags them together", async ({
     expect(delta.x).toBeCloseTo(deltas[0].x, 1);
     expect(delta.y).toBeCloseTo(deltas[0].y, 1);
   }
+});
+
+test("a middle-button pan that ends off the canvas leaves select mode intact", async ({
+  page,
+}) => {
+  await selectEverything(page);
+  expect(await selectedTableCount(page)).toBeGreaterThan(1);
+
+  const box = await canvasOf(page).boundingBox();
+  const left = box?.x ?? 0;
+  const top = box?.y ?? 0;
+
+  // Panning by the middle button makes the stage draggable for the length of
+  // the gesture. Releasing outside the canvas sends the stage no mouse-up at
+  // all, so nothing but a handler on the way out puts it back — and without one
+  // select mode silently became pan mode, with the next drag both drawing a
+  // marquee and moving the canvas.
+  await page.mouse.move(left + 200, top + 200);
+  await page.mouse.down({ button: "middle" });
+  await page.mouse.move(left + 260, top + 240, { steps: 5 });
+  await page.mouse.move(left - 80, top + 240, { steps: 5 });
+  await page.mouse.up({ button: "middle" });
+
+  await expect.poll(async () => await stageIsDraggable(page)).toBe(false);
+  // And the gesture took nothing away with it.
+  expect(await selectedTableCount(page)).toBeGreaterThan(1);
+});
+
+test("holding space pans without drawing a marquee or losing the selection", async ({
+  page,
+}) => {
+  await selectEverything(page);
+  const selected = await selectedTableCount(page);
+
+  await page.keyboard.down("Space");
+  await expect.poll(async () => await stageIsDraggable(page)).toBe(true);
+
+  await page.keyboard.up("Space");
+  await expect.poll(async () => await stageIsDraggable(page)).toBe(false);
+
+  expect(await selectedTableCount(page)).toBe(selected);
+});
+
+test("Escape drops the selection, and so does leaving the mode", async ({
+  page,
+}) => {
+  await selectEverything(page);
+  expect(await selectedTableCount(page)).toBeGreaterThan(1);
+
+  await page.keyboard.press("Escape");
+  await expect.poll(async () => await selectedTableCount(page)).toBe(0);
+
+  // And again, this time by going back to panning: a selection that outlived
+  // the mode would silently change what a plain drag does.
+  await selectEverything(page);
+  expect(await selectedTableCount(page)).toBeGreaterThan(1);
+
+  await page.keyboard.press("v");
+  await expect.poll(async () => await selectedTableCount(page)).toBe(0);
+});
+
+test("shift adds one table to the selection and takes it away again", async ({
+  page,
+}) => {
+  await selectEverything(page);
+  const all = await selectedTableCount(page);
+  expect(all).toBeGreaterThan(1);
+
+  const first = await page.evaluate(() => {
+    const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
+      name: () => string;
+      x: () => number;
+      y: () => number;
+    }>;
+    const table = groups.find((group) =>
+      String(group.name()).startsWith("table-"),
+    );
+    const stage = window.Konva?.stages[0];
+
+    return {
+      x: table?.x() ?? 0,
+      y: table?.y() ?? 0,
+      scale: stage?.scaleX() ?? 1,
+      stageX: stage?.x() ?? 0,
+      stageY: stage?.y() ?? 0,
+    };
+  });
+
+  const box = await canvasOf(page).boundingBox();
+  // Table coordinates sit inside a Group offset by the diagram padding, and the
+  // stage transform turns the result into pixels. The offsets land the pointer
+  // inside the table's header.
+  const DIAGRAM_PADDING = 60;
+  const x =
+    (box?.x ?? 0) +
+    (first.x + DIAGRAM_PADDING) * first.scale +
+    first.stageX +
+    30;
+  const y =
+    (box?.y ?? 0) +
+    (first.y + DIAGRAM_PADDING) * first.scale +
+    first.stageY +
+    15;
+
+  // A plain click narrows the selection to the one table under it.
+  await page.mouse.click(x, y);
+  await expect.poll(async () => await selectedTableCount(page)).toBe(1);
+
+  // Shift takes that one back out, leaving nothing selected.
+  await page.keyboard.down("Shift");
+  await page.mouse.click(x, y);
+  await page.keyboard.up("Shift");
+
+  await expect.poll(async () => await selectedTableCount(page)).toBe(0);
 });

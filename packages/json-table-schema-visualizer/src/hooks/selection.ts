@@ -4,7 +4,8 @@ import { interactionModeStore } from "@/stores/interactionModeStore";
 import { selectionStore } from "@/stores/selectionStore";
 import { InteractionMode } from "@/types/interactionMode";
 
-export const useInteractionMode = (): InteractionMode =>
+/** Not exported: `useIsSelectMode` is the only shape anything needs. */
+const useInteractionMode = (): InteractionMode =>
   useSyncExternalStore(
     interactionModeStore.subscribe,
     interactionModeStore.getMode,
@@ -27,10 +28,3 @@ export const useIsTableSelected = (tableName: string): boolean => {
 
   return useSyncExternalStore(selectionStore.subscribe, select, select);
 };
-
-export const useSelectedTables = (): ReadonlySet<string> =>
-  useSyncExternalStore(
-    selectionStore.subscribe,
-    selectionStore.getSelected,
-    selectionStore.getSelected,
-  );

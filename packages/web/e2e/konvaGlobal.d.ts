@@ -17,6 +17,7 @@ declare global {
         scaleX: () => number;
         x: () => number;
         y: () => number;
+        draggable: () => boolean;
         find: (s: string) => unknown[];
       }>;
     };

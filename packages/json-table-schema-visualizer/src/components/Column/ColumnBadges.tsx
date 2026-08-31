@@ -3,12 +3,12 @@ import { Group, Rect } from "react-konva";
 import KonvaText from "../dumb/KonvaText";
 
 import { BADGE, COLUMN_HEIGHT, FONT_SIZES } from "@/constants/sizing";
-import { badgesWidth, type FieldBadge } from "@/utils/fieldMarks";
-import { computeTextSize } from "@/utils/computeTextSize";
+import { type BadgeLayout } from "@/utils/fieldMarks";
 
 interface ColumnBadgesProps {
-  badges: FieldBadge[];
-  /** Where the row ends. The badges are laid out back from it. */
+  /** Computed by the caller; see `badgeLayout`. */
+  layout: BadgeLayout;
+  /** Where the row ends. The block is placed back from it. */
   rowWidth: number;
   color: string;
 }
@@ -16,57 +16,50 @@ interface ColumnBadgesProps {
 /**
  * `PK` / `FK` / `UK` as pills at the right of a column line.
  *
- * Drawn back from the end of the row rather than forward from the type, because
- * the type is drawn right-aligned into the same row and nothing here knows
- * where it ended up. Laid out with `badgesWidth`, which is also what the table
- * was measured by, so the first pill starts exactly where the type text stops.
+ * Placed back from the end of the row rather than forward from the type,
+ * because the type is drawn right-aligned into the same row and nothing here
+ * knows where it ended up.
+ *
+ * The layout arrives already computed rather than being worked out here: the
+ * caller narrows the type by the same total, and two places computing one
+ * number is two places to drift.
  */
-const ColumnBadges = ({ badges, rowWidth, color }: ColumnBadgesProps) => {
-  if (badges.length === 0) {
+const ColumnBadges = ({ layout, rowWidth, color }: ColumnBadgesProps) => {
+  if (layout.pills.length === 0) {
     return null;
   }
 
-  let x = rowWidth - badgesWidth(badges) + BADGE.gap;
+  const left = rowWidth - layout.totalWidth;
 
   return (
     <>
-      {badges.map((badge) => {
-        const textWidth = computeTextSize(badge, {
-          fontSize: FONT_SIZES.badge,
-        }).width;
-        const width = textWidth + BADGE.paddingX * 2;
-        const left = x;
-
-        x += width + BADGE.gap;
-
-        return (
-          <Group
-            key={badge}
-            x={left}
-            y={(COLUMN_HEIGHT - BADGE.height) / 2}
+      {layout.pills.map((pill) => (
+        <Group
+          key={pill.badge}
+          x={left + pill.x}
+          y={(COLUMN_HEIGHT - BADGE.height) / 2}
+          listening={false}
+        >
+          <Rect
+            width={pill.width}
+            height={BADGE.height}
+            cornerRadius={BADGE.radius}
+            fill={color}
+            opacity={0.18}
+          />
+          <KonvaText
+            text={pill.badge}
+            width={pill.width}
+            height={BADGE.height}
+            align="center"
+            verticalAlign="middle"
+            fill={color}
+            fontSize={FONT_SIZES.badge}
+            fontStyle="bold"
             listening={false}
-          >
-            <Rect
-              width={width}
-              height={BADGE.height}
-              cornerRadius={BADGE.radius}
-              fill={color}
-              opacity={0.18}
-            />
-            <KonvaText
-              text={badge}
-              width={width}
-              height={BADGE.height}
-              align="center"
-              verticalAlign="middle"
-              fill={color}
-              fontSize={FONT_SIZES.badge}
-              fontStyle="bold"
-              listening={false}
-            />
-          </Group>
-        );
-      })}
+          />
+        </Group>
+      ))}
     </>
   );
 };

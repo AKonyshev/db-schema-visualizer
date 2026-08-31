@@ -29,6 +29,7 @@ import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
 import { computeFieldMarks } from "@/utils/fieldMarks";
 import { useForeignKeys } from "@/hooks/foreignKeys";
 import { useIsSelectMode, useIsTableSelected } from "@/hooks/selection";
+import { SELECTED_OUTLINE_NAME } from "@/constants/selection";
 import { selectionStore } from "@/stores/selectionStore";
 import {
   beginGroupDrag,
@@ -120,13 +121,19 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
     };
   }, [name, theme]);
 
+  // Read through a ref rather than closed over: the drawn size changes with the
+  // detail level, and the group-drag subscription below is set up once per
+  // table. A captured size would write the box the table had when it mounted.
+  const drawnSizeRef = useRef({ w: tablePreferredWidth, h: tableHeight });
+  drawnSizeRef.current = { w: tablePreferredWidth, h: tableHeight };
+
   const propagateCoordinates = (node: Konva.Group) => {
     const existing = tableCoordsStore.getFullCoords(name);
     const tableCoords = {
       x: node.x(),
       y: node.y(),
-      w: existing.w > 0 ? existing.w : tablePreferredWidth,
-      h: existing.h > 0 ? existing.h : tableHeight,
+      w: existing.w > 0 ? existing.w : drawnSizeRef.current.w,
+      h: existing.h > 0 ? existing.h : drawnSizeRef.current.h,
     };
     eventEmitter.emit(tableDragEventName, tableCoords);
     tableCoordsStore.setFullCoords(name, tableCoords);
@@ -158,9 +165,6 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
   };
 
   useEffect(() => {
-    // No dependency array: `propagateCoordinates` closes over the drawn width
-    // and height, which change with the detail level, and a stale copy would
-    // write the wrong box into the store. Re-subscribing is one Set operation.
     return subscribeToGroupDrag(({ positions }) => {
       const position = positions.get(name);
       const node = tableRef.current;
@@ -176,7 +180,9 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
       // one.
       propagateCoordinates(node);
     });
-  });
+    // Once per table. Everything the handler needs that can change is read
+    // through a ref, so there is nothing here to re-subscribe for.
+  }, [name]);
 
   const handleOnHover = () => {
     setHoveredTableName(name);
@@ -258,6 +264,10 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
         // animation that ends at `strokeWidth: 0`, and sharing it would let a
         // search hit quietly erase the outline it happened to finish on.
         <Rect
+          // Named so a test can count what is selected. A canvas has no DOM to
+          // query, and picking these out by stroke width catches every other
+          // outline on the diagram too.
+          name={SELECTED_OUTLINE_NAME}
           x={-3}
           y={-3}
           width={tablePreferredWidth + 6}

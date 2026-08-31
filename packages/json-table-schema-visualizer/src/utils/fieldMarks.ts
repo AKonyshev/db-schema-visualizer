@@ -66,26 +66,66 @@ export const computeFieldMarks = (
 export const fieldTypeText = (marks: FieldMarks): string =>
   marks.mandatory ? `${marks.typeName} ${MANDATORY_MARK}` : marks.typeName;
 
+/** One pill, placed relative to the start of the badge block. */
+export interface BadgePill {
+  badge: FieldBadge;
+  x: number;
+  width: number;
+}
+
+export interface BadgeLayout {
+  /** What the badges take in total, pills and gaps included. */
+  totalWidth: number;
+  pills: BadgePill[];
+}
+
 /**
- * How much room the badges need, pills and gaps included.
+ * The drawn width of one label, measured once for the life of the page.
  *
- * Used both to lay the table out and to draw the row, so that what the layout
- * reserved and what the renderer puts there cannot come apart.
+ * `computeTextSize` clones a Konva node to measure with a font size of its own,
+ * and this is asked for on every render of every column that carries a badge.
+ * There are three labels and one font size, so the answer cannot change between
+ * calls and there is nothing to invalidate.
  */
-export const badgesWidth = (badges: FieldBadge[]): number => {
-  if (badges.length === 0) {
-    return 0;
+const labelWidths = new Map<FieldBadge, number>();
+
+const labelWidth = (badge: FieldBadge): number => {
+  const cached = labelWidths.get(badge);
+
+  if (cached !== undefined) {
+    return cached;
   }
 
-  const pills = badges.reduce(
-    (total, badge) =>
-      total +
-      computeTextSize(badge, { fontSize: FONT_SIZES.badge }).width +
-      BADGE.paddingX * 2,
-    0,
-  );
+  const width = computeTextSize(badge, { fontSize: FONT_SIZES.badge }).width;
 
-  // One gap before the first pill, separating them from the type, and one
-  // between each pair.
-  return pills + BADGE.gap * badges.length;
+  labelWidths.set(badge, width);
+
+  return width;
 };
+
+/**
+ * Where each pill goes and how much room they need altogether.
+ *
+ * One function for both, because the two have to agree: the table is laid out
+ * wide enough for `totalWidth`, and the renderer draws at `pills`. Computed
+ * apart, they drift, and the last badge hangs over the edge of the table.
+ */
+export const badgeLayout = (badges: FieldBadge[]): BadgeLayout => {
+  const pills: BadgePill[] = [];
+  // One gap before the first pill, separating the block from the type, and one
+  // between each pair.
+  let x = BADGE.gap;
+
+  for (const badge of badges) {
+    const width = labelWidth(badge) + BADGE.paddingX * 2;
+
+    pills.push({ badge, x, width });
+    x += width + BADGE.gap;
+  }
+
+  return { totalWidth: badges.length === 0 ? 0 : x - BADGE.gap, pills };
+};
+
+/** What the badges take, for the code that only needs to reserve the room. */
+export const badgesWidth = (badges: FieldBadge[]): number =>
+  badgeLayout(badges).totalWidth;

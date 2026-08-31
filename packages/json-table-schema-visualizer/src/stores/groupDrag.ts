@@ -5,7 +5,9 @@ import { type XYPosition } from "@/types/positions";
 import eventEmitter from "@/events-emitter";
 import { groupDragPositions } from "@/utils/groupDragPositions";
 
-export const GROUP_DRAG_EVENT = "groupDrag:move";
+// Internal to this module: everything outside goes through the two
+// functions below.
+const GROUP_DRAG_EVENT = "groupDrag:move";
 
 export interface GroupDragMove {
   positions: Map<string, XYPosition>;
