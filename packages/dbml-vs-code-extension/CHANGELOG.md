@@ -1,10 +1,34 @@
 # Change Log
 
-All notable changes to the "dbml-schema-visualizer" extension will be documented in this file.
+All notable changes to the "dbml-studio" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-08-31
+
+The extension is republished under its own name. What it does was never the
+problem — what it was called, and what it was called underneath, was.
+
+### Added
+
+- **Several tables can be selected and moved together.** The toolbar carries a pan-or-select mode. In select mode a marquee catches every table it touches, a click picks one and Shift+click adds to what is already held, a selected table is outlined, and dragging any one of them moves the whole group. Holding space pans without leaving the mode, so choosing tables and getting to the part of the diagram you want to choose from are not two modes to swap between. The moved positions reach the coordinate store, which is to say they survive a reload.
+- **Keys and mandatory columns are marked in a notation people already read.** A mandatory column takes a `*` after its type, which is Barker's; Barker's `o` for an optional one is left out, because a real schema is mostly optional columns and a mark on nearly every line stops being read — the legend says instead that an unmarked column may be null. `PK`, `FK` and `UK` pills sit at the right of the line, the set Mermaid's ER diagrams use, with `UK` suppressed beside `PK`, which is unique by definition. Whether a column is a foreign key is worked out from the relations rather than guessed: anything genuinely ambiguous is left unmarked. This replaces the `(!)` after a NOT NULL column, which was a notation of this diagram's own.
+- **A documentation page can let the reader expand the diagram it embeds.** An embedded frame is as tall as the page's author made it. The toolbar now offers a button that asks the surrounding page for the whole viewport over a postMessage handshake, and it appears only once a host has answered — a frame in a page that does not speak the protocol offers nothing that would then do nothing. Escape puts the page back. The page's half of the protocol lives in the documentation repository.
+
+### Changed
+
+- **The extension is now DBML Studio, and carries its own identity throughout.** It was published as a fork that had kept the original's name, identifier, command namespace and settings keys verbatim, and the Marketplace removed it as an extension resembling another one. The identifier is now `konyshevav.dbml-studio`, the commands are `dbmlStudio.*`, the settings are `dbmlStudio.preferredTheme` and `dbmlStudio.scrollDirection`, the diagram editor's viewType is `dbml-studio-diagram`, and the listing describes what this fork actually does rather than restating the original's feature list. The upstream project is still credited, in the listing and in the repository, as the work it is built on.
+- **Settings written under the old keys are not carried over.** `dbmlERDPreviewer.preferredTheme` and `dbmlERDPreviewer.scrollDirection` are read by nothing now; set the two `dbmlStudio.*` keys instead. A diagram's table positions kept in the webview's local cache are dropped for the same reason, but a layout saved into a file's `MetaInfo` block is untouched and still read.
+- **The search bar hides with the toolbar in a framed diagram.** It sits over the top-right corner for the same reason the toolbar sits over the bottom, and costs the same in a frame a few hundred pixels tall. Ctrl+F now checks whether the bar can be seen before claiming the key, so in a documentation page the keypress goes to the browser's own find over the prose instead of to a box that cannot be focused. Nothing changes in the full application, where the bar is always there.
+- **A framed diagram re-frames itself whenever its room changes**, rather than only when it loads, so a diagram given the whole viewport fills it instead of sitting small in the corner of a large empty one. The editor and the extension keep the old behaviour, where a resize is a dragged divider and re-framing would throw away a pan.
+- **Tables are a little wider**, because a column line is now measured as widths rather than as text: a pill's padding is part of what a table must be wide enough for. Arrangements stored before this have correspondingly less room between them.
+
+### Fixed
+
+- **A canvas gesture now ends wherever it ended.** A middle-button pan released outside the canvas sent the stage no event at all, so the flag stayed raised and select mode silently became pan mode — the next drag drew a marquee and moved the canvas at once. Recovery was toggling the mode, and nothing on screen said so.
+- **Holding space to pan no longer opens a marquee underneath it.** The tables move with the stage, so the box that came out at the end caught nothing, and committing it cleared the selection the reader was holding space to keep — which is the one thing panning inside select mode exists to make possible.
 
 ## [0.16.0] - 2026-08-30
 

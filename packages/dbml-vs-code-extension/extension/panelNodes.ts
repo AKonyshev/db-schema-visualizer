@@ -16,19 +16,19 @@ export const ACTION_NODES: PanelNode[] = [
   {
     kind: "action",
     label: "Show diagram",
-    commandId: "dbml-erd-visualizer.previewDiagrams",
+    commandId: "dbmlStudio.previewDiagrams",
     icon: "graph",
   },
   {
     kind: "action",
     label: "Import from database",
-    commandId: "dbml-erd-visualizer.importFromDatabase",
+    commandId: "dbmlStudio.importFromDatabase",
     icon: "cloud-download",
   },
   {
     kind: "action",
     label: "Compare with database",
-    commandId: "dbml-erd-visualizer.compareWithDatabase",
+    commandId: "dbmlStudio.compareWithDatabase",
     icon: "diff",
   },
 ];

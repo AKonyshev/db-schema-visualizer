@@ -17,7 +17,7 @@ type Story = StoryObj<typeof Column>;
 export const ColumnStory: Story = {
   args: {
     colName: "username",
-    type: "varchar",
+    marks: { typeName: "varchar", mandatory: true, badges: ["PK", "FK"] },
   },
   parameters: {
     withKonvaWrapper: true,

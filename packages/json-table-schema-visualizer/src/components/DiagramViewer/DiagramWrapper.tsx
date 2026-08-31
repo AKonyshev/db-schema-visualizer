@@ -1,4 +1,4 @@
-import { Group, Layer, Stage } from "react-konva";
+import { Group, Layer, Rect, Stage } from "react-konva";
 import {
   useCallback,
   useEffect,
@@ -16,11 +16,13 @@ import Toolbar from "../Toolbar/Toolbar";
 import ShortcutsLegend from "../ShortcutsLegend/ShortcutsLegend";
 
 import type { Stage as CoreStage } from "konva/lib/Stage";
+import type { Group as CoreGroup } from "konva/lib/Group";
 
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { useElementSize } from "@/hooks/elementSize";
 import { useCursorChanger } from "@/hooks/cursor";
 import { DIAGRAM_PADDING } from "@/constants/sizing";
+import { REVEAL_ON_HOVER } from "@/constants/revealOnHover";
 import { useThemeColors } from "@/hooks/theme";
 import { useStageStartingState } from "@/hooks/stage";
 import { stageStateStore } from "@/stores/stagesState";
@@ -43,6 +45,19 @@ import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 import { computeWheelZoom } from "@/utils/computeWheelZoom";
 import { computeDiagramBounds } from "@/utils/diagramBounds";
 import { viewportStore } from "@/stores/viewportStore";
+import { toggleInteractionMode } from "@/stores/interactionModeStore";
+import { useIsSelectMode } from "@/hooks/selection";
+import {
+  isSpaceActivatedTarget,
+  isTypingTarget,
+  type TypingTarget,
+} from "@/utils/isTypingTarget";
+import { selectionStore } from "@/stores/selectionStore";
+import {
+  normalizeMarquee,
+  selectionFromMarquee,
+  type Marquee,
+} from "@/utils/selectionFromMarquee";
 
 interface DiagramWrapperProps {
   connections: ReactNode;
@@ -52,31 +67,37 @@ interface DiagramWrapperProps {
   /** Passed straight through to the toolbar; see `DiagramApp`. */
   hostActions?: ReactNode;
   /**
-   * Frame the whole diagram on the first render instead of using the starting
-   * state, for a host whose reader cannot pan to find it.
+   * Keep the whole diagram framed — on the first render instead of the starting
+   * state, and again whenever the container changes size — for a host whose
+   * reader cannot pan to find it.
    *
    * The embedded frame in a documentation page is that host: it can be a few
    * hundred pixels tall, it opens on a slice of a model somebody chose, and the
    * reader is reading prose around it rather than exploring a canvas. An
    * application's reader has a whole window and a toolbar; a page's reader has
    * whatever the author's `height=` gave them.
+   *
+   * Re-framing on resize is the part the other hosts must not have: for them a
+   * resize is a dragged divider, and re-framing would throw away a pan that is
+   * persisted nowhere. For this one a resize is the reader asking for the
+   * diagram across the page, and leaving the old framing behind would answer by
+   * putting the same small picture in the corner of a large empty one.
    */
-  fitOnLoad?: boolean;
+  autoFit?: boolean;
   /**
    * Keep the toolbar out of sight until the pointer is over the diagram, for
-   * the same host and the same reason as `fitOnLoad`.
+   * the same host and the same reason as `autoFit`. See `REVEAL_ON_HOVER`.
    *
    * The toolbar floats over the bottom of the diagram. In a window that costs
    * a strip of empty canvas; in a 500px frame it covers the bottom fifth of the
    * thing the page put there to be looked at, and on a narrow one it wraps to
-   * two rows and covers a third.
-   *
-   * Hidden with `visibility`, not opacity: an invisible row of buttons that
-   * still answers the pointer and still reads out to a screen reader is worse
-   * than one that is honestly not there. The shortcuts keep working either way
+   * two rows and covers a third. The shortcuts keep working while it is hidden
    * — `F`, `L` and `D` are bound to the document, not to these buttons.
+   *
+   * The group this reveals from is on `DiagramViewer`'s `main`, because the
+   * search bar hides with the toolbar and is not inside this component.
    */
-  revealToolbarOnHover?: boolean;
+  revealControlsOnHover?: boolean;
 }
 
 interface PendingWheelEvent {
@@ -92,11 +113,30 @@ const DiagramWrapper = ({
   tablesMeta,
   refs,
   hostActions = null,
-  fitOnLoad = false,
-  revealToolbarOnHover = false,
+  autoFit = false,
+  revealControlsOnHover = false,
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
+  const isSelectMode = useIsSelectMode();
+  // The Group the tables live in. A pointer position read from it is already in
+  // the coordinates `tableCoordsStore` holds — the stage transform and this
+  // Group's own offset included — so nothing here has to undo either.
+  const tablesGroupRef = useRef<null | CoreGroup>(null);
+  const [marquee, setMarquee] = useState<Marquee | null>(null);
+  // Where the drag began, and whether the modifier was down when it did: the
+  // reader may let Shift go halfway through, and the gesture they started is
+  // the one they meant.
+  const marqueeStartRef = useRef<{
+    x: number;
+    y: number;
+    additive: boolean;
+  } | null>(null);
+  // Konva has no filter for which mouse button starts a drag, so panning inside
+  // select mode is the stage being made draggable for the length of one gesture
+  // and put back afterwards.
+  const [isPanOverride, setIsPanOverride] = useState(false);
+  const isMiddleButtonDownRef = useRef(false);
   const { height: viewHeight, width: viewWidth } = useElementSize(containerRef);
   const { scrollDirection } = useScrollDirectionContext();
   // Konva is written to directly on pan and zoom, so this is the only thing
@@ -135,7 +175,7 @@ const DiagramWrapper = ({
     height: number;
   } | null =>
     computeDiagramBounds(
-      tableCoordsStore.getCurrentStoreValue(),
+      tableCoordsStore.getCurrentStore(),
       tablesMeta,
       detailLevelRef.current,
     );
@@ -178,42 +218,46 @@ const DiagramWrapper = ({
     }
   };
 
-  // repositioning the stage only once
+  // repositioning the stage: once for most hosts, on every resize for the one
+  // that asked to be kept framed
   const { scale: defaultStageScale, position: defaultStagePosition } =
     useStageStartingState({ width: viewWidth, height: viewHeight });
   const hasPositionedStage = useRef(false);
   useEffect(() => {
-    // Once, and only after there is a real size to fit into. The starting state
-    // now depends on the container's dimensions, so without this guard every
-    // resize — a dragged divider most of all — would re-fit the diagram and
-    // throw away the reader's pan. Panning is not persisted, so there would be
-    // nothing to restore it from.
-    if (
-      hasPositionedStage.current ||
-      stageRef.current === null ||
-      viewWidth === 0 ||
-      viewHeight === 0
-    ) {
+    // Only after there is a real size to fit into.
+    if (stageRef.current === null || viewWidth === 0 || viewHeight === 0) {
       return;
     }
 
-    hasPositionedStage.current = true;
-
-    // A host that asked to open framed gets the same measurement the toolbar's
-    // fit button makes, rather than the starting state: the starting state
-    // takes its bounds from table coordinates alone, so a table's own width and
-    // height fall outside the box it computes, and the rightmost one is cut off
-    // by however wide it happens to be.
+    // A host that asked to be kept framed gets the same measurement the
+    // toolbar's fit button makes, rather than the starting state: the starting
+    // state takes its bounds from table coordinates alone, so a table's own
+    // width and height fall outside the box it computes, and the rightmost one
+    // is cut off by however wide it happens to be.
     //
-    // Not done for every host, because for the other two it would be a
-    // regression: `useStageStartingState` returns a view the reader left behind
-    // when there is one, and overriding it would drop them somewhere they did
-    // not ask to be, every time they came back to a document.
-    if (fitOnLoad) {
+    // Ahead of the once-only guard, because for this host the resizes are the
+    // point — see `autoFit`.
+    if (autoFit) {
+      hasPositionedStage.current = true;
       // Fits and publishes the viewport itself.
       fitToView();
       return;
     }
+
+    // Once, for everyone else. The starting state depends on the container's
+    // dimensions, so without this guard every resize — a dragged divider most of
+    // all — would reposition the diagram and throw away the reader's pan.
+    // Panning is not persisted, so there would be nothing to restore it from.
+    //
+    // And the starting state is not something to override even once here:
+    // `useStageStartingState` returns a view the reader left behind when there
+    // is one, and replacing it would drop them somewhere they did not ask to be,
+    // every time they came back to a document.
+    if (hasPositionedStage.current) {
+      return;
+    }
+
+    hasPositionedStage.current = true;
 
     stageRef.current.scale({
       x: defaultStageScale,
@@ -227,7 +271,7 @@ const DiagramWrapper = ({
     viewWidth,
     viewHeight,
     publishViewport,
-    fitOnLoad,
+    autoFit,
   ]);
 
   const pendingWheelRef = useRef<PendingWheelEvent | null>(null);
@@ -330,6 +374,212 @@ const DiagramWrapper = ({
     setHighlightedColumns([]);
   };
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (
+        event.key !== "Escape" ||
+        selectionStore.getSelected().size === 0 ||
+        // The one definition of "the reader is busy with this key" — see
+        // `isTypingTarget`. Escape in the editor beside the diagram means
+        // "dismiss what you are showing me", not "drop my selection".
+        isTypingTarget(event.target as TypingTarget | null)
+      ) {
+        return;
+      }
+
+      // Marked as spent, the way the legend and the export menu mark theirs:
+      // the embedded frame reads exactly this to decide whether an Escape was
+      // the reader asking for the page back. Without it one keypress would both
+      // drop the selection and collapse an expanded frame.
+      event.preventDefault();
+      selectionStore.clear();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    // An unmount cleanup rather than a watch on the document key: this
+    // component does not receive the key, and remounting is exactly what a
+    // document change does to it. Without this, opening another schema leaves a
+    // selection naming tables that are not on the canvas.
+    return () => {
+      selectionStore.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isSelectMode) {
+      // A selection that outlived the mode would silently change what a plain
+      // drag does, in the mode whose whole point is that a drag moves the
+      // canvas. Panning stays reachable inside select mode, so nobody has to
+      // leave it mid-task.
+      selectionStore.clear();
+    }
+  }, [isSelectMode]);
+
+  useEffect(() => {
+    if (!isSelectMode) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (
+        event.code !== "Space" ||
+        isSpaceActivatedTarget(event.target as TypingTarget | null)
+      ) {
+        return;
+      }
+
+      // Otherwise the page around an embedded frame scrolls a screen down while
+      // the reader is holding the key to pan.
+      event.preventDefault();
+      setIsPanOverride(true);
+    };
+
+    const onKeyUp = (event: KeyboardEvent): void => {
+      if (event.code === "Space") {
+        setIsPanOverride(false);
+      }
+    };
+
+    // A reader who switches windows mid-pan never sends the key-up.
+    const onBlur = (): void => {
+      setIsPanOverride(false);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+      setIsPanOverride(false);
+    };
+  }, [isSelectMode]);
+
+  const pointerInDiagram = (): { x: number; y: number } | null =>
+    tablesGroupRef.current?.getRelativePointerPosition() ?? null;
+
+  const handleMarqueeStart = (event: KonvaEventObject<MouseEvent>): void => {
+    // Only a drag that began on empty canvas. One that began on a table is that
+    // table being moved, which Konva is already handling.
+    if (event.target !== stageRef.current) {
+      return;
+    }
+
+    const point = pointerInDiagram();
+
+    if (point === null) {
+      return;
+    }
+
+    marqueeStartRef.current = { ...point, additive: event.evt.shiftKey };
+    setMarquee({ x: point.x, y: point.y, w: 0, h: 0 });
+  };
+
+  const handleMarqueeMove = (): void => {
+    const start = marqueeStartRef.current;
+    const point = pointerInDiagram();
+
+    if (start === null || point === null) {
+      return;
+    }
+
+    setMarquee({
+      x: start.x,
+      y: start.y,
+      w: point.x - start.x,
+      h: point.y - start.y,
+    });
+  };
+
+  /** What the stage's `draggable` prop says it should be right now. */
+  const stageIsDraggable = !isSelectMode || isPanOverride;
+
+  /**
+   * Ends whatever gesture was in flight, whichever way it ended.
+   *
+   * One function for both gestures and bound to every way a drag can stop —
+   * the button coming up, the pointer leaving the canvas, the window losing
+   * focus. A middle-button pan released outside the canvas used to send no
+   * mouse-up at all, so its flag stayed raised and the stage stayed draggable:
+   * select mode silently became pan mode, and the next drag both drew a marquee
+   * and moved the canvas.
+   *
+   * `draggable` is restored to what the prop says rather than to `false`.
+   * Konva is being written to directly here, and React will not re-apply a prop
+   * whose value has not changed — so hardcoding `false` left the stage
+   * undraggable while the reader was still holding space for it.
+   */
+  const endGesture = (): void => {
+    if (isMiddleButtonDownRef.current) {
+      isMiddleButtonDownRef.current = false;
+      stageRef.current?.stopDrag();
+      stageRef.current?.draggable(stageIsDraggable);
+    }
+
+    const start = marqueeStartRef.current;
+
+    if (start === null) {
+      return;
+    }
+
+    const point = pointerInDiagram();
+    const box: Marquee =
+      point === null
+        ? { x: start.x, y: start.y, w: 0, h: 0 }
+        : {
+            x: start.x,
+            y: start.y,
+            w: point.x - start.x,
+            h: point.y - start.y,
+          };
+
+    selectionStore.setSelected(
+      selectionFromMarquee(
+        tableCoordsStore.getCurrentStore(),
+        box,
+        start.additive,
+        selectionStore.getSelected(),
+      ),
+    );
+
+    marqueeStartRef.current = null;
+    setMarquee(null);
+  };
+
+  // Bound once, and read at the moment the gesture ends, so the listener below
+  // never needs re-attaching.
+  const endGestureRef = useRef(endGesture);
+  endGestureRef.current = endGesture;
+
+  useEffect(() => {
+    // On the window rather than on the stage, which is the whole point: Konva
+    // captures the pointer for the length of a stage drag, so the stage hears
+    // no `mouseleave` and — if the button comes up outside the canvas — no
+    // `mouseup` either. Listening here is the only way to be told the gesture
+    // is over wherever it ended. `blur` covers the reader switching apps
+    // mid-drag, which sends no pointer event at all.
+    const onEnd = (): void => {
+      endGestureRef.current();
+    };
+
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("blur", onEnd);
+
+    return () => {
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("blur", onEnd);
+    };
+  }, []);
+
   /**
    * A fresh arrangement gets a fresh view.
    *
@@ -425,6 +675,7 @@ const DiagramWrapper = ({
       },
       detailLevel: nextDetailLevel,
       autoArrange: resetPositions,
+      interactionMode: toggleInteractionMode,
       fitToView,
       legend: () => {
         setIsLegendOpen(true);
@@ -567,16 +818,52 @@ const DiagramWrapper = ({
     // else, which is exactly when they stop being cosmetic.
     <div
       ref={containerRef}
-      className={`relative h-full w-full overflow-hidden ${revealToolbarOnHover ? "group/diagram" : ""}`}
+      // The reader has to be told the mode is temporarily something else, or
+      // holding space looks like the marquee has broken. The middle button
+      // needs no cursor of its own: `useCursorChanger("grabbing")` is already
+      // wired to the stage's drag events, which a middle-button pan goes
+      // through.
+      className={`relative h-full w-full overflow-hidden ${
+        isSelectMode && isPanOverride ? "cursor-grab" : ""
+      }`}
     >
       <Stage
-        draggable
+        draggable={!isSelectMode || isPanOverride}
         ref={stageRef}
         onDragStart={onGrabbing}
         onDragMove={publishViewport}
         onDragEnd={onGrabRelease}
         onWheel={handleZooming}
-        onMouseDown={handleStagePointerDown}
+        onMouseDown={(event) => {
+          handleStagePointerDown(event);
+
+          if (!isSelectMode) {
+            return;
+          }
+
+          // Space is held, so the stage is already draggable and Konva is
+          // about to pan with this very drag. Opening a marquee on top of it
+          // would end by committing an empty one: the tables move with the
+          // stage, so the pointer barely moves relative to them, and the box
+          // `endGesture` computes catches nothing — which clears the selection
+          // the reader held space to keep.
+          if (isPanOverride) {
+            return;
+          }
+
+          // 1 is the middle button. Konva cannot be told which buttons drag,
+          // so the stage is made draggable for the length of this gesture and
+          // `endGesture` puts it back.
+          if (event.evt.button === 1) {
+            isMiddleButtonDownRef.current = true;
+            stageRef.current?.draggable(true);
+            stageRef.current?.startDrag();
+            return;
+          }
+
+          handleMarqueeStart(event);
+        }}
+        onMouseMove={isSelectMode ? handleMarqueeMove : undefined}
         onTouchStart={handleStagePointerDown}
         width={viewWidth}
         height={viewHeight}
@@ -588,21 +875,42 @@ const DiagramWrapper = ({
           </Group>
         </Layer>
         <Layer>
-          <Group offsetX={-DIAGRAM_PADDING} offsetY={-DIAGRAM_PADDING}>
+          <Group
+            ref={tablesGroupRef}
+            offsetX={-DIAGRAM_PADDING}
+            offsetY={-DIAGRAM_PADDING}
+          >
             {tables}
           </Group>
         </Layer>
+
+        {marquee !== null && (
+          // Its own layer, above the tables: the marquee is drawn over whatever
+          // it is catching. Deaf to the pointer, so the rectangle under it
+          // cannot swallow the mouse-up that ends the gesture.
+          <Layer listening={false}>
+            <Group offsetX={-DIAGRAM_PADDING} offsetY={-DIAGRAM_PADDING}>
+              <Rect
+                x={normalizeMarquee(marquee).x}
+                y={normalizeMarquee(marquee).y}
+                width={normalizeMarquee(marquee).w}
+                height={normalizeMarquee(marquee).h}
+                fill={themeColors.selection.fill}
+                opacity={0.25}
+                stroke={themeColors.selection.stroke}
+                // Divided by the scale so the outline stays a hairline however
+                // far out the reader has zoomed.
+                strokeWidth={1 / (stageRef.current?.scaleX() ?? 1)}
+                dash={[4, 3]}
+              />
+            </Group>
+          </Layer>
+        )}
       </Stage>
 
       {/* A plain wrapper, with no positioning of its own, so the toolbar inside
           still anchors to the container above rather than to this. */}
-      <div
-        className={
-          revealToolbarOnHover
-            ? "invisible opacity-0 transition-opacity duration-150 group-hover/diagram:visible group-hover/diagram:opacity-100 group-focus-within/diagram:visible group-focus-within/diagram:opacity-100"
-            : ""
-        }
-      >
+      <div className={revealControlsOnHover ? REVEAL_ON_HOVER : ""}>
         <Toolbar
           onFitToView={fitToView}
           onDownloadPng={onDownloadPng}

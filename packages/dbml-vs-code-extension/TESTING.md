@@ -2,7 +2,7 @@
 
 ## Switching between text and diagram
 
-The tab bookkeeping is covered automatically — `yarn workspace dbml-schema-visualizer test:integration` proves in a real VS Code that switching replaces the tab in both directions, that opening beside keeps the text, and that a plain open still gives text. Run that first; what is left below is what only eyes can check.
+The tab bookkeeping is covered automatically — `yarn workspace dbml-studio test:integration` proves in a real VS Code that switching replaces the tab in both directions, that opening beside keeps the text, and that a plain open still gives text. Run that first; what is left below is what only eyes can check.
 
 1. In a `.dbml` text editor exactly one title button shows — **Show diagram**, with the preview icon.
 2. Alt-click it — the diagram takes over the current tab. (Plain click opens it beside.)

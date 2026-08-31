@@ -18,7 +18,11 @@ type Story = StoryObj<typeof Table>;
 export const TableStory: Story = {
   render: (props) => (
     <TablesPositionsProvider tables={[]} refs={[]}>
-      <MainProviders enums={exampleData.enums} tables={exampleData.tables}>
+      <MainProviders
+        refs={exampleData.refs}
+        enums={exampleData.enums}
+        tables={exampleData.tables}
+      >
         <Table {...props} />
       </MainProviders>
     </TablesPositionsProvider>

@@ -1,4 +1,4 @@
-import { isTypingTarget } from "../isTypingTarget";
+import { isSpaceActivatedTarget, isTypingTarget } from "../isTypingTarget";
 
 describe("isTypingTarget", () => {
   test("returns false when the event carries no target", () => {
@@ -49,5 +49,40 @@ describe("isTypingTarget", () => {
     expect(isTypingTarget({ tagName: "DIV", isContentEditable: false })).toBe(
       false,
     );
+  });
+});
+
+describe("isSpaceActivatedTarget", () => {
+  it("leaves the key to a focused button", () => {
+    // Space is how a button is pressed from the keyboard. The diagram claims it
+    // to pan, and claiming it here would make the toolbar unusable without a
+    // mouse.
+    expect(isSpaceActivatedTarget({ tagName: "button" })).toBe(true);
+    expect(isSpaceActivatedTarget({ tagName: "BUTTON" })).toBe(true);
+  });
+
+  it("leaves the key to a control that only says it is one", () => {
+    expect(isSpaceActivatedTarget({ tagName: "DIV", role: "button" })).toBe(
+      true,
+    );
+    expect(isSpaceActivatedTarget({ tagName: "DIV", role: "checkbox" })).toBe(
+      true,
+    );
+  });
+
+  it("leaves the key to anything text goes into", () => {
+    expect(isSpaceActivatedTarget({ tagName: "INPUT" })).toBe(true);
+    expect(isSpaceActivatedTarget({ tagName: "DIV", role: "textbox" })).toBe(
+      true,
+    );
+    expect(
+      isSpaceActivatedTarget({ tagName: "DIV", isContentEditable: true }),
+    ).toBe(true);
+  });
+
+  it("hands the key over for the canvas and for nothing focused", () => {
+    expect(isSpaceActivatedTarget({ tagName: "CANVAS" })).toBe(false);
+    expect(isSpaceActivatedTarget({ tagName: "DIV" })).toBe(false);
+    expect(isSpaceActivatedTarget(null)).toBe(false);
   });
 });

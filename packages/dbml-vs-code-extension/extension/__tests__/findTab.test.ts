@@ -14,13 +14,13 @@ const customTab = (value: string, viewType: string): { input: unknown } => ({
 
 describe("findTab", () => {
   test("finds the custom editor tab for a document", () => {
-    const wanted = customTab("file:///a.dbml", "dblm-preview-webview");
+    const wanted = customTab("file:///a.dbml", "dbml-studio-diagram");
 
     expect(
       findTab(
         [textTab("file:///a.dbml"), wanted],
         "file:///a.dbml",
-        "dblm-preview-webview",
+        "dbml-studio-diagram",
       ),
     ).toBe(wanted);
   });
@@ -30,7 +30,7 @@ describe("findTab", () => {
 
     expect(
       findTab(
-        [customTab("file:///a.dbml", "dblm-preview-webview"), wanted],
+        [customTab("file:///a.dbml", "dbml-studio-diagram"), wanted],
         "file:///a.dbml",
       ),
     ).toBe(wanted);

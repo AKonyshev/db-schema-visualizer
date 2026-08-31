@@ -1,5 +1,4 @@
 import { computeTextSize } from "../computeTextSize";
-import { computeTextsMaxWidth } from "../computeTextsMaxWidth";
 
 import {
   FONT_SIZES,
@@ -8,10 +7,10 @@ import {
 } from "@/constants/sizing";
 
 export const computeTablePreferredWidth = (
-  tableTexts: string[],
+  lineWidths: number[],
   tableName: string,
 ): number => {
-  const minColsW = computeTextsMaxWidth(tableTexts);
+  const minColsW = lineWidths.length === 0 ? 0 : Math.max(...lineWidths);
   const { width: tableNameW } = computeTextSize(tableName, {
     fontSize: FONT_SIZES.tableTitle,
   });

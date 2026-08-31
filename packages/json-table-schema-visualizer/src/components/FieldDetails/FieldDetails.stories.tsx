@@ -16,7 +16,11 @@ type Story = StoryObj<typeof FieldDetails>;
 
 export const FieldDetailsStory: Story = {
   render: (props) => (
-    <MainProviders tables={exampleData.tables} enums={exampleData.enums}>
+    <MainProviders
+      refs={exampleData.refs}
+      tables={exampleData.tables}
+      enums={exampleData.enums}
+    >
       <FieldDetails {...props} />
     </MainProviders>
   ),

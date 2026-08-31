@@ -3,6 +3,7 @@ import { type ReactNode } from "react";
 import { KeyboardIcon } from "lucide-react";
 
 import AutoArrangeTableButton from "./AutoArrage/AutoArrangeTables";
+import InteractionModeToggle from "./InteractionModeToggle/InteractionModeToggle";
 import RelationStyleToggle from "./RelationStyleToggle/RelationStyleToggle";
 import ThemeToggler from "./ThemeToggler/ThemeToggler";
 import DetailLevelToggle from "./DetailLevelToggle/DetailLevelToggle";
@@ -53,6 +54,9 @@ const Toolbar = ({
     // toolbar's own box rather than letting it run past the diagram.
     <div className="absolute bottom-14 left-1/2 flex w-max max-w-full -translate-x-1/2 flex-wrap items-center gap-1 rounded-2xl border border-subtle bg-surface-raised/95 px-4 py-1.5 text-sm shadow-xl shadow-black/10 backdrop-blur [&_svg]:h-5 [&_svg]:w-5">
       <AutoArrangeTableButton />
+      {/* Beside auto-arrange because both are about where the tables are rather
+          than what they look like. */}
+      <InteractionModeToggle />
       {/* Beside auto-arrange because it shapes the arrangement, not only the
           look: right angles need corridors and curves do not. */}
       <RelationStyleToggle />
@@ -65,8 +69,15 @@ const Toolbar = ({
         onDownloadAdoc={onDownloadAdoc}
         onDownloadMarkdown={onDownloadMarkdown}
       />
-      <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
-      {hostActions}
+      {/* Both rules belong to the slot, so a host that adds nothing — or one
+          whose action comes and goes, as the frame's does — is not left with
+          two dividers against each other. */}
+      {hostActions !== null && (
+        <>
+          <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
+          {hostActions}
+        </>
+      )}
       <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
       <ShortTableNameSetting />
       <EnableAlwaysHover />

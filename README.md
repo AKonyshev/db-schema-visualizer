@@ -1,6 +1,6 @@
-# Database schema visualizer
+# DBML Studio
 
-A VS Code extension to visualize database schemas as ERD diagrams from DBML files — and the same visualizer as a website you can host yourself.
+A DBML workbench for VS Code — ERD diagrams, PostgreSQL import, and live database comparison — plus the same diagram as a website you can host yourself and embed in documentation.
 
 > **Fork notice.** This repository is a fork of [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer), maintained independently under the [MIT License](./LICENSE). The original project and its authors are credited below; modifications in this fork are maintained by [AKonyshev](https://github.com/AKonyshev).
 
@@ -22,8 +22,8 @@ A VS Code extension to visualize database schemas as ERD diagrams from DBML file
 ### From source
 
 ```bash
-git clone https://github.com/AKonyshev/db-schema-visualizer.git
-cd db-schema-visualizer
+git clone https://github.com/AKonyshev/dbml-studio.git
+cd dbml-studio
 yarn install
 ```
 
@@ -52,11 +52,11 @@ the container image, and the tests.
 
 This software is licensed under the [MIT License](./LICENSE). Per the license, the copyright notice and permission notice are included in distributions of this project.
 
-|                     |                                                                                                                                                |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Upstream**        | [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) — original ERD visualizer for DBML and Prisma                    |
-| **Original author** | [@BOCOVO](https://github.com/BOCOVO)                                                                                                           |
-| **This fork**       | [AKonyshev/db-schema-visualizer](https://github.com/AKonyshev/db-schema-visualizer) — maintained by [@AKonyshev](https://github.com/AKonyshev) |
+|                     |                                                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Upstream**        | [BOCOVO/db-schema-visualizer](https://github.com/BOCOVO/db-schema-visualizer) — original ERD visualizer for DBML and Prisma  |
+| **Original author** | [@BOCOVO](https://github.com/BOCOVO)                                                                                         |
+| **This fork**       | [AKonyshev/dbml-studio](https://github.com/AKonyshev/dbml-studio) — maintained by [@AKonyshev](https://github.com/AKonyshev) |
 
 Upstream tutorials (still useful for core diagram features):
 

@@ -17,7 +17,9 @@ import { resolveBrowserLocale } from "../i18n/resolveBrowserLocale";
 
 import { embedErrorText } from "./embedError";
 import { parseEmbedParams } from "./embedParams";
+import ExpandButton from "./ExpandButton";
 import { filterSchema } from "./filterSchema";
+import { useHostExpand } from "./useHostExpand";
 
 // The visualizer's own stylesheet, the same one the full site uses: the
 // Tailwind directives and the full-height rules do not change because the host
@@ -51,6 +53,7 @@ const Frame = ({
   theme,
 }: FrameProps): JSX.Element => {
   const { themeColors, setTheme, theme: current } = useCreateTheme(theme);
+  const { supported, expanded, toggle } = useHostExpand();
 
   return (
     <DiagramApp
@@ -61,13 +64,21 @@ const Frame = ({
       themeColors={themeColors}
       setTheme={setTheme}
       scrollDirection={ScrollDirection.UpIn}
+      // The one thing a frame can do that a window cannot: ask for more room.
+      // Absent unless the page around us said it knows how to give any.
+      hostActions={
+        supported ? (
+          <ExpandButton expanded={expanded} onToggle={toggle} />
+        ) : null
+      }
       // The frame is as tall as the page's author made it, and the reader is
       // reading prose around it: whatever the diagram is, it has to be visible
-      // without being hunted for.
-      fitOnLoad
+      // without being hunted for — and it stays that way when the page gives it
+      // the room it just asked for.
+      autoFit
       // And it must not spend a fifth of that height on buttons the reader has
       // not reached for.
-      revealToolbarOnHover
+      revealControlsOnHover
     />
   );
 };

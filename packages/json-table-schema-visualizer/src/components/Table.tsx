@@ -1,5 +1,6 @@
 import { Group, Rect } from "react-konva";
 import { useEffect, useMemo, useRef } from "react";
+import { computeRelationalFieldKey } from "shared/utils/computeRelationalFieldKey";
 
 import TableHeader from "./TableHeader";
 import Column from "./Column/Column";
@@ -25,7 +26,17 @@ import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 import { useAreRowsWorthDrawing } from "@/hooks/viewport";
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
-import computeFieldDisplayTypeName from "@/utils/getFieldType";
+import { computeFieldMarks } from "@/utils/fieldMarks";
+import { useForeignKeys } from "@/hooks/foreignKeys";
+import { useIsSelectMode, useIsTableSelected } from "@/hooks/selection";
+import { SELECTED_OUTLINE_NAME } from "@/constants/selection";
+import { selectionStore } from "@/stores/selectionStore";
+import {
+  beginGroupDrag,
+  endGroupDrag,
+  moveGroupDrag,
+  subscribeToGroupDrag,
+} from "@/stores/groupDrag";
 import { drawnTableHeight } from "@/utils/drawnTableHeight";
 
 interface TableProps extends JSONTableTable {
@@ -39,10 +50,13 @@ interface TableProps extends JSONTableTable {
 }
 
 const Table = ({ fields, name, schemaColumns }: TableProps) => {
+  const foreignKeys = useForeignKeys();
   const themeColors = useThemeColors();
   // The dashed outline marks a table whose relations are hidden — the same
   // state the header icon toggles, so the two always agree.
   const { isHidden: hasHiddenRefs } = useTableRelationsVisibility(name);
+  const isSelected = useIsTableSelected(name);
+  const isSelectMode = useIsSelectMode();
   const { detailLevel } = useTableDetailLevel();
   const tableRef = useRef<null | Konva.Group>(null);
   const highlightRef = useRef<null | Konva.Rect>(null);
@@ -107,22 +121,68 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
     };
   }, [name, theme]);
 
+  // Read through a ref rather than closed over: the drawn size changes with the
+  // detail level, and the group-drag subscription below is set up once per
+  // table. A captured size would write the box the table had when it mounted.
+  const drawnSizeRef = useRef({ w: tablePreferredWidth, h: tableHeight });
+  drawnSizeRef.current = { w: tablePreferredWidth, h: tableHeight };
+
   const propagateCoordinates = (node: Konva.Group) => {
     const existing = tableCoordsStore.getFullCoords(name);
     const tableCoords = {
       x: node.x(),
       y: node.y(),
-      w: existing.w > 0 ? existing.w : tablePreferredWidth,
-      h: existing.h > 0 ? existing.h : tableHeight,
+      w: existing.w > 0 ? existing.w : drawnSizeRef.current.w,
+      h: existing.h > 0 ? existing.h : drawnSizeRef.current.h,
     };
     eventEmitter.emit(tableDragEventName, tableCoords);
     tableCoordsStore.setFullCoords(name, tableCoords);
   };
 
+  const handleOnDragStart = () => {
+    // Dragging a table the reader has not selected is them changing their mind
+    // about what they are working on: the table they took hold of becomes the
+    // selection, and the group they had is let go. Without this the outlines
+    // would go on claiming a group that is not the one moving.
+    if (isSelectMode && !selectionStore.isSelected(name)) {
+      selectionStore.setSelected(new Set([name]));
+    }
+
+    beginGroupDrag(name);
+  };
+
   const handleOnDrag = (event: KonvaEventObject<DragEvent>) => {
     event.currentTarget.moveToTop();
-    propagateCoordinates(event.target as Konva.Group);
+
+    const node = event.target as Konva.Group;
+
+    propagateCoordinates(node);
+    moveGroupDrag(name, { x: node.x(), y: node.y() });
   };
+
+  const handleOnDragEnd = () => {
+    endGroupDrag();
+  };
+
+  useEffect(() => {
+    return subscribeToGroupDrag(({ positions }) => {
+      const position = positions.get(name);
+      const node = tableRef.current;
+
+      if (position === undefined || node === null) {
+        return;
+      }
+
+      node.x(position.x);
+      node.y(position.y);
+      // The same call the table's own drag makes, so relation anchors and the
+      // coordinate store follow a group move exactly as they follow a single
+      // one.
+      propagateCoordinates(node);
+    });
+    // Once per table. Everything the handler needs that can change is read
+    // through a ref, so there is nothing here to re-subscribe for.
+  }, [name]);
 
   const handleOnHover = () => {
     setHoveredTableName(name);
@@ -132,10 +192,31 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
     setHoveredTableName(null);
   };
 
-  const moveTableToTop = () => {
+  const handleOnClick = (event: KonvaEventObject<MouseEvent>) => {
     if (tableRef.current != null) {
       tableRef.current.moveToTop();
     }
+
+    if (!isSelectMode) {
+      return;
+    }
+
+    // Konva raises `click` only when the pointer did not drag, so there is
+    // nothing to tell a click from a move by hand.
+    if (!event.evt.shiftKey) {
+      selectionStore.setSelected(new Set([name]));
+      return;
+    }
+
+    const selected = new Set(selectionStore.getSelected());
+
+    if (selected.has(name)) {
+      selected.delete(name);
+    } else {
+      selected.add(name);
+    }
+
+    selectionStore.setSelected(selected);
   };
 
   return (
@@ -143,12 +224,14 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
       name={`table-${name.replace(/\s+/g, "_")}`}
       ref={tableRef}
       draggable
+      onDragStart={handleOnDragStart}
       onDragMove={handleOnDrag}
+      onDragEnd={handleOnDragEnd}
       width={tablePreferredWidth}
       height={tableHeight}
       onMouseEnter={handleOnHover}
       onMouseLeave={handleOnBlur}
-      onClick={moveTableToTop}
+      onClick={handleOnClick}
     >
       <Rect
         shadowBlur={PADDINGS.xs}
@@ -176,6 +259,27 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
         />
       )}
 
+      {isSelected && (
+        // Its own Rect rather than the highlight one below: that one is an
+        // animation that ends at `strokeWidth: 0`, and sharing it would let a
+        // search hit quietly erase the outline it happened to finish on.
+        <Rect
+          // Named so a test can count what is selected. A canvas has no DOM to
+          // query, and picking these out by stroke width catches every other
+          // outline on the diagram too.
+          name={SELECTED_OUTLINE_NAME}
+          x={-3}
+          y={-3}
+          width={tablePreferredWidth + 6}
+          height={tableHeight + 6}
+          stroke={themeColors.selection.stroke}
+          strokeWidth={2}
+          fill="transparent"
+          cornerRadius={PADDINGS.sm + 1}
+          listening={false}
+        />
+      )}
+
       <TableHeader title={name} />
       {detailLevel !== TableDetailLevel.HeaderOnly && rowsAreWorthDrawing ? (
         <Group y={TABLE_HEADER_HEIGHT}>
@@ -185,7 +289,10 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
               colName={field.name}
               tableName={name}
               isEnum={field.type.is_enum}
-              type={computeFieldDisplayTypeName(field)}
+              marks={computeFieldMarks(
+                field,
+                foreignKeys.has(computeRelationalFieldKey(name, field.name)),
+              )}
               isPrimaryKey={field.pk}
               offsetY={index * COLUMN_HEIGHT}
               relationalTables={field.relational_tables}

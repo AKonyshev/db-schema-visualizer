@@ -28,6 +28,10 @@ const themeFrom = (
     default: palette.borderStrong,
   },
   colAccent: palette.surfaceSunken,
+  selection: {
+    stroke: palette.accent,
+    fill: palette.accentSoft,
+  },
   table: {
     bg: palette.surfaceRaised,
     shadow: extras.shadow,

@@ -1,8 +1,8 @@
 {
-  "name": "dbml-schema-visualizer",
-  "displayName": "DBML Schema Visualizer",
-  "description": "Visualize DBML schemas as ERD diagrams, import from PostgreSQL, and compare with a live database.",
-  "version": "0.16.0",
+  "name": "dbml-studio",
+  "displayName": "DBML Studio",
+  "description": "Diagram, import, and diff DBML schemas — ERD view, PostgreSQL import, live database compare.",
+  "version": "1.0.0",
   "icon": "assets/logo.png",
   "publisher": "konyshevav",
   "license": "MIT",
@@ -19,16 +19,16 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "dbmlSchemaVisualizer",
+          "id": "dbmlStudio",
           "title": "%viewsContainer.title%",
           "icon": "assets/icons/panel.svg"
         }
       ]
     },
     "views": {
-      "dbmlSchemaVisualizer": [
+      "dbmlStudio": [
         {
-          "id": "dbml-erd-visualizer.panel",
+          "id": "dbmlStudio.panel",
           "name": "DBML"
         }
       ]
@@ -60,7 +60,7 @@
     ],
     "customEditors": [
       {
-        "viewType": "dblm-preview-webview",
+        "viewType": "dbml-studio-diagram",
         "displayName": "%customEditor.diagram%",
         "priority": "option",
         "selector": [
@@ -72,49 +72,49 @@
     ],
     "commands": [
       {
-        "command": "dbml-erd-visualizer.previewDiagrams",
+        "command": "dbmlStudio.previewDiagrams",
         "title": "%command.previewDiagrams%",
         "icon": "$(open-preview)"
       },
       {
-        "command": "dbml-erd-visualizer.previewDiagramsInPlace",
+        "command": "dbmlStudio.previewDiagramsInPlace",
         "title": "%command.previewDiagramsInPlace%"
       },
       {
-        "command": "dbml-erd-visualizer.showSource",
+        "command": "dbmlStudio.showSource",
         "title": "%command.showSource%",
         "icon": "$(go-to-file)"
       },
       {
-        "command": "dbml-erd-visualizer.importFromDatabase",
+        "command": "dbmlStudio.importFromDatabase",
         "title": "%command.importFromDatabase%"
       },
       {
-        "command": "dbml-erd-visualizer.compareWithDatabase",
+        "command": "dbmlStudio.compareWithDatabase",
         "title": "%command.compareWithDatabase%"
       },
       {
-        "command": "dbml-erd-visualizer.addConnection",
+        "command": "dbmlStudio.addConnection",
         "title": "%command.addConnection%",
         "icon": "$(add)"
       },
       {
-        "command": "dbml-erd-visualizer.refreshConnections",
+        "command": "dbmlStudio.refreshConnections",
         "title": "%command.refreshConnections%",
         "icon": "$(refresh)"
       },
       {
-        "command": "dbml-erd-visualizer.deleteConnection",
+        "command": "dbmlStudio.deleteConnection",
         "title": "%command.deleteConnection%",
         "icon": "$(trash)"
       },
       {
-        "command": "dbml-erd-visualizer.importFromConnection",
+        "command": "dbmlStudio.importFromConnection",
         "title": "%command.importFromConnection%",
         "icon": "$(cloud-download)"
       },
       {
-        "command": "dbml-erd-visualizer.compareWithConnection",
+        "command": "dbmlStudio.compareWithConnection",
         "title": "%command.compareWithConnection%",
         "icon": "$(diff)"
       }
@@ -122,57 +122,57 @@
     "menus": {
       "commandPalette": [
         {
-          "command": "dbml-erd-visualizer.importFromConnection",
+          "command": "dbmlStudio.importFromConnection",
           "when": "false"
         },
         {
-          "command": "dbml-erd-visualizer.compareWithConnection",
+          "command": "dbmlStudio.compareWithConnection",
           "when": "false"
         },
         {
-          "command": "dbml-erd-visualizer.deleteConnection",
+          "command": "dbmlStudio.deleteConnection",
           "when": "false"
         }
       ],
       "editor/title": [
         {
-          "command": "dbml-erd-visualizer.previewDiagrams",
-          "when": "resourceLangId == dbml && activeCustomEditorId != 'dblm-preview-webview'",
-          "alt": "dbml-erd-visualizer.previewDiagramsInPlace",
+          "command": "dbmlStudio.previewDiagrams",
+          "when": "resourceLangId == dbml && activeCustomEditorId != 'dbml-studio-diagram'",
+          "alt": "dbmlStudio.previewDiagramsInPlace",
           "group": "navigation"
         },
         {
-          "command": "dbml-erd-visualizer.showSource",
-          "when": "activeCustomEditorId == 'dblm-preview-webview'",
+          "command": "dbmlStudio.showSource",
+          "when": "activeCustomEditorId == 'dbml-studio-diagram'",
           "group": "navigation"
         }
       ],
       "view/title": [
         {
-          "command": "dbml-erd-visualizer.addConnection",
-          "when": "view == dbml-erd-visualizer.panel",
+          "command": "dbmlStudio.addConnection",
+          "when": "view == dbmlStudio.panel",
           "group": "navigation"
         },
         {
-          "command": "dbml-erd-visualizer.refreshConnections",
-          "when": "view == dbml-erd-visualizer.panel",
+          "command": "dbmlStudio.refreshConnections",
+          "when": "view == dbmlStudio.panel",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
-          "command": "dbml-erd-visualizer.importFromConnection",
-          "when": "view == dbml-erd-visualizer.panel && viewItem == dbmlConnection",
+          "command": "dbmlStudio.importFromConnection",
+          "when": "view == dbmlStudio.panel && viewItem == dbmlConnection",
           "group": "inline"
         },
         {
-          "command": "dbml-erd-visualizer.compareWithConnection",
-          "when": "view == dbml-erd-visualizer.panel && viewItem == dbmlConnection",
+          "command": "dbmlStudio.compareWithConnection",
+          "when": "view == dbmlStudio.panel && viewItem == dbmlConnection",
           "group": "inline"
         },
         {
-          "command": "dbml-erd-visualizer.deleteConnection",
-          "when": "view == dbml-erd-visualizer.panel && viewItem == dbmlConnection",
+          "command": "dbmlStudio.deleteConnection",
+          "when": "view == dbmlStudio.panel && viewItem == dbmlConnection",
           "group": "inline"
         }
       ]
@@ -180,7 +180,7 @@
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
-        "dbmlERDPreviewer.preferredTheme": {
+        "dbmlStudio.preferredTheme": {
           "type": "string",
           "default": "dark",
           "enum": [
@@ -192,7 +192,7 @@
             "To use light mode theme colors"
           ]
         },
-        "dbmlERDPreviewer.scrollDirection": {
+        "dbmlStudio.scrollDirection": {
           "type": "string",
           "default": "up-out",
           "enum": [
@@ -252,10 +252,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/AKonyshev/db-schema-visualizer.git"
+    "url": "https://github.com/AKonyshev/dbml-studio.git"
   },
-  "homepage": "https://github.com/AKonyshev/db-schema-visualizer#readme",
+  "homepage": "https://github.com/AKonyshev/dbml-studio#readme",
   "bugs": {
-    "url": "https://github.com/AKonyshev/db-schema-visualizer/issues"
+    "url": "https://github.com/AKonyshev/dbml-studio/issues"
   }
 }
