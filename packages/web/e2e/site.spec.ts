@@ -242,6 +242,21 @@ test("a marquee selects several tables and drags them together", async ({
     expect(delta.x).toBeCloseTo(deltas[0].x, 1);
     expect(delta.y).toBeCloseTo(deltas[0].y, 1);
   }
+
+  // And the move reached the coordinate store, not just the Konva nodes.
+  // Asserted through a reload rather than by reaching into the store: the app
+  // flushes positions on the way out, so surviving one is what "it was stored"
+  // means to the reader, and it is the same thing they would notice if it were
+  // not true.
+  await page.reload();
+  await expect(canvasOf(page)).toBeVisible();
+
+  const restored = await positions();
+
+  for (const name of names) {
+    expect(restored[name].x).toBeCloseTo(after[name].x, 0);
+    expect(restored[name].y).toBeCloseTo(after[name].y, 0);
+  }
 });
 
 test("a middle-button pan that ends off the canvas leaves select mode intact", async ({
@@ -276,8 +291,21 @@ test("holding space pans without drawing a marquee or losing the selection", asy
   await selectEverything(page);
   const selected = await selectedTableCount(page);
 
+  const box = await canvasOf(page).boundingBox();
+  const left = box?.x ?? 0;
+  const top = box?.y ?? 0;
+
   await page.keyboard.down("Space");
   await expect.poll(async () => await stageIsDraggable(page)).toBe(true);
+
+  // Actually pan, rather than only checking the flag: the reason panning has to
+  // stay reachable in select mode is so the reader can look around without
+  // losing what they have picked. A drag that also opened a marquee would end
+  // by committing an empty one over the top of them.
+  await page.mouse.move(left + 200, top + 200);
+  await page.mouse.down();
+  await page.mouse.move(left + 320, top + 260, { steps: 10 });
+  await page.mouse.up();
 
   await page.keyboard.up("Space");
   await expect.poll(async () => await stageIsDraggable(page)).toBe(false);

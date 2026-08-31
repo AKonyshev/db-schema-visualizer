@@ -841,6 +841,16 @@ const DiagramWrapper = ({
             return;
           }
 
+          // Space is held, so the stage is already draggable and Konva is
+          // about to pan with this very drag. Opening a marquee on top of it
+          // would end by committing an empty one: the tables move with the
+          // stage, so the pointer barely moves relative to them, and the box
+          // `endGesture` computes catches nothing — which clears the selection
+          // the reader held space to keep.
+          if (isPanOverride) {
+            return;
+          }
+
           // 1 is the middle button. Konva cannot be told which buttons drag,
           // so the stage is made draggable for the length of this gesture and
           // `endGesture` puts it back.
