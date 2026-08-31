@@ -43,6 +43,24 @@ const RelationEndGlyph = () => (
   </svg>
 );
 
+/** The rectangle a drag draws over the canvas in select mode. */
+const MarqueeGlyph = () => (
+  <svg width="22" height="16" viewBox="0 0 22 16" aria-hidden="true">
+    <rect
+      x="1"
+      y="1"
+      width="20"
+      height="14"
+      rx="2"
+      fill="currentColor"
+      fillOpacity="0.15"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeDasharray="3 2"
+    />
+  </svg>
+);
+
 interface NotationRow {
   id: string;
   labelKey: MessageKey;
@@ -100,6 +118,15 @@ const NOTATION: NotationRow[] = [
     sample: (
       <span className="text-accent">
         <RelationEndGlyph />
+      </span>
+    ),
+  },
+  {
+    id: "marquee",
+    labelKey: "notation.marquee",
+    sample: (
+      <span className="text-accent">
+        <MarqueeGlyph />
       </span>
     ),
   },

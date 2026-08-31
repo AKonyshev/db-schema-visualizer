@@ -5,6 +5,10 @@ import { type MessageKey } from "../messages";
 // relying on the terminology here. Corrections are welcome.
 export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "action.autoArrange": "自动布局",
+  "action.interactionMode.pan": "拖动可平移画布",
+  "action.interactionMode.pan.compact": "平移",
+  "action.interactionMode.select": "拖动可框选表",
+  "action.interactionMode.select.compact": "框选",
   "action.detailLevel": "显示级别",
   "action.detailLevel.full": "全部列",
   "action.detailLevel.header": "仅表头",
@@ -61,6 +65,7 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "notation.tableColor": "表的颜色：来自模型，或由表名推导",
   "notation.toggleRelations": "隐藏或显示该表的关系",
   "notation.relationEnd": "跳转到关系的另一端",
+  "notation.marquee": "框选模式下，在空白处拖动可选中表；按住 Shift 可追加选择",
   "embed.noTablesLeft": "此架构中没有找到任何指定的表",
   "embed.notFound": "未找到架构",
   "embed.srcInvalid": "架构路径无效",

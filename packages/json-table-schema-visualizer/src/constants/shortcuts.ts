@@ -37,6 +37,12 @@ export const SHORTCUTS = [
     executable: true,
   },
   {
+    id: "interactionMode",
+    key: "v",
+    labelKey: "action.interactionMode.select",
+    executable: true,
+  },
+  {
     id: "autoArrange",
     key: "l",
     labelKey: "action.autoArrange",

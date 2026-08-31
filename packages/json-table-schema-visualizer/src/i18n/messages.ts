@@ -2,6 +2,10 @@
 // key here makes it a compile error in every other locale until translated.
 export const MESSAGES_EN = {
   "action.autoArrange": "Auto-arrange",
+  "action.interactionMode.pan": "Drag moves the canvas",
+  "action.interactionMode.pan.compact": "Pan",
+  "action.interactionMode.select": "Drag selects tables",
+  "action.interactionMode.select.compact": "Select",
   "action.detailLevel": "Detail level",
   "action.detailLevel.full": "Full details",
   "action.detailLevel.header": "Header only",
@@ -60,6 +64,8 @@ export const MESSAGES_EN = {
     "The table's colour, set in the model or taken from its name",
   "notation.toggleRelations": "Hide or show this table's relations",
   "notation.relationEnd": "Jump to the other end of the relation",
+  "notation.marquee":
+    "In select mode, drag on empty canvas to catch tables; Shift adds to the selection",
   "embed.noTablesLeft": "None of the named tables are in this schema",
   "embed.notFound": "Schema not found",
   "embed.srcInvalid": "Invalid schema path",

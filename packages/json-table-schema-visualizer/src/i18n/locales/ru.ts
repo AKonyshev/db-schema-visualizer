@@ -4,6 +4,10 @@ import { type MessageKey } from "../messages";
 // until it is translated.
 export const MESSAGES_RU: Record<MessageKey, string> = {
   "action.autoArrange": "Авто-раскладка",
+  "action.interactionMode.pan": "Протаскивание двигает холст",
+  "action.interactionMode.pan.compact": "Панорама",
+  "action.interactionMode.select": "Протаскивание выделяет таблицы",
+  "action.interactionMode.select.compact": "Выделение",
   "action.detailLevel": "Уровень детализации",
   "action.detailLevel.full": "Все колонки",
   "action.detailLevel.header": "Только заголовок",
@@ -62,6 +66,8 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
     "Цвет таблицы: из модели, а без него — производный от имени",
   "notation.toggleRelations": "Скрыть или показать связи таблицы",
   "notation.relationEnd": "Перейти к другому концу связи",
+  "notation.marquee":
+    "В режиме выделения протаскивание по пустому месту ловит таблицы; Shift добавляет к выделению",
   "embed.noTablesLeft": "Ни одна из указанных таблиц не найдена в этой схеме",
   "embed.notFound": "Модель не найдена",
   "embed.srcInvalid": "Недопустимый путь к модели",

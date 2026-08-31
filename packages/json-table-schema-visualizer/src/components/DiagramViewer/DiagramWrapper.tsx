@@ -44,6 +44,7 @@ import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 import { computeWheelZoom } from "@/utils/computeWheelZoom";
 import { computeDiagramBounds } from "@/utils/diagramBounds";
 import { viewportStore } from "@/stores/viewportStore";
+import { toggleInteractionMode } from "@/stores/interactionModeStore";
 
 interface DiagramWrapperProps {
   connections: ReactNode;
@@ -436,6 +437,7 @@ const DiagramWrapper = ({
       },
       detailLevel: nextDetailLevel,
       autoArrange: resetPositions,
+      interactionMode: toggleInteractionMode,
       fitToView,
       legend: () => {
         setIsLegendOpen(true);
