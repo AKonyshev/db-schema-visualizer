@@ -1,16 +1,18 @@
-import {
-  expect,
-  test,
-  type Locator,
-  type Page,
-  type Request,
-} from "@playwright/test";
+import { expect, test, type Request } from "@playwright/test";
 
 // A relative path rather than the package name the rest of this package uses:
 // Playwright's loader resolves the workspace symlink but will not add the `.ts`
 // extension across it, and this file is compiled by Playwright rather than Vite.
 import { MESSAGES_EN } from "../../json-table-schema-visualizer/src/i18n/messages";
-import { SELECTED_OUTLINE_NAME } from "../../json-table-schema-visualizer/src/constants/selection";
+
+import {
+  canvasOf,
+  pointOnTable,
+  selectEverything,
+  selectedTableCount,
+  stageIsDraggable,
+  tablePositions,
+} from "./diagram";
 
 // Everything the page is allowed to talk to. `blob:` and `data:` are the site
 // handing bytes to itself — the download path builds a blob URL on purpose —
@@ -28,53 +30,6 @@ const isSameOrigin = (request: Request, origin: string): boolean => {
   } catch {
     return false;
   }
-};
-
-/**
- * How many tables are drawn as selected.
- *
- * Counted off the canvas, because a canvas has no DOM to query and the
- * selection store is not on `window`. By the node's name rather than by how it
- * is drawn: a count built on stroke width matches the hidden-relations outline
- * and the search highlight too, and answers the same number whatever is
- * selected — which is an assertion that passes for ever.
- */
-const selectedTableCount = async (page: Page): Promise<number> =>
-  await page.evaluate(
-    (name) => window.Konva?.stages[0]?.find(`.${name}`).length ?? 0,
-    SELECTED_OUTLINE_NAME,
-  );
-
-const stageIsDraggable = async (page: Page): Promise<boolean> =>
-  await page.evaluate(() => window.Konva?.stages[0]?.draggable() ?? false);
-
-/** The diagram canvas, and a point on it that no table covers. */
-const canvasOf = (page: Page): Locator =>
-  page.locator(".konvajs-content canvas").first();
-
-/**
- * Opens the site in select mode with every table caught by a marquee.
- *
- * The click first is not ceremony: the page opens with the editor holding the
- * focus, and a shortcut is ignored while a text field has it.
- */
-const selectEverything = async (page: Page): Promise<void> => {
-  await page.goto("/");
-  await expect(canvasOf(page)).toBeVisible();
-
-  const box = await canvasOf(page).boundingBox();
-  const left = box?.x ?? 0;
-  const top = box?.y ?? 0;
-  const right = left + (box?.width ?? 0);
-  const bottom = top + (box?.height ?? 0);
-
-  await page.mouse.click(right - 20, bottom - 20);
-  await page.keyboard.press("v");
-
-  await page.mouse.move(left + 2, top + 2);
-  await page.mouse.down();
-  await page.mouse.move(right - 2, bottom - 2, { steps: 10 });
-  await page.mouse.up();
 };
 
 test("the built site works, and asks the network for nothing", async ({
@@ -155,79 +110,22 @@ test("the built site works, and asks the network for nothing", async ({
 test("a marquee selects several tables and drags them together", async ({
   page,
 }) => {
-  await page.goto("/");
+  await selectEverything(page);
 
-  const canvas = page.locator(".konvajs-content canvas").first();
-  await expect(canvas).toBeVisible();
-
-  const positions = async (): Promise<
-    Record<string, { x: number; y: number }>
-  > =>
-    await page.evaluate(() => {
-      const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
-        name: () => string;
-        x: () => number;
-        y: () => number;
-      }>;
-
-      return Object.fromEntries(
-        groups
-          .filter((group) => String(group.name()).startsWith("table-"))
-          .map((group) => [group.name(), { x: group.x(), y: group.y() }]),
-      );
-    });
-
-  const before = await positions();
+  const before = await tablePositions(page);
   const names = Object.keys(before);
   expect(names.length).toBeGreaterThan(1);
+  // The marquee covered the canvas, so it should have caught all of them.
+  expect(await selectedTableCount(page)).toBe(names.length);
 
-  const box = await canvas.boundingBox();
-  const left = box?.x ?? 0;
-  const top = box?.y ?? 0;
-  const right = left + (box?.width ?? 0);
-  const bottom = top + (box?.height ?? 0);
+  const grip = await pointOnTable(page, names[0]);
 
-  // Into the canvas first: the shortcut is ignored while a text field has the
-  // focus, and the page opens with the editor holding it.
-  await page.mouse.click(right - 20, bottom - 20);
-  await page.keyboard.press("v");
-
-  // A marquee over the whole canvas catches every table.
-  await page.mouse.move(left + 2, top + 2);
+  await page.mouse.move(grip.x, grip.y);
   await page.mouse.down();
-  await page.mouse.move(right - 2, bottom - 2, { steps: 10 });
+  await page.mouse.move(grip.x + 80, grip.y + 40, { steps: 10 });
   await page.mouse.up();
 
-  // Take hold of one table by its header. `boundingBox` is the canvas, so the
-  // point has to be computed: table coordinates sit inside a Group offset by
-  // the diagram padding, and the stage transform turns the result into pixels.
-  const stage = await page.evaluate(() => {
-    const konvaStage = window.Konva?.stages[0] as unknown as {
-      scaleX: () => number;
-      x: () => number;
-      y: () => number;
-    };
-
-    return {
-      scale: konvaStage.scaleX(),
-      x: konvaStage.x(),
-      y: konvaStage.y(),
-    };
-  });
-
-  const first = before[names[0]];
-  const DIAGRAM_PADDING = 60;
-  const screenX =
-    left + (first.x + DIAGRAM_PADDING) * stage.scale + stage.x + 30;
-  const screenY =
-    top + (first.y + DIAGRAM_PADDING) * stage.scale + stage.y + 15;
-
-  await page.mouse.move(screenX, screenY);
-  await page.mouse.down();
-  await page.mouse.move(screenX + 80, screenY + 40, { steps: 10 });
-  await page.mouse.up();
-
-  const after = await positions();
+  const after = await tablePositions(page);
 
   const deltas = names.map((name) => ({
     x: after[name].x - before[name].x,
@@ -251,7 +149,7 @@ test("a marquee selects several tables and drags them together", async ({
   await page.reload();
   await expect(canvasOf(page)).toBeVisible();
 
-  const restored = await positions();
+  const restored = await tablePositions(page);
 
   for (const name of names) {
     expect(restored[name].x).toBeCloseTo(after[name].x, 0);
@@ -335,52 +233,18 @@ test("shift adds one table to the selection and takes it away again", async ({
   page,
 }) => {
   await selectEverything(page);
-  const all = await selectedTableCount(page);
-  expect(all).toBeGreaterThan(1);
+  expect(await selectedTableCount(page)).toBeGreaterThan(1);
 
-  const first = await page.evaluate(() => {
-    const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
-      name: () => string;
-      x: () => number;
-      y: () => number;
-    }>;
-    const table = groups.find((group) =>
-      String(group.name()).startsWith("table-"),
-    );
-    const stage = window.Konva?.stages[0];
-
-    return {
-      x: table?.x() ?? 0,
-      y: table?.y() ?? 0,
-      scale: stage?.scaleX() ?? 1,
-      stageX: stage?.x() ?? 0,
-      stageY: stage?.y() ?? 0,
-    };
-  });
-
-  const box = await canvasOf(page).boundingBox();
-  // Table coordinates sit inside a Group offset by the diagram padding, and the
-  // stage transform turns the result into pixels. The offsets land the pointer
-  // inside the table's header.
-  const DIAGRAM_PADDING = 60;
-  const x =
-    (box?.x ?? 0) +
-    (first.x + DIAGRAM_PADDING) * first.scale +
-    first.stageX +
-    30;
-  const y =
-    (box?.y ?? 0) +
-    (first.y + DIAGRAM_PADDING) * first.scale +
-    first.stageY +
-    15;
+  const names = Object.keys(await tablePositions(page));
+  const grip = await pointOnTable(page, names[0]);
 
   // A plain click narrows the selection to the one table under it.
-  await page.mouse.click(x, y);
+  await page.mouse.click(grip.x, grip.y);
   await expect.poll(async () => await selectedTableCount(page)).toBe(1);
 
   // Shift takes that one back out, leaving nothing selected.
   await page.keyboard.down("Shift");
-  await page.mouse.click(x, y);
+  await page.mouse.click(grip.x, grip.y);
   await page.keyboard.up("Shift");
 
   await expect.poll(async () => await selectedTableCount(page)).toBe(0);

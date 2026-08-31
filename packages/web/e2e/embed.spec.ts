@@ -6,6 +6,8 @@ import {
   type Request,
 } from "@playwright/test";
 
+import { canvasOf } from "./diagram";
+
 // Three tables and two relations, so that a filter naming two of them has
 // something to leave out — both a table and the edge that reached it.
 const ACL = `
@@ -118,9 +120,6 @@ const isSameOrigin = (request: Request, origin: string): boolean => {
     return false;
   }
 };
-
-const canvasOf = (page: Page): Locator =>
-  page.locator(".konvajs-content canvas").first();
 
 const stageScale = async (page: Page): Promise<number> =>
   await page.evaluate(() => window.Konva?.stages[0]?.scaleX() ?? 0);
