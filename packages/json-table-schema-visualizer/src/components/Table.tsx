@@ -30,6 +30,12 @@ import { computeFieldMarks } from "@/utils/fieldMarks";
 import { useForeignKeys } from "@/hooks/foreignKeys";
 import { useIsSelectMode, useIsTableSelected } from "@/hooks/selection";
 import { selectionStore } from "@/stores/selectionStore";
+import {
+  beginGroupDrag,
+  endGroupDrag,
+  moveGroupDrag,
+  subscribeToGroupDrag,
+} from "@/stores/groupDrag";
 import { drawnTableHeight } from "@/utils/drawnTableHeight";
 
 interface TableProps extends JSONTableTable {
@@ -126,10 +132,51 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
     tableCoordsStore.setFullCoords(name, tableCoords);
   };
 
+  const handleOnDragStart = () => {
+    // Dragging a table the reader has not selected is them changing their mind
+    // about what they are working on: the table they took hold of becomes the
+    // selection, and the group they had is let go. Without this the outlines
+    // would go on claiming a group that is not the one moving.
+    if (isSelectMode && !selectionStore.isSelected(name)) {
+      selectionStore.setSelected(new Set([name]));
+    }
+
+    beginGroupDrag(name);
+  };
+
   const handleOnDrag = (event: KonvaEventObject<DragEvent>) => {
     event.currentTarget.moveToTop();
-    propagateCoordinates(event.target as Konva.Group);
+
+    const node = event.target as Konva.Group;
+
+    propagateCoordinates(node);
+    moveGroupDrag(name, { x: node.x(), y: node.y() });
   };
+
+  const handleOnDragEnd = () => {
+    endGroupDrag();
+  };
+
+  useEffect(() => {
+    // No dependency array: `propagateCoordinates` closes over the drawn width
+    // and height, which change with the detail level, and a stale copy would
+    // write the wrong box into the store. Re-subscribing is one Set operation.
+    return subscribeToGroupDrag(({ positions }) => {
+      const position = positions.get(name);
+      const node = tableRef.current;
+
+      if (position === undefined || node === null) {
+        return;
+      }
+
+      node.x(position.x);
+      node.y(position.y);
+      // The same call the table's own drag makes, so relation anchors and the
+      // coordinate store follow a group move exactly as they follow a single
+      // one.
+      propagateCoordinates(node);
+    });
+  });
 
   const handleOnHover = () => {
     setHoveredTableName(name);
@@ -171,7 +218,9 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
       name={`table-${name.replace(/\s+/g, "_")}`}
       ref={tableRef}
       draggable
+      onDragStart={handleOnDragStart}
       onDragMove={handleOnDrag}
+      onDragEnd={handleOnDragEnd}
       width={tablePreferredWidth}
       height={tableHeight}
       onMouseEnter={handleOnHover}
