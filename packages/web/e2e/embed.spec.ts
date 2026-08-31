@@ -122,17 +122,6 @@ const isSameOrigin = (request: Request, origin: string): boolean => {
 const canvasOf = (page: Page): Locator =>
   page.locator(".konvajs-content canvas").first();
 
-// Konva publishes its stages on `window.Konva`; nothing in the application puts
-// them there. Reaching for them is what lets a test say how far the diagram is
-// zoomed, which is not a thing a screenshot of a canvas can be asked.
-declare global {
-  interface Window {
-    Konva?: {
-      stages: Array<{ scaleX: () => number; find: (s: string) => unknown[] }>;
-    };
-  }
-}
-
 const stageScale = async (page: Page): Promise<number> =>
   await page.evaluate(() => window.Konva?.stages[0]?.scaleX() ?? 0);
 

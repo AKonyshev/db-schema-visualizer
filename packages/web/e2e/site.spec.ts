@@ -9,10 +9,6 @@ import { MESSAGES_EN } from "../../json-table-schema-visualizer/src/i18n/message
 // handing bytes to itself — the download path builds a blob URL on purpose —
 // and neither leaves the machine.
 //
-// Compared as an origin rather than as a string prefix: the port is assigned
-// per run, and `http://127.0.0.1:4173` is a prefix of `http://127.0.0.1:41730`,
-// so a prefix test would wave through a request to a different server on this
-// very machine — the closest thing to a leak the test can see.
 const isSameOrigin = (request: Request, origin: string): boolean => {
   const url = request.url();
 
@@ -100,4 +96,96 @@ test("the built site works, and asks the network for nothing", async ({
   await expect(page.getByRole("button", { name: /smoke_test/ })).toBeVisible();
 
   expect(offOrigin).toEqual([]);
+});
+
+test("a marquee selects several tables and drags them together", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const canvas = page.locator(".konvajs-content canvas").first();
+  await expect(canvas).toBeVisible();
+
+  const positions = async (): Promise<
+    Record<string, { x: number; y: number }>
+  > =>
+    await page.evaluate(() => {
+      const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
+        name: () => string;
+        x: () => number;
+        y: () => number;
+      }>;
+
+      return Object.fromEntries(
+        groups
+          .filter((group) => String(group.name()).startsWith("table-"))
+          .map((group) => [group.name(), { x: group.x(), y: group.y() }]),
+      );
+    });
+
+  const before = await positions();
+  const names = Object.keys(before);
+  expect(names.length).toBeGreaterThan(1);
+
+  const box = await canvas.boundingBox();
+  const left = box?.x ?? 0;
+  const top = box?.y ?? 0;
+  const right = left + (box?.width ?? 0);
+  const bottom = top + (box?.height ?? 0);
+
+  // Into the canvas first: the shortcut is ignored while a text field has the
+  // focus, and the page opens with the editor holding it.
+  await page.mouse.click(right - 20, bottom - 20);
+  await page.keyboard.press("v");
+
+  // A marquee over the whole canvas catches every table.
+  await page.mouse.move(left + 2, top + 2);
+  await page.mouse.down();
+  await page.mouse.move(right - 2, bottom - 2, { steps: 10 });
+  await page.mouse.up();
+
+  // Take hold of one table by its header. `boundingBox` is the canvas, so the
+  // point has to be computed: table coordinates sit inside a Group offset by
+  // the diagram padding, and the stage transform turns the result into pixels.
+  const stage = await page.evaluate(() => {
+    const konvaStage = window.Konva?.stages[0] as unknown as {
+      scaleX: () => number;
+      x: () => number;
+      y: () => number;
+    };
+
+    return {
+      scale: konvaStage.scaleX(),
+      x: konvaStage.x(),
+      y: konvaStage.y(),
+    };
+  });
+
+  const first = before[names[0]];
+  const DIAGRAM_PADDING = 60;
+  const screenX =
+    left + (first.x + DIAGRAM_PADDING) * stage.scale + stage.x + 30;
+  const screenY =
+    top + (first.y + DIAGRAM_PADDING) * stage.scale + stage.y + 15;
+
+  await page.mouse.move(screenX, screenY);
+  await page.mouse.down();
+  await page.mouse.move(screenX + 80, screenY + 40, { steps: 10 });
+  await page.mouse.up();
+
+  const after = await positions();
+
+  const deltas = names.map((name) => ({
+    x: after[name].x - before[name].x,
+    y: after[name].y - before[name].y,
+  }));
+
+  // Something moved, and every table moved by the same amount: that is what
+  // makes it a group move rather than one table being dragged.
+  expect(Math.abs(deltas[0].x) + Math.abs(deltas[0].y)).toBeGreaterThan(0);
+
+  for (const delta of deltas) {
+    expect(delta.x).toBeCloseTo(deltas[0].x, 1);
+    expect(delta.y).toBeCloseTo(deltas[0].y, 1);
+  }
 });
