@@ -126,10 +126,6 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     eventEmitter.emit(TableCoordsStore.RESET_POS_EVENT_NAME, tablesPos);
   }
 
-  public getCurrentStoreValue(): Map<string, XYWHPosition> {
-    return this.tableCoords;
-  }
-
   public saveCurrentStore(): void {
     const storeValue = Array.from(this.tableCoords);
     this.persist(this.currentStoreKey, storeValue);

@@ -33,3 +33,49 @@ export const isTypingTarget = (target: TypingTarget | null): boolean => {
 
   return target.role != null && TEXT_ENTRY_ROLES.has(target.role);
 };
+
+// What an element uses the space bar for when it is not a text field: buttons,
+// checkboxes and their ARIA equivalents are activated by it, and a link is
+// scrolled past by it.
+const SPACE_ACTIVATED_ROLES = new Set([
+  "button",
+  "checkbox",
+  "radio",
+  "switch",
+  "menuitem",
+  "menuitemcheckbox",
+  "menuitemradio",
+  "option",
+  "tab",
+]);
+
+const SPACE_ACTIVATED_TAGS = new Set(["BUTTON", "INPUT", "SELECT", "TEXTAREA"]);
+
+/**
+ * Whether the space bar already belongs to whatever holds focus.
+ *
+ * Its own predicate rather than a second reading of `isTypingTarget`, because
+ * space is not typing: a focused button is not a place text goes, and it still
+ * must not have the key taken from it. The diagram claims space to pan while
+ * the reader is choosing tables, and claiming it from a focused toolbar button
+ * would leave that button unusable by keyboard.
+ */
+export const isSpaceActivatedTarget = (
+  target: TypingTarget | null,
+): boolean => {
+  if (target == null) {
+    return false;
+  }
+
+  if (isTypingTarget(target)) {
+    return true;
+  }
+
+  const tag = target.tagName?.toUpperCase();
+
+  if (tag !== undefined && SPACE_ACTIVATED_TAGS.has(tag)) {
+    return true;
+  }
+
+  return target.role != null && SPACE_ACTIVATED_ROLES.has(target.role);
+};

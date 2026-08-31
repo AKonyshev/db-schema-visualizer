@@ -47,7 +47,11 @@ import { computeDiagramBounds } from "@/utils/diagramBounds";
 import { viewportStore } from "@/stores/viewportStore";
 import { toggleInteractionMode } from "@/stores/interactionModeStore";
 import { useIsSelectMode } from "@/hooks/selection";
-import { isTypingTarget, type TypingTarget } from "@/utils/isTypingTarget";
+import {
+  isSpaceActivatedTarget,
+  isTypingTarget,
+  type TypingTarget,
+} from "@/utils/isTypingTarget";
 import { selectionStore } from "@/stores/selectionStore";
 import {
   normalizeMarquee,
@@ -171,7 +175,7 @@ const DiagramWrapper = ({
     height: number;
   } | null =>
     computeDiagramBounds(
-      tableCoordsStore.getCurrentStoreValue(),
+      tableCoordsStore.getCurrentStore(),
       tablesMeta,
       detailLevelRef.current,
     );
@@ -372,7 +376,14 @@ const DiagramWrapper = ({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== "Escape" || selectionStore.getSelected().size === 0) {
+      if (
+        event.key !== "Escape" ||
+        selectionStore.getSelected().size === 0 ||
+        // The one definition of "the reader is busy with this key" — see
+        // `isTypingTarget`. Escape in the editor beside the diagram means
+        // "dismiss what you are showing me", not "drop my selection".
+        isTypingTarget(event.target as TypingTarget | null)
+      ) {
         return;
       }
 
@@ -419,7 +430,7 @@ const DiagramWrapper = ({
     const onKeyDown = (event: KeyboardEvent): void => {
       if (
         event.code !== "Space" ||
-        isTypingTarget(event.target as TypingTarget | null)
+        isSpaceActivatedTarget(event.target as TypingTarget | null)
       ) {
         return;
       }
@@ -489,7 +500,31 @@ const DiagramWrapper = ({
     });
   };
 
-  const handleMarqueeEnd = (): void => {
+  /** What the stage's `draggable` prop says it should be right now. */
+  const stageIsDraggable = !isSelectMode || isPanOverride;
+
+  /**
+   * Ends whatever gesture was in flight, whichever way it ended.
+   *
+   * One function for both gestures and bound to every way a drag can stop —
+   * the button coming up, the pointer leaving the canvas, the window losing
+   * focus. A middle-button pan released outside the canvas used to send no
+   * mouse-up at all, so its flag stayed raised and the stage stayed draggable:
+   * select mode silently became pan mode, and the next drag both drew a marquee
+   * and moved the canvas.
+   *
+   * `draggable` is restored to what the prop says rather than to `false`.
+   * Konva is being written to directly here, and React will not re-apply a prop
+   * whose value has not changed — so hardcoding `false` left the stage
+   * undraggable while the reader was still holding space for it.
+   */
+  const endGesture = (): void => {
+    if (isMiddleButtonDownRef.current) {
+      isMiddleButtonDownRef.current = false;
+      stageRef.current?.stopDrag();
+      stageRef.current?.draggable(stageIsDraggable);
+    }
+
     const start = marqueeStartRef.current;
 
     if (start === null) {
@@ -519,6 +554,31 @@ const DiagramWrapper = ({
     marqueeStartRef.current = null;
     setMarquee(null);
   };
+
+  // Bound once, and read at the moment the gesture ends, so the listener below
+  // never needs re-attaching.
+  const endGestureRef = useRef(endGesture);
+  endGestureRef.current = endGesture;
+
+  useEffect(() => {
+    // On the window rather than on the stage, which is the whole point: Konva
+    // captures the pointer for the length of a stage drag, so the stage hears
+    // no `mouseleave` and — if the button comes up outside the canvas — no
+    // `mouseup` either. Listening here is the only way to be told the gesture
+    // is over wherever it ended. `blur` covers the reader switching apps
+    // mid-drag, which sends no pointer event at all.
+    const onEnd = (): void => {
+      endGestureRef.current();
+    };
+
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("blur", onEnd);
+
+    return () => {
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("blur", onEnd);
+    };
+  }, []);
 
   /**
    * A fresh arrangement gets a fresh view.
@@ -781,7 +841,9 @@ const DiagramWrapper = ({
             return;
           }
 
-          // 1 is the middle button.
+          // 1 is the middle button. Konva cannot be told which buttons drag,
+          // so the stage is made draggable for the length of this gesture and
+          // `endGesture` puts it back.
           if (event.evt.button === 1) {
             isMiddleButtonDownRef.current = true;
             stageRef.current?.draggable(true);
@@ -792,24 +854,6 @@ const DiagramWrapper = ({
           handleMarqueeStart(event);
         }}
         onMouseMove={isSelectMode ? handleMarqueeMove : undefined}
-        onMouseUp={
-          isSelectMode
-            ? () => {
-                if (isMiddleButtonDownRef.current) {
-                  isMiddleButtonDownRef.current = false;
-                  stageRef.current?.stopDrag();
-                  stageRef.current?.draggable(false);
-                  return;
-                }
-
-                handleMarqueeEnd();
-              }
-            : undefined
-        }
-        // Closes the gesture when the pointer leaves the canvas mid-drag;
-        // without it the marquee stays on screen and the next click finishes a
-        // drag the reader abandoned.
-        onMouseLeave={isSelectMode ? handleMarqueeEnd : undefined}
         onTouchStart={handleStagePointerDown}
         width={viewWidth}
         height={viewHeight}
