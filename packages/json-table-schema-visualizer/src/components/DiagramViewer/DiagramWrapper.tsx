@@ -47,6 +47,7 @@ import { computeDiagramBounds } from "@/utils/diagramBounds";
 import { viewportStore } from "@/stores/viewportStore";
 import { toggleInteractionMode } from "@/stores/interactionModeStore";
 import { useIsSelectMode } from "@/hooks/selection";
+import { isTypingTarget, type TypingTarget } from "@/utils/isTypingTarget";
 import { selectionStore } from "@/stores/selectionStore";
 import {
   normalizeMarquee,
@@ -127,6 +128,11 @@ const DiagramWrapper = ({
     y: number;
     additive: boolean;
   } | null>(null);
+  // Konva has no filter for which mouse button starts a drag, so panning inside
+  // select mode is the stage being made draggable for the length of one gesture
+  // and put back afterwards.
+  const [isPanOverride, setIsPanOverride] = useState(false);
+  const isMiddleButtonDownRef = useRef(false);
   const { height: viewHeight, width: viewWidth } = useElementSize(containerRef);
   const { scrollDirection } = useScrollDirectionContext();
   // Konva is written to directly on pan and zoom, so this is the only thing
@@ -403,6 +409,48 @@ const DiagramWrapper = ({
       // leave it mid-task.
       selectionStore.clear();
     }
+  }, [isSelectMode]);
+
+  useEffect(() => {
+    if (!isSelectMode) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (
+        event.code !== "Space" ||
+        isTypingTarget(event.target as TypingTarget | null)
+      ) {
+        return;
+      }
+
+      // Otherwise the page around an embedded frame scrolls a screen down while
+      // the reader is holding the key to pan.
+      event.preventDefault();
+      setIsPanOverride(true);
+    };
+
+    const onKeyUp = (event: KeyboardEvent): void => {
+      if (event.code === "Space") {
+        setIsPanOverride(false);
+      }
+    };
+
+    // A reader who switches windows mid-pan never sends the key-up.
+    const onBlur = (): void => {
+      setIsPanOverride(false);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+      setIsPanOverride(false);
+    };
   }, [isSelectMode]);
 
   const pointerInDiagram = (): { x: number; y: number } | null =>
@@ -708,9 +756,19 @@ const DiagramWrapper = ({
     // page, and `overflow-hidden` so a stage mid-resize cannot widen the
     // document. Both matter only once the diagram shares a page with something
     // else, which is exactly when they stop being cosmetic.
-    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+    <div
+      ref={containerRef}
+      // The reader has to be told the mode is temporarily something else, or
+      // holding space looks like the marquee has broken. The middle button
+      // needs no cursor of its own: `useCursorChanger("grabbing")` is already
+      // wired to the stage's drag events, which a middle-button pan goes
+      // through.
+      className={`relative h-full w-full overflow-hidden ${
+        isSelectMode && isPanOverride ? "cursor-grab" : ""
+      }`}
+    >
       <Stage
-        draggable={!isSelectMode}
+        draggable={!isSelectMode || isPanOverride}
         ref={stageRef}
         onDragStart={onGrabbing}
         onDragMove={publishViewport}
@@ -719,12 +777,35 @@ const DiagramWrapper = ({
         onMouseDown={(event) => {
           handleStagePointerDown(event);
 
-          if (isSelectMode) {
-            handleMarqueeStart(event);
+          if (!isSelectMode) {
+            return;
           }
+
+          // 1 is the middle button.
+          if (event.evt.button === 1) {
+            isMiddleButtonDownRef.current = true;
+            stageRef.current?.draggable(true);
+            stageRef.current?.startDrag();
+            return;
+          }
+
+          handleMarqueeStart(event);
         }}
         onMouseMove={isSelectMode ? handleMarqueeMove : undefined}
-        onMouseUp={isSelectMode ? handleMarqueeEnd : undefined}
+        onMouseUp={
+          isSelectMode
+            ? () => {
+                if (isMiddleButtonDownRef.current) {
+                  isMiddleButtonDownRef.current = false;
+                  stageRef.current?.stopDrag();
+                  stageRef.current?.draggable(false);
+                  return;
+                }
+
+                handleMarqueeEnd();
+              }
+            : undefined
+        }
         // Closes the gesture when the pointer leaves the canvas mid-drag;
         // without it the marquee stays on screen and the next click finishes a
         // drag the reader abandoned.
