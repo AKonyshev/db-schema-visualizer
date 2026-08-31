@@ -20,10 +20,25 @@ export const PADDINGS = {
 };
 export const TABLE_FIELD_TYPE_PADDING = PADDINGS.sm;
 
+/**
+ * The `PK` / `FK` / `UK` pill drawn at the right of a column line.
+ *
+ * `FONT_SIZES.badge` is smaller than the column text on purpose: a badge is an
+ * aside about the column, not a second name for it.
+ */
+export const BADGE = {
+  paddingX: 4,
+  /** Between two badges, and between the type and the first of them. */
+  gap: 4,
+  height: 15,
+  radius: 3,
+};
+
 export const FONT_SIZES = {
   md: 15,
   lg: 18,
   tableTitle: 18,
+  badge: 10,
 };
 
 export const FIELD_DETAILS_CARET = {

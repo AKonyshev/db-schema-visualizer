@@ -1,4 +1,5 @@
 import { computeTableDimension } from "../computeTableDimension";
+import { computeForeignKeyFields } from "../foreignKeys";
 
 import { getLayoutEdges } from "./getLayoutEdges";
 import { layoutAroundHubs } from "./hubLayout";
@@ -46,8 +47,16 @@ const computeTablesPositions = (
     return new Map<string, XYWHPosition>();
   }
 
+  // Once for the diagram rather than once per table: it is a fact about the
+  // relations, and every box is measured against the same set.
+  const foreignKeys = computeForeignKeyFields(tables, refs);
+
   const boxes = tables.map((table) => {
-    const { width, height } = computeTableDimension(table, detailLevel);
+    const { width, height } = computeTableDimension(
+      table,
+      detailLevel,
+      foreignKeys,
+    );
 
     return { name: table.name, w: width, h: height };
   });

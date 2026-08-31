@@ -406,6 +406,41 @@ test("a hidden search leaves the reader's own find alone", async ({ page }) => {
   ).toBeFocused();
 });
 
+test("the legend says what the marks on the diagram mean, and fits the frame", async ({
+  page,
+}) => {
+  await serveModel(page);
+  // The shape the frame is really used in: a few hundred pixels of a page of
+  // prose. The legend has two sections now and is taller than that.
+  await page.setViewportSize({ width: 900, height: 420 });
+  await page.goto("/embed.html?src=acl.dbml");
+  await expect(canvasOf(page)).toBeVisible();
+
+  // Bound to the document, so it works while the toolbar is hidden.
+  await page.keyboard.press("?");
+
+  const notation = page.getByText("Required: cannot be null");
+  await expect(notation).toBeVisible();
+  await expect(page.getByText("Foreign key")).toBeVisible();
+  // Both halves: the notation section was added beside the shortcuts, not over
+  // them.
+  await expect(page.getByRole("heading", { name: "Notation" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Keyboard shortcuts" }),
+  ).toBeVisible();
+
+  const dialog = page.locator("div.overflow-y-auto").first();
+  const box = await dialog.boundingBox();
+
+  // Inside the frame on both edges. An overflowing dialog looks fine at the top
+  // and hides whichever section the reader scrolled down for.
+  expect(box?.y ?? -1).toBeGreaterThanOrEqual(0);
+  expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(420);
+
+  await page.keyboard.press("Escape");
+  await expect(notation).toBeHidden();
+});
+
 test("a name that is in no table is said out loud", async ({ page }) => {
   await serveModel(page);
   await page.goto("/embed.html?src=acl.dbml&tables=analisys");

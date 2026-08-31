@@ -1,6 +1,6 @@
 import { type JSONTableTable } from "shared/types/tableSchema";
 
-import { getTableLinesText } from "./tableWComputation/getTableLinesText";
+import { computeTableLineWidths } from "./tableWComputation/computeTableLineWidths";
 import { computeTablePreferredWidth } from "./tableWComputation/computeTablePreferredWidth";
 import { drawnTableHeight } from "./drawnTableHeight";
 
@@ -19,13 +19,17 @@ import { type Dimension } from "@/types/dimension";
  * The width does not move with the level. A table is drawn as wide as its
  * widest column line whether or not the lines are showing, so that a table does
  * not change width under the reader for a reason they cannot see.
+ *
+ * `foreignKeys` is what decides whether a line carries an `FK` badge, and so
+ * how wide it is; see `computeForeignKeyFields`.
  */
 export const computeTableDimension = (
   table: JSONTableTable,
   detailLevel: TableDetailLevel,
+  foreignKeys: ReadonlySet<string>,
 ): Dimension => {
-  const tableTexts = getTableLinesText(table.fields);
-  const width = computeTablePreferredWidth(tableTexts, table.name);
+  const lineWidths = computeTableLineWidths(table, foreignKeys);
+  const width = computeTablePreferredWidth(lineWidths, table.name);
 
   return { width, height: drawnTableHeight(table.fields, detailLevel) };
 };

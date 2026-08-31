@@ -1,4 +1,5 @@
 import { computeTableDimension } from "../computeTableDimension";
+import { computeForeignKeyFields } from "../foreignKeys";
 
 import { exampleData } from "@/fake/fakeJsonTables";
 import {
@@ -16,6 +17,14 @@ jest.mock("../computeTextSize", () => ({
   })),
 }));
 
+// The real set for this model, so the widths measured here are the widths the
+// diagram is drawn at — a table whose column carries an `FK` badge is wider
+// than the letters in it.
+const FOREIGN_KEYS = computeForeignKeyFields(
+  exampleData.tables,
+  exampleData.refs,
+);
+
 describe("compute table dimension", () => {
   test("measures a table as it will be drawn at full detail", () => {
     const table = exampleData.tables[0];
@@ -25,7 +34,9 @@ describe("compute table dimension", () => {
     const expectedHeight =
       TABLE_HEADER_HEIGHT + COLUMN_HEIGHT * table.fields.length + PADDINGS.sm;
 
-    expect(computeTableDimension(table, TableDetailLevel.FullDetails)).toEqual({
+    expect(
+      computeTableDimension(table, TableDetailLevel.FullDetails, FOREIGN_KEYS),
+    ).toEqual({
       width: TABLE_DEFAULT_MIN_WIDTH,
       height: expectedHeight,
     });
@@ -34,7 +45,9 @@ describe("compute table dimension", () => {
   test("measures a table by its header alone when that is all that is drawn", () => {
     const table = exampleData.tables[0];
 
-    expect(computeTableDimension(table, TableDetailLevel.HeaderOnly)).toEqual({
+    expect(
+      computeTableDimension(table, TableDetailLevel.HeaderOnly, FOREIGN_KEYS),
+    ).toEqual({
       // The width is the same: a table does not narrow because its columns are
       // hidden, so it does not shift under the reader for an invisible reason.
       width: TABLE_DEFAULT_MIN_WIDTH,

@@ -1,5 +1,6 @@
 import { Group, Rect } from "react-konva";
 import { useEffect, useMemo, useRef } from "react";
+import { computeRelationalFieldKey } from "shared/utils/computeRelationalFieldKey";
 
 import TableHeader from "./TableHeader";
 import Column from "./Column/Column";
@@ -25,7 +26,8 @@ import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 import { useAreRowsWorthDrawing } from "@/hooks/viewport";
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
-import computeFieldDisplayTypeName from "@/utils/getFieldType";
+import { computeFieldMarks } from "@/utils/fieldMarks";
+import { useForeignKeys } from "@/hooks/foreignKeys";
 import { drawnTableHeight } from "@/utils/drawnTableHeight";
 
 interface TableProps extends JSONTableTable {
@@ -39,6 +41,7 @@ interface TableProps extends JSONTableTable {
 }
 
 const Table = ({ fields, name, schemaColumns }: TableProps) => {
+  const foreignKeys = useForeignKeys();
   const themeColors = useThemeColors();
   // The dashed outline marks a table whose relations are hidden — the same
   // state the header icon toggles, so the two always agree.
@@ -185,7 +188,10 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
               colName={field.name}
               tableName={name}
               isEnum={field.type.is_enum}
-              type={computeFieldDisplayTypeName(field)}
+              marks={computeFieldMarks(
+                field,
+                foreignKeys.has(computeRelationalFieldKey(name, field.name)),
+              )}
               isPrimaryKey={field.pk}
               offsetY={index * COLUMN_HEIGHT}
               relationalTables={field.relational_tables}

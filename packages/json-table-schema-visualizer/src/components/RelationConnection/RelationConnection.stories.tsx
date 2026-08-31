@@ -28,7 +28,11 @@ export const RelationConnectionStory: Story = {
       tables={exampleData.tables}
       refs={exampleData.refs}
     >
-      <MainProviders enums={exampleData.enums} tables={exampleData.tables}>
+      <MainProviders
+        refs={exampleData.refs}
+        enums={exampleData.enums}
+        tables={exampleData.tables}
+      >
         <RelationConnection {...props} />
 
         {/* The example schema is small, so its rows are drawn at any zoom —

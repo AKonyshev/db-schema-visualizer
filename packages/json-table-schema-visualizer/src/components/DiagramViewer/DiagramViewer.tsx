@@ -53,7 +53,7 @@ const DiagramViewer = ({
   return (
     <TableLevelDetailProvider>
       <TablesPositionsProvider tables={tables} refs={refs}>
-        <MainProviders tables={tables} enums={enums}>
+        <MainProviders tables={tables} refs={refs} enums={enums}>
           <main
             // `h-full w-full` so the diagram below can measure a real box. This
             // element had no height of its own and did not need one while the

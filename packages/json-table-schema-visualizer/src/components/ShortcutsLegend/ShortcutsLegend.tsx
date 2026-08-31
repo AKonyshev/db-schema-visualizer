@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 
+import Notation from "./Notation";
+
 import { t } from "@/i18n/t";
 import { SHORTCUTS } from "@/constants/shortcuts";
 
@@ -29,28 +31,43 @@ const ShortcutsLegend = ({ onClose }: ShortcutsLegendProps) => {
       onClick={onClose}
     >
       <div
-        className="min-w-[320px] rounded-2xl border border-subtle bg-surface-raised p-6 shadow-2xl shadow-black/20"
+        // `max-h-full` and its scroll: this box is as tall as its two sections
+        // make it, and the space it has is the diagram's — which for the frame
+        // embedded in a documentation page is whatever height the author gave
+        // it. Without these the legend runs off both ends of a short frame and
+        // the reader cannot reach the half they opened it for.
+        className="flex max-h-full min-w-[320px] flex-col gap-5 overflow-y-auto rounded-2xl border border-subtle bg-surface-raised p-6 shadow-2xl shadow-black/20"
         onClick={(event) => {
           event.stopPropagation();
         }}
       >
-        <h2 className="mb-4 text-sm font-semibold text-content">
-          {t("legend.title")}
-        </h2>
+        <section>
+          <h2 className="mb-4 text-sm font-semibold text-content">
+            {t("legend.notation")}
+          </h2>
 
-        <ul className="flex flex-col gap-2">
-          {SHORTCUTS.map((shortcut) => (
-            <li
-              key={shortcut.id}
-              className="flex items-center justify-between gap-6 text-xs text-content"
-            >
-              <span>{t(shortcut.labelKey)}</span>
-              <kbd className="rounded-md border border-subtle bg-surface-sunken px-2 py-1 font-mono text-content-muted">
-                {shortcut.key}
-              </kbd>
-            </li>
-          ))}
-        </ul>
+          <Notation />
+        </section>
+
+        <section>
+          <h2 className="mb-4 text-sm font-semibold text-content">
+            {t("legend.shortcuts")}
+          </h2>
+
+          <ul className="flex flex-col gap-2">
+            {SHORTCUTS.map((shortcut) => (
+              <li
+                key={shortcut.id}
+                className="flex items-center justify-between gap-6 text-xs text-content"
+              >
+                <span>{t(shortcut.labelKey)}</span>
+                <kbd className="rounded-md border border-subtle bg-surface-sunken px-2 py-1 font-mono text-content-muted">
+                  {shortcut.key}
+                </kbd>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );

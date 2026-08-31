@@ -2,6 +2,7 @@ import KonvaText from "../dumb/KonvaText";
 import FieldDetails from "../FieldDetails/FieldDetails";
 
 import ColumnWrapper from "./ColumnWrapper";
+import ColumnBadges from "./ColumnBadges";
 
 import { useTableColor } from "@/hooks/tableColor";
 import {
@@ -12,11 +13,17 @@ import {
 } from "@/constants/sizing";
 import { useThemeColors } from "@/hooks/theme";
 import { useTableWidth } from "@/hooks/table";
+import {
+  badgesWidth,
+  fieldTypeText,
+  type FieldMarks,
+} from "@/utils/fieldMarks";
 
 interface ColumnProps {
   colName: string;
   tableName: string;
-  type: string;
+  /** The type, the mandatory mark and the key badges; see `computeFieldMarks`. */
+  marks: FieldMarks;
   isPrimaryKey?: boolean;
   isEnum: boolean;
   relationalTables?: string[] | null;
@@ -27,7 +34,7 @@ interface ColumnProps {
 const Column = ({
   colName,
   tableName,
-  type,
+  marks,
   isPrimaryKey = false,
   offsetY,
   relationalTables,
@@ -38,6 +45,7 @@ const Column = ({
   const tableColors = useTableColor(tableName);
   const tablePreferredWidth = useTableWidth();
 
+  const badgeRoom = badgesWidth(marks.badges);
   const colTextColor = themeColors.text[900];
   const typeTextColor = themeColors.text[700];
   const fontStyle = isPrimaryKey ? "bold" : "normal";
@@ -74,9 +82,11 @@ const Column = ({
 
           <KonvaText
             listening={false}
-            text={type}
+            text={fieldTypeText(marks)}
             align="right"
-            width={tablePreferredWidth}
+            // Narrowed by exactly what the badges take, so the type stops where
+            // the first pill begins. Both sides read the same measurement.
+            width={tablePreferredWidth - badgeRoom}
             // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
             fill={(highlighted && tableColors?.regular) || typeTextColor}
             padding={TABLE_FIELD_TYPE_PADDING}
@@ -85,8 +95,14 @@ const Column = ({
             height={COLUMN_HEIGHT}
           />
 
+          <ColumnBadges
+            badges={marks.badges}
+            rowWidth={tablePreferredWidth - TABLE_FIELD_TYPE_PADDING}
+            color={tableColors?.regular ?? colTextColor}
+          />
+
           {note != null || isEnum ? (
-            <FieldDetails note={note ?? ""} enumName={type} />
+            <FieldDetails note={note ?? ""} enumName={marks.typeName} />
           ) : null}
         </>
       )}
