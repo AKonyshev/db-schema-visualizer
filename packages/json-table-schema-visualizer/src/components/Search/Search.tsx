@@ -7,6 +7,7 @@ import {
 } from "react";
 import { type JSONTableTable } from "shared/types/tableSchema";
 
+import { REVEAL_ON_HOVER } from "@/constants/revealOnHover";
 import { t } from "@/i18n/t";
 import eventEmitter from "@/events-emitter";
 import {
@@ -23,13 +24,18 @@ interface SearchResult {
 
 interface SearchProps {
   tables: JSONTableTable[];
+  /**
+   * Stay out of the diagram until the pointer is over it, alongside the
+   * toolbar; see `REVEAL_ON_HOVER`.
+   */
+  hideUntilHover?: boolean;
 }
 
 /**
  * This is the search bar component placed on the top-right corner
  * of the stage, where you can search table or column.
  */
-const Search = ({ tables }: SearchProps) => {
+const Search = ({ tables, hideUntilHover = false }: SearchProps) => {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -140,8 +146,19 @@ const Search = ({ tables }: SearchProps) => {
         return;
       }
 
+      // Nothing to focus, so nothing to spend the key on: while the bar is
+      // hidden it stays the browser's, which in a documentation page is what
+      // the reader meant by it — the prose around the diagram is what they are
+      // searching. Read off the element rather than off the prop, because what
+      // decides this is a hover the component never sees.
+      const input = inputRef.current;
+
+      if (input === null || getComputedStyle(input).visibility === "hidden") {
+        return;
+      }
+
       e.preventDefault();
-      inputRef.current?.focus();
+      input.focus();
     };
 
     window.addEventListener("keydown", handleShortcut);
@@ -179,7 +196,10 @@ const Search = ({ tables }: SearchProps) => {
   return (
     // `absolute`, not `fixed`: pinned to the diagram's own box so it stays over
     // the diagram when that is one pane of a page rather than the whole window.
-    <div className="absolute top-4 right-4 z-50" ref={dropdownRef}>
+    <div
+      className={`absolute top-4 right-4 z-50 ${hideUntilHover ? REVEAL_ON_HOVER : ""}`}
+      ref={dropdownRef}
+    >
       <div className="relative">
         <div title={t("search.tooltip")} className="relative flex items-center">
           <input

@@ -28,8 +28,10 @@ interface DiagramViewerProps {
   hostActions?: ReactNode;
   /** Passed straight through to the wrapper; see `DiagramWrapper`. */
   autoFit?: boolean;
-  /** Passed straight through to the wrapper; see `DiagramWrapper`. */
-  revealToolbarOnHover?: boolean;
+  /** Hides the toolbar and the search bar until the pointer is over the
+   * diagram; see `DiagramWrapper`. The group they reveal from is on the `main`
+   * below, because it is the one box that holds both. */
+  revealControlsOnHover?: boolean;
 }
 
 const DiagramViewer = ({
@@ -40,7 +42,7 @@ const DiagramViewer = ({
   syncEffects = null,
   hostActions = null,
   autoFit = false,
-  revealToolbarOnHover = false,
+  revealControlsOnHover = false,
 }: DiagramViewerProps) => {
   const { theme } = useThemeContext();
 
@@ -56,18 +58,18 @@ const DiagramViewer = ({
             // `h-full w-full` so the diagram below can measure a real box. This
             // element had no height of its own and did not need one while the
             // stage sized itself to the viewport regardless of its container.
-            className={`relative flex h-full w-full flex-col items-center ${theme === Theme.dark ? "dark" : ""}`}
+            className={`relative flex h-full w-full flex-col items-center ${theme === Theme.dark ? "dark" : ""} ${revealControlsOnHover ? "group/diagram" : ""}`}
           >
             {syncEffects}
             {/* Inside the providers because it needs the hovered table; shared
                 by both hosts because hiding relations is now purely a view. */}
             <ToggleRefsShortcut />
-            <Search tables={tables} />
+            <Search tables={tables} hideUntilHover={revealControlsOnHover} />
 
             <DiagramWrapper
               hostActions={hostActions}
               autoFit={autoFit}
-              revealToolbarOnHover={revealToolbarOnHover}
+              revealControlsOnHover={revealControlsOnHover}
               tablesMeta={tables}
               refs={refs}
               connections={

@@ -336,7 +336,7 @@ test("a filtered diagram is arranged as itself, not as part of the model", async
   await expect.poll(async () => await tableSpan(page)).toBeLessThan(2000);
 });
 
-test("the toolbar stays out of the diagram until the reader reaches for it", async ({
+test("the controls stay out of the diagram until the reader reaches for them", async ({
   page,
 }) => {
   await serveModel(page);
@@ -345,8 +345,11 @@ test("the toolbar stays out of the diagram until the reader reaches for it", asy
 
   // A frame is as tall as the page's author made it, and a toolbar sitting on
   // top of a 500px one covers the bottom fifth of the diagram it came to show.
+  // The search box covers the top-right corner of it for the same reason.
   const fit = page.getByRole("button", { name: "Fit to view" });
+  const search = page.getByPlaceholder("Search tables and columns...");
   await expect(fit).toBeHidden();
+  await expect(search).toBeHidden();
 
   // `mouse.move` rather than `hover()`: the canvas animates its relations, so
   // Playwright can wait forever for it to be "stable" enough to hover.
@@ -357,6 +360,50 @@ test("the toolbar stays out of the diagram until the reader reaches for it", asy
   );
 
   await expect(fit).toBeVisible();
+  await expect(search).toBeVisible();
+});
+
+test("a hidden search leaves the reader's own find alone", async ({ page }) => {
+  await serveModel(page);
+  await page.goto("/embed.html?src=acl.dbml");
+  await expect(canvasOf(page)).toBeVisible();
+
+  // Registered after the search's own listener, so by the time this runs the
+  // search has had its chance to claim the key.
+  await page.evaluate(() => {
+    window.addEventListener("keydown", (event) => {
+      (window as unknown as { claimed?: boolean }).claimed =
+        event.defaultPrevented;
+    });
+  });
+
+  const claimedFind = async (): Promise<boolean | undefined> =>
+    await page.evaluate(
+      () => (window as unknown as { claimed?: boolean }).claimed,
+    );
+
+  await page.keyboard.press("ControlOrMeta+f");
+
+  // A box nobody can see cannot be focused, so claiming the key would spend it
+  // on nothing — and in a documentation page Ctrl+F is what the reader presses
+  // to search the prose around the diagram.
+  expect(await claimedFind()).toBe(false);
+
+  const box = await canvasOf(page).boundingBox();
+  await page.mouse.move(
+    (box?.x ?? 0) + (box?.width ?? 0) / 2,
+    (box?.y ?? 0) + (box?.height ?? 0) / 2,
+  );
+  await expect(
+    page.getByPlaceholder("Search tables and columns..."),
+  ).toBeVisible();
+
+  await page.keyboard.press("ControlOrMeta+f");
+
+  expect(await claimedFind()).toBe(true);
+  await expect(
+    page.getByPlaceholder("Search tables and columns..."),
+  ).toBeFocused();
 });
 
 test("a name that is in no table is said out loud", async ({ page }) => {

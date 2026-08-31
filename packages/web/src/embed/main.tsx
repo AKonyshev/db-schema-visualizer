@@ -78,7 +78,7 @@ const Frame = ({
       autoFit
       // And it must not spend a fifth of that height on buttons the reader has
       // not reached for.
-      revealToolbarOnHover
+      revealControlsOnHover
     />
   );
 };

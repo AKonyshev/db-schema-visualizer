@@ -21,6 +21,7 @@ import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { useElementSize } from "@/hooks/elementSize";
 import { useCursorChanger } from "@/hooks/cursor";
 import { DIAGRAM_PADDING } from "@/constants/sizing";
+import { REVEAL_ON_HOVER } from "@/constants/revealOnHover";
 import { useThemeColors } from "@/hooks/theme";
 import { useStageStartingState } from "@/hooks/stage";
 import { stageStateStore } from "@/stores/stagesState";
@@ -71,19 +72,18 @@ interface DiagramWrapperProps {
   autoFit?: boolean;
   /**
    * Keep the toolbar out of sight until the pointer is over the diagram, for
-   * the same host and the same reason as `autoFit`.
+   * the same host and the same reason as `autoFit`. See `REVEAL_ON_HOVER`.
    *
    * The toolbar floats over the bottom of the diagram. In a window that costs
    * a strip of empty canvas; in a 500px frame it covers the bottom fifth of the
    * thing the page put there to be looked at, and on a narrow one it wraps to
-   * two rows and covers a third.
-   *
-   * Hidden with `visibility`, not opacity: an invisible row of buttons that
-   * still answers the pointer and still reads out to a screen reader is worse
-   * than one that is honestly not there. The shortcuts keep working either way
+   * two rows and covers a third. The shortcuts keep working while it is hidden
    * — `F`, `L` and `D` are bound to the document, not to these buttons.
+   *
+   * The group this reveals from is on `DiagramViewer`'s `main`, because the
+   * search bar hides with the toolbar and is not inside this component.
    */
-  revealToolbarOnHover?: boolean;
+  revealControlsOnHover?: boolean;
 }
 
 interface PendingWheelEvent {
@@ -100,7 +100,7 @@ const DiagramWrapper = ({
   refs,
   hostActions = null,
   autoFit = false,
-  revealToolbarOnHover = false,
+  revealControlsOnHover = false,
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
@@ -576,10 +576,7 @@ const DiagramWrapper = ({
     // page, and `overflow-hidden` so a stage mid-resize cannot widen the
     // document. Both matter only once the diagram shares a page with something
     // else, which is exactly when they stop being cosmetic.
-    <div
-      ref={containerRef}
-      className={`relative h-full w-full overflow-hidden ${revealToolbarOnHover ? "group/diagram" : ""}`}
-    >
+    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
       <Stage
         draggable
         ref={stageRef}
@@ -607,13 +604,7 @@ const DiagramWrapper = ({
 
       {/* A plain wrapper, with no positioning of its own, so the toolbar inside
           still anchors to the container above rather than to this. */}
-      <div
-        className={
-          revealToolbarOnHover
-            ? "invisible opacity-0 transition-opacity duration-150 group-hover/diagram:visible group-hover/diagram:opacity-100 group-focus-within/diagram:visible group-focus-within/diagram:opacity-100"
-            : ""
-        }
-      >
+      <div className={revealControlsOnHover ? REVEAL_ON_HOVER : ""}>
         <Toolbar
           onFitToView={fitToView}
           onDownloadPng={onDownloadPng}
