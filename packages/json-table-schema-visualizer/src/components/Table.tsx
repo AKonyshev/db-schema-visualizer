@@ -28,6 +28,7 @@ import { TableDetailLevel } from "@/types/tableDetailLevel";
 import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
 import { computeFieldMarks } from "@/utils/fieldMarks";
 import { useForeignKeys } from "@/hooks/foreignKeys";
+import { useIsTableSelected } from "@/hooks/selection";
 import { drawnTableHeight } from "@/utils/drawnTableHeight";
 
 interface TableProps extends JSONTableTable {
@@ -46,6 +47,7 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
   // The dashed outline marks a table whose relations are hidden — the same
   // state the header icon toggles, so the two always agree.
   const { isHidden: hasHiddenRefs } = useTableRelationsVisibility(name);
+  const isSelected = useIsTableSelected(name);
   const { detailLevel } = useTableDetailLevel();
   const tableRef = useRef<null | Konva.Group>(null);
   const highlightRef = useRef<null | Konva.Rect>(null);
@@ -173,6 +175,23 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
           stroke="yellow"
           strokeWidth={1.5}
           dash={[6, 4]}
+          fill="transparent"
+          cornerRadius={PADDINGS.sm + 1}
+          listening={false}
+        />
+      )}
+
+      {isSelected && (
+        // Its own Rect rather than the highlight one below: that one is an
+        // animation that ends at `strokeWidth: 0`, and sharing it would let a
+        // search hit quietly erase the outline it happened to finish on.
+        <Rect
+          x={-3}
+          y={-3}
+          width={tablePreferredWidth + 6}
+          height={tableHeight + 6}
+          stroke={themeColors.selection.stroke}
+          strokeWidth={2}
           fill="transparent"
           cornerRadius={PADDINGS.sm + 1}
           listening={false}

@@ -16,6 +16,12 @@ export interface ThemeColors {
     fg: string;
   };
   colAccent: string;
+  /** The outline on a selected table and the fill of the marquee that caught
+   * it. Both are the accent, because both mean "the reader picked this". */
+  selection: {
+    stroke: string;
+    fill: string;
+  };
   table: {
     bg: string;
     shadow: string;
