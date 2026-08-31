@@ -33,10 +33,10 @@ interface DiagramAppProps {
    * Open with the whole diagram framed, for a host whose reader cannot pan to
    * find it — the embedded frame in a documentation page. See `DiagramWrapper`.
    */
-  fitOnLoad?: boolean;
+  autoFit?: boolean;
   /**
    * Keep the toolbar hidden until the pointer is over the diagram, for the same
-   * host as `fitOnLoad`. See `DiagramWrapper`.
+   * host as `autoFit`. See `DiagramWrapper`.
    */
   revealToolbarOnHover?: boolean;
 }
@@ -56,7 +56,7 @@ const DiagramApp = ({
   scrollDirection,
   syncEffects,
   hostActions,
-  fitOnLoad,
+  autoFit,
   revealToolbarOnHover,
 }: DiagramAppProps) => {
   if (schemaErrorMessage !== null && schema === null) {
@@ -76,7 +76,7 @@ const DiagramApp = ({
           {...schema}
           syncEffects={syncEffects?.(schema) ?? null}
           hostActions={hostActions}
-          fitOnLoad={fitOnLoad}
+          autoFit={autoFit}
           revealToolbarOnHover={revealToolbarOnHover}
         />
       </ScrollDirectionProvider>

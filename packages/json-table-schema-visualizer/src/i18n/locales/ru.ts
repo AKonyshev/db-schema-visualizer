@@ -9,6 +9,8 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "action.detailLevel.header": "Только заголовок",
   "action.detailLevel.key": "Только ключи",
   "action.fitToView": "Вписать в экран",
+  "action.expandFrame": "Развернуть на всю страницу",
+  "action.collapseFrame": "Свернуть обратно",
   "action.export": "Экспорт",
   "action.exportPng": "PNG",
   "action.exportSvg": "SVG",

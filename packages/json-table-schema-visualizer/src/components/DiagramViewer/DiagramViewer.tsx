@@ -27,7 +27,7 @@ interface DiagramViewerProps {
   syncEffects?: ReactNode;
   hostActions?: ReactNode;
   /** Passed straight through to the wrapper; see `DiagramWrapper`. */
-  fitOnLoad?: boolean;
+  autoFit?: boolean;
   /** Passed straight through to the wrapper; see `DiagramWrapper`. */
   revealToolbarOnHover?: boolean;
 }
@@ -39,7 +39,7 @@ const DiagramViewer = ({
   documentKey = null,
   syncEffects = null,
   hostActions = null,
-  fitOnLoad = false,
+  autoFit = false,
   revealToolbarOnHover = false,
 }: DiagramViewerProps) => {
   const { theme } = useThemeContext();
@@ -66,7 +66,7 @@ const DiagramViewer = ({
 
             <DiagramWrapper
               hostActions={hostActions}
-              fitOnLoad={fitOnLoad}
+              autoFit={autoFit}
               revealToolbarOnHover={revealToolbarOnHover}
               tablesMeta={tables}
               refs={refs}

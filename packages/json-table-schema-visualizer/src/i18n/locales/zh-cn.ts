@@ -10,6 +10,8 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "action.detailLevel.header": "仅表头",
   "action.detailLevel.key": "仅键列",
   "action.fitToView": "适应窗口",
+  "action.expandFrame": "展开至整页",
+  "action.collapseFrame": "恢复原大小",
   "action.export": "导出",
   "action.exportPng": "PNG",
   "action.exportSvg": "SVG",

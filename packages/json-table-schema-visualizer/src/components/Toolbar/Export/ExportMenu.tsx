@@ -36,6 +36,10 @@ const ExportMenu = ({
 
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
+        // Marks the key as spent, so nothing else takes an Escape that closed
+        // this menu for an Escape nobody answered — the embedded frame reads
+        // exactly this to decide whether the reader meant "put the page back".
+        event.preventDefault();
         setIsOpen(false);
       }
     };

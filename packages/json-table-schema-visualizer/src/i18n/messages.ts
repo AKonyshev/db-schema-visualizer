@@ -7,6 +7,8 @@ export const MESSAGES_EN = {
   "action.detailLevel.header": "Header only",
   "action.detailLevel.key": "Key only",
   "action.fitToView": "Fit to view",
+  "action.expandFrame": "Expand across the page",
+  "action.collapseFrame": "Back into the page",
   "action.export": "Export",
   "action.exportPng": "PNG",
   "action.exportSvg": "SVG",

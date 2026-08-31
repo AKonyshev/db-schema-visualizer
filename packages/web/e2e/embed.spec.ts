@@ -400,3 +400,156 @@ test("the frame leaves no trace in storage", async ({ page }) => {
   expect(state.ours).toEqual([]);
   expect(state.theme).toBe("dark");
 });
+
+// A page that embeds the frame the way the site of documentation does. The real
+// one is built by `antora/docs/lib/dbml-frame-host.js` in the documentation
+// repository; this is the same protocol written out small, because the two
+// repositories cannot import from each other and what is under test here is the
+// frame's half of it.
+//
+// The box is deliberately small — 400×200 in a viewport several times that — so
+// that expanding it is a change worth measuring rather than a few pixels.
+const HOST_PAGE = `<!doctype html>
+<html><head><style>
+  body { margin: 0; padding: 40px; }
+  .dbml-diagram { width: 400px; height: 200px; }
+  .dbml-diagram iframe { width: 100%; height: 100%; border: 0; }
+  .dbml-diagram--expanded {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; margin: 0;
+    width: auto; height: auto; max-width: none; max-height: none;
+  }
+  html.locked, html.locked body { overflow: hidden; }
+</style></head>
+<body>
+<div class="dbml-diagram"><iframe src="/embed.html?src=acl.dbml"></iframe></div>
+<script>
+;(function () {
+  var expandedFrame = null;
+
+  function frameOf(source) {
+    var frames = document.querySelectorAll('.dbml-diagram iframe');
+    for (var i = 0; i < frames.length; i++) {
+      if (frames[i].contentWindow === source) return frames[i];
+    }
+    return null;
+  }
+
+  function post(frame, message) {
+    frame.contentWindow.postMessage(message, window.location.origin);
+  }
+
+  function apply(frame, expanded) {
+    frame.parentNode.classList.toggle('dbml-diagram--expanded', expanded);
+    document.documentElement.classList.toggle('locked', expanded);
+    expandedFrame = expanded ? frame : null;
+    post(frame, { source: 'dbml-frame', type: 'expanded', expanded: expanded });
+  }
+
+  window.addEventListener('message', function (event) {
+    if (event.origin !== window.location.origin) return;
+    var data = event.data;
+    if (data === null || typeof data !== 'object' || data.source !== 'dbml-frame') return;
+    var frame = frameOf(event.source);
+    if (frame === null) return;
+    if (data.type === 'hello') { post(frame, { source: 'dbml-frame', type: 'ready' }); return; }
+    if (data.type === 'expand') apply(frame, data.expanded);
+  });
+})();
+</script>
+</body></html>`;
+
+const serveHost = async (page: Page): Promise<void> => {
+  await page.route("**/host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: HOST_PAGE,
+    });
+  });
+};
+
+/** Puts the pointer over the diagram, which is what raises the toolbar. */
+const reachForTheToolbar = async (page: Page, box: Locator): Promise<void> => {
+  const bounds = await box.boundingBox();
+
+  // `mouse.move` rather than `hover()`: the canvas animates its relations, so
+  // Playwright can wait forever for it to be "stable" enough to hover.
+  await page.mouse.move(
+    (bounds?.x ?? 0) + (bounds?.width ?? 0) / 2,
+    (bounds?.y ?? 0) + (bounds?.height ?? 0) / 2,
+  );
+};
+
+const embeddedStageScale = async (page: Page): Promise<number> => {
+  const frame = page.frames().find((f) => f.url().includes("embed.html"));
+
+  return (
+    (await frame?.evaluate(() => window.Konva?.stages[0]?.scaleX() ?? 0)) ?? 0
+  );
+};
+
+test("a frame nobody is listening to offers no way out of the page", async ({
+  page,
+}) => {
+  await serveModel(page);
+  await page.goto("/embed.html?src=acl.dbml");
+  await expect(canvasOf(page)).toBeVisible();
+  await reachForTheToolbar(page, canvasOf(page));
+
+  // The toolbar is up — this is not a test that passes because nothing rendered.
+  await expect(page.getByRole("button", { name: "Fit to view" })).toBeVisible();
+
+  // And there is no button, because there is no page around us to make room. A
+  // frame opened straight from the address bar has `window.parent === window`,
+  // so it would otherwise hear its own hello and believe it had a host.
+  await expect(
+    page.getByRole("button", { name: "Expand across the page" }),
+  ).toHaveCount(0);
+});
+
+test("the reader can put the diagram across the page, and Escape puts it back", async ({
+  page,
+}) => {
+  await serveModel(page);
+  await serveHost(page);
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await page.goto("/host.html");
+
+  const box = page.locator(".dbml-diagram");
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  const inTheColumn = await box.boundingBox();
+  expect(inTheColumn?.width).toBe(400);
+
+  const fittedSmall = await embeddedStageScale(page);
+  expect(fittedSmall).toBeGreaterThan(0);
+
+  await reachForTheToolbar(page, box);
+  await frame.getByRole("button", { name: "Expand across the page" }).click();
+
+  await expect.poll(async () => (await box.boundingBox())?.width).toBe(1100);
+  expect((await box.boundingBox())?.height).toBe(700);
+
+  // The room is no use unless the diagram takes it: the view is positioned once
+  // on mount for every other host, and a frame that kept that framing would
+  // answer the reader by putting the same small picture in the corner of a
+  // large empty one.
+  await expect
+    .poll(async () => await embeddedStageScale(page))
+    .toBeGreaterThan(fittedSmall * 2);
+
+  // The button says what it does now, and the focus is inside the frame — which
+  // is why the frame has to answer Escape itself. The page around it never sees
+  // the keypress.
+  await expect(
+    frame.getByRole("button", { name: "Back into the page" }),
+  ).toBeVisible();
+
+  await page.keyboard.press("Escape");
+
+  await expect.poll(async () => (await box.boundingBox())?.width).toBe(400);
+  await expect
+    .poll(async () => await embeddedStageScale(page))
+    .toBe(fittedSmall);
+});

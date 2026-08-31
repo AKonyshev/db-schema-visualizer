@@ -65,8 +65,15 @@ const Toolbar = ({
         onDownloadAdoc={onDownloadAdoc}
         onDownloadMarkdown={onDownloadMarkdown}
       />
-      <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
-      {hostActions}
+      {/* Both rules belong to the slot, so a host that adds nothing — or one
+          whose action comes and goes, as the frame's does — is not left with
+          two dividers against each other. */}
+      {hostActions !== null && (
+        <>
+          <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
+          {hostActions}
+        </>
+      )}
       <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
       <ShortTableNameSetting />
       <EnableAlwaysHover />

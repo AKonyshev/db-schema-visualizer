@@ -52,19 +52,26 @@ interface DiagramWrapperProps {
   /** Passed straight through to the toolbar; see `DiagramApp`. */
   hostActions?: ReactNode;
   /**
-   * Frame the whole diagram on the first render instead of using the starting
-   * state, for a host whose reader cannot pan to find it.
+   * Keep the whole diagram framed — on the first render instead of the starting
+   * state, and again whenever the container changes size — for a host whose
+   * reader cannot pan to find it.
    *
    * The embedded frame in a documentation page is that host: it can be a few
    * hundred pixels tall, it opens on a slice of a model somebody chose, and the
    * reader is reading prose around it rather than exploring a canvas. An
    * application's reader has a whole window and a toolbar; a page's reader has
    * whatever the author's `height=` gave them.
+   *
+   * Re-framing on resize is the part the other hosts must not have: for them a
+   * resize is a dragged divider, and re-framing would throw away a pan that is
+   * persisted nowhere. For this one a resize is the reader asking for the
+   * diagram across the page, and leaving the old framing behind would answer by
+   * putting the same small picture in the corner of a large empty one.
    */
-  fitOnLoad?: boolean;
+  autoFit?: boolean;
   /**
    * Keep the toolbar out of sight until the pointer is over the diagram, for
-   * the same host and the same reason as `fitOnLoad`.
+   * the same host and the same reason as `autoFit`.
    *
    * The toolbar floats over the bottom of the diagram. In a window that costs
    * a strip of empty canvas; in a 500px frame it covers the bottom fifth of the
@@ -92,7 +99,7 @@ const DiagramWrapper = ({
   tablesMeta,
   refs,
   hostActions = null,
-  fitOnLoad = false,
+  autoFit = false,
   revealToolbarOnHover = false,
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -178,42 +185,46 @@ const DiagramWrapper = ({
     }
   };
 
-  // repositioning the stage only once
+  // repositioning the stage: once for most hosts, on every resize for the one
+  // that asked to be kept framed
   const { scale: defaultStageScale, position: defaultStagePosition } =
     useStageStartingState({ width: viewWidth, height: viewHeight });
   const hasPositionedStage = useRef(false);
   useEffect(() => {
-    // Once, and only after there is a real size to fit into. The starting state
-    // now depends on the container's dimensions, so without this guard every
-    // resize — a dragged divider most of all — would re-fit the diagram and
-    // throw away the reader's pan. Panning is not persisted, so there would be
-    // nothing to restore it from.
-    if (
-      hasPositionedStage.current ||
-      stageRef.current === null ||
-      viewWidth === 0 ||
-      viewHeight === 0
-    ) {
+    // Only after there is a real size to fit into.
+    if (stageRef.current === null || viewWidth === 0 || viewHeight === 0) {
       return;
     }
 
-    hasPositionedStage.current = true;
-
-    // A host that asked to open framed gets the same measurement the toolbar's
-    // fit button makes, rather than the starting state: the starting state
-    // takes its bounds from table coordinates alone, so a table's own width and
-    // height fall outside the box it computes, and the rightmost one is cut off
-    // by however wide it happens to be.
+    // A host that asked to be kept framed gets the same measurement the
+    // toolbar's fit button makes, rather than the starting state: the starting
+    // state takes its bounds from table coordinates alone, so a table's own
+    // width and height fall outside the box it computes, and the rightmost one
+    // is cut off by however wide it happens to be.
     //
-    // Not done for every host, because for the other two it would be a
-    // regression: `useStageStartingState` returns a view the reader left behind
-    // when there is one, and overriding it would drop them somewhere they did
-    // not ask to be, every time they came back to a document.
-    if (fitOnLoad) {
+    // Ahead of the once-only guard, because for this host the resizes are the
+    // point — see `autoFit`.
+    if (autoFit) {
+      hasPositionedStage.current = true;
       // Fits and publishes the viewport itself.
       fitToView();
       return;
     }
+
+    // Once, for everyone else. The starting state depends on the container's
+    // dimensions, so without this guard every resize — a dragged divider most of
+    // all — would reposition the diagram and throw away the reader's pan.
+    // Panning is not persisted, so there would be nothing to restore it from.
+    //
+    // And the starting state is not something to override even once here:
+    // `useStageStartingState` returns a view the reader left behind when there
+    // is one, and replacing it would drop them somewhere they did not ask to be,
+    // every time they came back to a document.
+    if (hasPositionedStage.current) {
+      return;
+    }
+
+    hasPositionedStage.current = true;
 
     stageRef.current.scale({
       x: defaultStageScale,
@@ -227,7 +238,7 @@ const DiagramWrapper = ({
     viewWidth,
     viewHeight,
     publishViewport,
-    fitOnLoad,
+    autoFit,
   ]);
 
   const pendingWheelRef = useRef<PendingWheelEvent | null>(null);

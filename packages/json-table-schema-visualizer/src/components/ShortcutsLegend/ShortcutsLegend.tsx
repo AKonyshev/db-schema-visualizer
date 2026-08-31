@@ -11,6 +11,9 @@ const ShortcutsLegend = ({ onClose }: ShortcutsLegendProps) => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
+        // See `ExportMenu`: an Escape that closed this is not an Escape going
+        // spare.
+        event.preventDefault();
         onClose();
       }
     };
