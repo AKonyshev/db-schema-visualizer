@@ -28,7 +28,8 @@ import { TableDetailLevel } from "@/types/tableDetailLevel";
 import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
 import { computeFieldMarks } from "@/utils/fieldMarks";
 import { useForeignKeys } from "@/hooks/foreignKeys";
-import { useIsTableSelected } from "@/hooks/selection";
+import { useIsSelectMode, useIsTableSelected } from "@/hooks/selection";
+import { selectionStore } from "@/stores/selectionStore";
 import { drawnTableHeight } from "@/utils/drawnTableHeight";
 
 interface TableProps extends JSONTableTable {
@@ -48,6 +49,7 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
   // state the header icon toggles, so the two always agree.
   const { isHidden: hasHiddenRefs } = useTableRelationsVisibility(name);
   const isSelected = useIsTableSelected(name);
+  const isSelectMode = useIsSelectMode();
   const { detailLevel } = useTableDetailLevel();
   const tableRef = useRef<null | Konva.Group>(null);
   const highlightRef = useRef<null | Konva.Rect>(null);
@@ -137,10 +139,31 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
     setHoveredTableName(null);
   };
 
-  const moveTableToTop = () => {
+  const handleOnClick = (event: KonvaEventObject<MouseEvent>) => {
     if (tableRef.current != null) {
       tableRef.current.moveToTop();
     }
+
+    if (!isSelectMode) {
+      return;
+    }
+
+    // Konva raises `click` only when the pointer did not drag, so there is
+    // nothing to tell a click from a move by hand.
+    if (!event.evt.shiftKey) {
+      selectionStore.setSelected(new Set([name]));
+      return;
+    }
+
+    const selected = new Set(selectionStore.getSelected());
+
+    if (selected.has(name)) {
+      selected.delete(name);
+    } else {
+      selected.add(name);
+    }
+
+    selectionStore.setSelected(selected);
   };
 
   return (
@@ -153,7 +176,7 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
       height={tableHeight}
       onMouseEnter={handleOnHover}
       onMouseLeave={handleOnBlur}
-      onClick={moveTableToTop}
+      onClick={handleOnClick}
     >
       <Rect
         shadowBlur={PADDINGS.xs}

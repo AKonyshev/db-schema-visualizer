@@ -364,6 +364,47 @@ const DiagramWrapper = ({
     setHighlightedColumns([]);
   };
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape" || selectionStore.getSelected().size === 0) {
+        return;
+      }
+
+      // Marked as spent, the way the legend and the export menu mark theirs:
+      // the embedded frame reads exactly this to decide whether an Escape was
+      // the reader asking for the page back. Without it one keypress would both
+      // drop the selection and collapse an expanded frame.
+      event.preventDefault();
+      selectionStore.clear();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    // An unmount cleanup rather than a watch on the document key: this
+    // component does not receive the key, and remounting is exactly what a
+    // document change does to it. Without this, opening another schema leaves a
+    // selection naming tables that are not on the canvas.
+    return () => {
+      selectionStore.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isSelectMode) {
+      // A selection that outlived the mode would silently change what a plain
+      // drag does, in the mode whose whole point is that a drag moves the
+      // canvas. Panning stays reachable inside select mode, so nobody has to
+      // leave it mid-task.
+      selectionStore.clear();
+    }
+  }, [isSelectMode]);
+
   const pointerInDiagram = (): { x: number; y: number } | null =>
     tablesGroupRef.current?.getRelativePointerPosition() ?? null;
 
