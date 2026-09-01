@@ -32,7 +32,7 @@ export function databaseSchemaToModel(
   db: DatabaseSchema,
   schemaName: string,
 ): CanonSchema {
-  const { schema } = filterDatabaseSchema(db, schemaName);
+  const { schema } = filterDatabaseSchema(db, [schemaName]);
 
   const tables = new Map<string, CanonTable>();
   for (const t of schema.tables) {

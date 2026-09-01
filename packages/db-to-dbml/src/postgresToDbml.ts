@@ -3,8 +3,8 @@ import { schemaToDbml } from "./schemaToDbml";
 
 export async function postgresToDbml(
   connectionString: string,
-  schemaName: string,
+  schemaNames: string[],
 ): Promise<string> {
   const db = await fetchPostgresSchema(connectionString);
-  return schemaToDbml(db, schemaName).dbml;
+  return schemaToDbml(db, schemaNames).dbml;
 }

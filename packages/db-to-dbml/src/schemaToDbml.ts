@@ -6,11 +6,11 @@ import type { DatabaseSchema } from "./types";
 
 export function schemaToDbml(
   db: DatabaseSchema,
-  schemaName: string,
+  schemaNames: string[],
 ): { dbml: string; droppedCrossSchemaRefs: number } {
   const { schema, droppedCrossSchemaRefs } = filterDatabaseSchema(
     db,
-    schemaName,
+    schemaNames,
   );
   const dbml: string = importer.generateDbml(schema);
   return { dbml, droppedCrossSchemaRefs };

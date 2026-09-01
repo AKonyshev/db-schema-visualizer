@@ -6,13 +6,13 @@ import type { DatabaseSchema } from "../types";
 
 describe("filterDatabaseSchema", () => {
   test("keeps only tables/enums of the target schema", () => {
-    const { schema } = filterDatabaseSchema(twoSchemaFixture(), "public");
+    const { schema } = filterDatabaseSchema(twoSchemaFixture(), ["public"]);
     expect(schema.tables.map((t) => t.name)).toEqual(["users", "orders"]);
     expect(schema.enums.map((e) => e.name)).toEqual(["user_role"]);
   });
 
   test("keeps only dictionary entries whose key is prefixed with the schema", () => {
-    const { schema } = filterDatabaseSchema(twoSchemaFixture(), "public");
+    const { schema } = filterDatabaseSchema(twoSchemaFixture(), ["public"]);
     expect(Object.keys(schema.fields)).toEqual([
       "public.users",
       "public.orders",
@@ -25,7 +25,7 @@ describe("filterDatabaseSchema", () => {
   test("keeps refs fully inside the schema and drops+counts cross-schema refs", () => {
     const { schema, droppedCrossSchemaRefs } = filterDatabaseSchema(
       twoSchemaFixture(),
-      "public",
+      ["public"],
     );
     // only the orders->users ref survives; the cross-schema one is dropped
     expect(schema.refs).toHaveLength(1);
@@ -35,7 +35,7 @@ describe("filterDatabaseSchema", () => {
   test("a schema with no relation to the target contributes no dropped count", () => {
     const { droppedCrossSchemaRefs } = filterDatabaseSchema(
       twoSchemaFixture(),
-      "audit",
+      ["audit"],
     );
     // audit's cross ref is the same public->audit ref (touches audit) => counted once
     expect(droppedCrossSchemaRefs).toBe(1);
@@ -53,10 +53,9 @@ describe("filterDatabaseSchema", () => {
       fields: { "public.users": [] },
     } as unknown as DatabaseSchema;
 
-    const { schema, droppedCrossSchemaRefs } = filterDatabaseSchema(
-      partial,
+    const { schema, droppedCrossSchemaRefs } = filterDatabaseSchema(partial, [
       "public",
-    );
+    ]);
 
     expect(schema.tables.map((t) => t.name)).toEqual(["users"]);
     expect(schema.enums.map((e) => e.name)).toEqual(["role"]);
@@ -74,7 +73,7 @@ describe("filterDatabaseSchema", () => {
     // dot) matching "public.*" entries when filtering by "pub".
     const { schema, droppedCrossSchemaRefs } = filterDatabaseSchema(
       twoSchemaFixture(),
-      "pub",
+      ["pub"],
     );
     expect(schema.tables).toEqual([]);
     expect(schema.enums).toEqual([]);
@@ -84,5 +83,48 @@ describe("filterDatabaseSchema", () => {
     expect(Object.keys(schema.tableConstraints)).toEqual([]);
     expect(Object.keys(schema.indexes)).toEqual([]);
     expect(Object.keys(schema.checks)).toEqual([]);
+  });
+
+  test("keeps a ref whose ends are in two selected schemas", () => {
+    const { schema, droppedCrossSchemaRefs } = filterDatabaseSchema(
+      twoSchemaFixture(),
+      ["public", "audit"],
+    );
+
+    // Nothing leaves the selection, so nothing is dropped: the three refs of
+    // the fixture all survive.
+    expect(schema.refs).toHaveLength(3);
+    expect(droppedCrossSchemaRefs).toBe(0);
+  });
+
+  test("keeps the tables, enums and dictionaries of every selected schema", () => {
+    const { schema } = filterDatabaseSchema(twoSchemaFixture(), [
+      "public",
+      "audit",
+    ]);
+
+    expect(schema.tables.map((t) => t.name)).toEqual([
+      "users",
+      "orders",
+      "logs",
+    ]);
+    expect(schema.enums.map((e) => e.name)).toEqual(["user_role", "log_level"]);
+    expect(Object.keys(schema.fields)).toEqual([
+      "public.users",
+      "public.orders",
+      "audit.logs",
+    ]);
+  });
+
+  test("an empty selection keeps nothing and drops nothing", () => {
+    const { schema, droppedCrossSchemaRefs } = filterDatabaseSchema(
+      twoSchemaFixture(),
+      [],
+    );
+
+    expect(schema.tables).toEqual([]);
+    expect(schema.refs).toEqual([]);
+    // No end is inside, so no ref is half-inside: nothing was lost by choosing.
+    expect(droppedCrossSchemaRefs).toBe(0);
   });
 });

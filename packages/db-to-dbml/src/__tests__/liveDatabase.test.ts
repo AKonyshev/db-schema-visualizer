@@ -1,5 +1,8 @@
+import { withDatabase } from "../connectionString";
 import { fetchPostgresSchema } from "../fetchPostgresSchema";
+import { listDatabases } from "../listDatabases";
 import { listSchemaNames } from "../listSchemaNames";
+import { listSchemas } from "../listSchemas";
 import { postgresToDbml } from "../postgresToDbml";
 
 /**
@@ -35,7 +38,7 @@ describeLive("against a real PostgreSQL", () => {
   });
 
   it("reads a live schema into DBML that carries its keys and relations", async () => {
-    const dbml = await postgresToDbml(connection, "public");
+    const dbml = await postgresToDbml(connection, ["public"]);
 
     expect(dbml).toContain('Table "authors"');
     expect(dbml).toContain('Table "books"');
@@ -54,7 +57,7 @@ describeLive("against a real PostgreSQL", () => {
   });
 
   it("brings back the types the database gave the columns", async () => {
-    const dbml = await postgresToDbml(connection, "public");
+    const dbml = await postgresToDbml(connection, ["public"]);
 
     // Asserted on the DBML rather than on the connector's own output, which is
     // deliberately untyped here — it is whatever `@dbml/connector` returns, and
@@ -72,12 +75,49 @@ describeLive("against a real PostgreSQL", () => {
     expect(dbml).toMatch(/"bio"\s+text/);
   });
 
+  it("lists the databases on the server, and not the templates", async () => {
+    const names = await listDatabases(connection);
+
+    expect(names).toContain("dbmltest");
+    expect(names).toContain("dbmlother");
+    expect(names).not.toContain("template0");
+    expect(names).not.toContain("template1");
+  });
+
+  it("lists the schemas of the database the string points at", async () => {
+    const names = await listSchemas(connection);
+
+    expect(names).toEqual(expect.arrayContaining(["public", "audit"]));
+    expect(names).not.toContain("information_schema");
+    expect(names).not.toContain("pg_catalog");
+  });
+
+  it("reads another database on the same server", async () => {
+    // The proof that `withDatabase` really moved: the second database was
+    // created empty, so it has none of the first one's schemas.
+    const names = await listSchemas(withDatabase(connection, "dbmlother"));
+
+    expect(names).toContain("public");
+    expect(names).not.toContain("audit");
+  });
+
+  it("keeps a live cross-schema reference when both schemas are exported", async () => {
+    const both = await postgresToDbml(connection, ["public", "audit"]);
+
+    expect(both).toContain('Table "audit"."logs"');
+    expect(both).toMatch(/"authors"\."id" < "audit"\."logs"\."author_id"/);
+
+    // And the same reference is gone when only one end was asked for.
+    const onlyPublic = await postgresToDbml(connection, ["public"]);
+    expect(onlyPublic).not.toContain("audit");
+  });
+
   it("refuses a database that is not there, without leaking the password", async () => {
     const wrong = connection.replace(/\/\/[^@]*@/, "//nobody:secret@");
 
-    await expect(postgresToDbml(wrong, "public")).rejects.toThrow();
+    await expect(postgresToDbml(wrong, ["public"])).rejects.toThrow();
 
-    await postgresToDbml(wrong, "public").catch((error: unknown) => {
+    await postgresToDbml(wrong, ["public"]).catch((error: unknown) => {
       expect(String((error as Error).message)).not.toContain("secret");
     });
   });

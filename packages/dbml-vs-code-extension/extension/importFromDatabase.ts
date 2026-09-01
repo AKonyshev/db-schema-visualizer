@@ -107,7 +107,7 @@ export async function importFromDatabase(
   let dbml: string;
   let droppedCrossSchemaRefs: number;
   try {
-    ({ dbml, droppedCrossSchemaRefs } = schemaToDbml(db, schemaName));
+    ({ dbml, droppedCrossSchemaRefs } = schemaToDbml(db, [schemaName]));
   } catch (error) {
     showImportDbError(error);
     return;
