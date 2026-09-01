@@ -137,6 +137,67 @@ describe("pickImportTargets", () => {
     ]);
   });
 
+  test("does not open a connection per database all at once", async () => {
+    const many = Array.from({ length: 12 }, (_, index) => `db${index}`);
+    jest.mocked(listDatabases).mockResolvedValue(many);
+
+    let inFlight = 0;
+    let peak = 0;
+    jest.mocked(listSchemas).mockImplementation(async () => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      inFlight -= 1;
+      return ["public"];
+    });
+    jest
+      .mocked(window.showQuickPick)
+      .mockResolvedValueOnce(many as never)
+      // The schema step is beside the point here; cancelling it ends the run.
+      .mockResolvedValueOnce(undefined);
+
+    await pickImportTargets({ connectionString: CONNECTION });
+
+    // Every database is still asked about — just not all at the same moment,
+    // and not one at a time either: the whole point is a bounded overlap.
+    expect(listSchemas).toHaveBeenCalledTimes(12);
+    expect(peak).toBe(5);
+  });
+
+  test("does not blame empty schemas when every database was unreadable", async () => {
+    jest.mocked(listDatabases).mockResolvedValue(["billing", "orders"]);
+    jest.mocked(listSchemas).mockRejectedValue(new Error("permission denied"));
+    jest
+      .mocked(window.showQuickPick)
+      .mockResolvedValueOnce(["billing", "orders"] as never);
+
+    expect(
+      await pickImportTargets({ connectionString: CONNECTION }),
+    ).toBeUndefined();
+
+    // The one warning above already named the cause; a second one about empty
+    // schemas would name the wrong one.
+    expect(window.showWarningMessage).toHaveBeenCalledTimes(1);
+    expect(window.showWarningMessage).toHaveBeenCalledWith(
+      "Could not read the schemas of: billing, orders",
+    );
+  });
+
+  test("speaks of databases in the plural when several were chosen", async () => {
+    jest.mocked(listDatabases).mockResolvedValue(["billing", "orders"]);
+    jest.mocked(listSchemas).mockResolvedValue([]);
+    jest
+      .mocked(window.showQuickPick)
+      .mockResolvedValueOnce(["billing", "orders"] as never);
+
+    expect(
+      await pickImportTargets({ connectionString: CONNECTION }),
+    ).toBeUndefined();
+    expect(window.showWarningMessage).toHaveBeenCalledWith(
+      "No user schemas found in the selected databases.",
+    );
+  });
+
   test("warns and gives up when nothing has a user schema", async () => {
     jest.mocked(listDatabases).mockResolvedValue(["orders"]);
     jest.mocked(listSchemas).mockResolvedValue([]);

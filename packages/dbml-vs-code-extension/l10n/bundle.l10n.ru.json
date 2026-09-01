@@ -34,6 +34,7 @@
   "No databases found on this server.": "На этом сервере не найдено баз данных.",
   "No saved connections": "Нет сохранённых подключений",
   "No user schemas": "Нет пользовательских схем",
+  "No user schemas found in the selected databases.": "В выбранных базах данных не найдено пользовательских схем.",
   "No user schemas found in this database.": "В этой базе данных не найдено пользовательских схем.",
   "Open a .dbml file to compare it with a database.": "Откройте файл .dbml, чтобы сравнить его с базой данных.",
   "Overwrite": "Перезаписать",

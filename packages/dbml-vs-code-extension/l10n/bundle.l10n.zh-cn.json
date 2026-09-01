@@ -34,6 +34,7 @@
   "No databases found on this server.": "此服务器上未找到数据库。",
   "No saved connections": "没有已保存的连接",
   "No user schemas": "没有用户模式",
+  "No user schemas found in the selected databases.": "在所选数据库中未找到用户架构。",
   "No user schemas found in this database.": "在此数据库中未找到用户架构。",
   "Open a .dbml file to compare it with a database.": "请打开一个 .dbml 文件以与数据库进行比较。",
   "Overwrite": "覆盖",
