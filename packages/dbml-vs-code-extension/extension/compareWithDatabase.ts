@@ -134,8 +134,10 @@ export async function compareWithDatabase(
 
   try {
     const model = parseDbmlToModel(dbmlText);
-    const database = databaseSchemaToModel(db, schemaName);
-    const diff = diffSchemas(model, database);
+    // Not `database`: that name is taken above by the database this compares
+    // against, and this is the model read out of it.
+    const databaseModel = databaseSchemaToModel(db, schemaName);
+    const diff = diffSchemas(model, databaseModel);
     const markdown = renderDiffMarkdown(diff, l10n.t);
 
     const doc = await workspace.openTextDocument({
