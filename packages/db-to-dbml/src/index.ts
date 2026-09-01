@@ -3,7 +3,9 @@ export {
   withDatabase,
 } from "./connectionString";
 export { fetchPostgresSchema } from "./fetchPostgresSchema";
+export { listDatabases } from "./listDatabases";
 export { listSchemaNames } from "./listSchemaNames";
+export { listSchemas } from "./listSchemas";
 export { schemaToDbml } from "./schemaToDbml";
 export { postgresToDbml } from "./postgresToDbml";
 export { filterDatabaseSchema } from "./filterDatabaseSchema";
