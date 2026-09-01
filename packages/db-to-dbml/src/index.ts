@@ -1,3 +1,7 @@
+export {
+  assertPostgresConnectionString,
+  withDatabase,
+} from "./connectionString";
 export { fetchPostgresSchema } from "./fetchPostgresSchema";
 export { listSchemaNames } from "./listSchemaNames";
 export { schemaToDbml } from "./schemaToDbml";
