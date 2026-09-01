@@ -50,7 +50,6 @@
   "Select the database schema to compare against": "Выберите схему базы данных для сравнения",
   "Select the database to compare against": "Выберите базу данных для сравнения",
   "Select the databases to import": "Выберите базы данных для импорта",
-  "Select the schema to import": "Выберите схему для импорта",
   "Select the schemas to import": "Выберите схемы для импорта",
   "Show diagram": "Показать диаграмму",
   "Tables only in DBML": "Таблицы только в DBML",

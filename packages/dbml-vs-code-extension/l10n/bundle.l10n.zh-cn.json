@@ -50,7 +50,6 @@
   "Select the database schema to compare against": "选择用于比较的数据库架构",
   "Select the database to compare against": "选择要比较的数据库",
   "Select the databases to import": "选择要导入的数据库",
-  "Select the schema to import": "选择要导入的架构",
   "Select the schemas to import": "选择要导入的模式",
   "Show diagram": "显示关系图",
   "Tables only in DBML": "仅存在于 DBML 的表",
