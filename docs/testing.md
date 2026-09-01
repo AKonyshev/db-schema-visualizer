@@ -48,7 +48,19 @@ CREATE TABLE books (
   author_id integer NOT NULL REFERENCES authors(id),
   title varchar(255) NOT NULL
 );
+-- A second schema, and a reference that leaves it: what an export of one
+-- schema drops and an export of both keeps.
+CREATE SCHEMA audit;
+CREATE TABLE audit.logs (
+  id serial PRIMARY KEY,
+  author_id integer NOT NULL REFERENCES authors(id),
+  action varchar(255) NOT NULL
+);
 SQL
+
+# A second database on the same server: what `listDatabases` is for.
+docker exec -i dbml-test-pg psql -U postgres -d postgres \
+  -c 'CREATE DATABASE dbmlother'
 
 DBML_TEST_DATABASE_URL=postgresql://postgres:test@localhost:55432/dbmltest \
   yarn workspace db-to-dbml test

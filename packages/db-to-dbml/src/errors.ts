@@ -3,6 +3,7 @@ export enum DbImportErrorCode {
   AUTH_FAILED = "AUTH_FAILED",
   UNREACHABLE = "UNREACHABLE",
   DATABASE_NOT_FOUND = "DATABASE_NOT_FOUND",
+  ACCESS_DENIED = "ACCESS_DENIED",
   UNKNOWN = "UNKNOWN",
 }
 
@@ -29,6 +30,9 @@ function inferCodeFromMessage(message: string): DbImportErrorCode {
   if (/database .* does not exist/i.test(message)) {
     return DbImportErrorCode.DATABASE_NOT_FOUND;
   }
+  if (/permission denied for database/i.test(message)) {
+    return DbImportErrorCode.ACCESS_DENIED;
+  }
   if (/ECONNREFUSED|ETIMEDOUT|ENOTFOUND|getaddrinfo/i.test(message)) {
     return DbImportErrorCode.UNREACHABLE;
   }
@@ -52,6 +56,11 @@ function dbImportErrorForCode(code: DbImportErrorCode): DbImportError {
         DbImportErrorCode.UNREACHABLE,
         "Could not reach the database host",
       );
+    case DbImportErrorCode.ACCESS_DENIED:
+      return new DbImportError(
+        DbImportErrorCode.ACCESS_DENIED,
+        "Permission denied for this database",
+      );
     default:
       return new DbImportError(
         DbImportErrorCode.UNKNOWN,
@@ -70,6 +79,8 @@ export function toDbImportError(err: unknown): DbImportError {
       return dbImportErrorForCode(DbImportErrorCode.AUTH_FAILED);
     case "3D000":
       return dbImportErrorForCode(DbImportErrorCode.DATABASE_NOT_FOUND);
+    case "42501":
+      return dbImportErrorForCode(DbImportErrorCode.ACCESS_DENIED);
     case "ECONNREFUSED":
     case "ETIMEDOUT":
     case "ENOTFOUND":

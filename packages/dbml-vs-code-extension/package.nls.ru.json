@@ -9,7 +9,7 @@
   "command.addConnection": "DBML: Добавить подключение к базе данных",
   "command.refreshConnections": "DBML: Обновить список подключений",
   "command.deleteConnection": "DBML: Удалить подключение",
-  "command.importFromConnection": "DBML: Импорт из этого подключения",
-  "command.compareWithConnection": "DBML: Сравнить с этим подключением",
+  "command.importFromConnection": "DBML: Импорт из базы данных",
+  "command.compareWithConnection": "DBML: Сравнить с базой данных",
   "configuration.title": "DBML Studio"
 }

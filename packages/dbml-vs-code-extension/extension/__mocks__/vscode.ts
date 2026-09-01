@@ -11,10 +11,17 @@ export const window = {
   showInformationMessage: jest.fn(),
   showTextDocument: jest.fn(),
   showSaveDialog: jest.fn(),
+  showOpenDialog: jest.fn(),
   registerCustomEditorProvider: jest.fn(() => ({ dispose: jest.fn() })),
   withProgress: jest.fn(
-    async (_options: unknown, task: (progress: unknown) => Thenable<unknown>) =>
-      task({}),
+    async (
+      _options: unknown,
+      task: (progress: unknown, token: unknown) => Thenable<unknown>,
+    ) =>
+      await task(
+        { report: jest.fn() },
+        { isCancellationRequested: false, onCancellationRequested: jest.fn() },
+      ),
   ),
 };
 
@@ -22,6 +29,7 @@ export const workspace = {
   workspaceFolders: undefined as { uri: unknown }[] | undefined,
   fs: {
     writeFile: jest.fn(),
+    stat: jest.fn(),
   },
   openTextDocument: jest.fn(),
   getConfiguration: jest.fn(() => ({
@@ -47,9 +55,36 @@ export const l10n = {
 };
 
 export const Uri = {
-  joinPath: jest.fn((...parts: unknown[]) => parts.join("/")),
+  // The real API normalizes what it joins: `..` is resolved away rather than
+  // kept as a segment, which is what lets an unsanitized name escape the folder
+  // it was joined to. A mock that only concatenates hides exactly that.
+  joinPath: jest.fn((base: unknown, ...parts: string[]) => {
+    const raw = [
+      String((base as { path?: string })?.path ?? base),
+      ...parts,
+    ].join("/");
+    const segments: string[] = [];
+    for (const segment of raw.split("/")) {
+      if (segment === "" || segment === ".") {
+        continue;
+      }
+      if (segment === "..") {
+        segments.pop();
+        continue;
+      }
+      segments.push(segment);
+    }
+    const joined = segments.join("/");
+    const path = raw.startsWith("/") ? `/${joined}` : joined;
+    return { path, fsPath: path, toString: () => path };
+  }),
   parse: jest.fn((value: string) => ({ toString: () => value })),
 };
+
+export const QuickPickItemKind = {
+  Separator: -1,
+  Default: 0,
+} as const;
 
 export const ProgressLocation = {
   Notification: 15,
@@ -97,3 +132,30 @@ export class Diagnostic {
 }
 
 export class ExtensionContext {}
+
+export const TreeItemCollapsibleState = {
+  None: 0,
+  Collapsed: 1,
+  Expanded: 2,
+} as const;
+
+export class TreeItem {
+  public contextValue?: string;
+  public iconPath?: unknown;
+  public command?: unknown;
+
+  constructor(
+    readonly label: string,
+    readonly collapsibleState?: number,
+  ) {}
+}
+
+export class ThemeIcon {
+  constructor(readonly id: string) {}
+}
+
+export class EventEmitter<T> {
+  public readonly event = jest.fn();
+
+  public fire(_value?: T): void {}
+}

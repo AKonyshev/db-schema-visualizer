@@ -6,6 +6,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+### Added
+
+- **Choose what to import from a server.** A saved connection used to mean one database and one schema — whatever the connection string named, minus every reference that left the schema you picked. It now means the server: the DBML panel opens a connection into its databases and each database into its schemas, and **DBML: Import from database** asks which databases and which schemas to take. Each database becomes one `.dbml` file holding every schema chosen from it, so a reference between two of them survives the export instead of being counted and dropped. Comparison gained the same choice of database, one schema at a time as before. A database the server lists but refuses now says so — it used to report the same "failed to import" as everything else.
+
 ## [1.0.2] - 2026-09-01
 
 ### Fixed

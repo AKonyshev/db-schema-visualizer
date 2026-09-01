@@ -9,7 +9,7 @@
   "command.addConnection": "DBML: Add database connection",
   "command.refreshConnections": "DBML: Refresh connections",
   "command.deleteConnection": "DBML: Delete connection",
-  "command.importFromConnection": "DBML: Import from this connection",
-  "command.compareWithConnection": "DBML: Compare with this connection",
+  "command.importFromConnection": "DBML: Import from database",
+  "command.compareWithConnection": "DBML: Compare with database",
   "configuration.title": "DBML Studio"
 }

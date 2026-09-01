@@ -3,29 +3,35 @@ import type { DatabaseSchema } from "./types";
 // The real @dbml/connector output does not always include every dictionary
 // (e.g. `checks` is absent when a database has no check constraints), and an
 // array can be missing too, so treat any nullish section as empty.
-const pickByPrefix = (
+const pickBySchemas = (
   dict: Record<string, unknown> | undefined,
-  prefix: string,
+  prefixes: string[],
 ): Record<string, unknown> =>
   Object.fromEntries(
-    Object.entries(dict ?? {}).filter(([key]) => key.startsWith(prefix)),
+    Object.entries(dict ?? {}).filter(([key]) =>
+      prefixes.some((prefix) => key.startsWith(prefix)),
+    ),
   );
 
 export function filterDatabaseSchema(
   db: DatabaseSchema,
-  schemaName: string,
+  schemaNames: string[],
 ): { schema: Required<DatabaseSchema>; droppedCrossSchemaRefs: number } {
-  const prefix = `${schemaName}.`;
+  const selected = new Set(schemaNames);
+  const prefixes = schemaNames.map((name) => `${name}.`);
 
-  const tables = (db.tables ?? []).filter((t) => t.schemaName === schemaName);
-  const enums = (db.enums ?? []).filter((e) => e.schemaName === schemaName);
+  const tables = (db.tables ?? []).filter((t) => selected.has(t.schemaName));
+  const enums = (db.enums ?? []).filter((e) => selected.has(e.schemaName));
 
+  // A reference survives when the whole of it was selected. One that leaves the
+  // selection cannot be drawn — nothing in the file holds its other end — so it
+  // is dropped and counted, and the user is told how many.
   let droppedCrossSchemaRefs = 0;
   const refs = (db.refs ?? []).filter((ref) => {
-    const allInSchema = ref.endpoints.every((e) => e.schemaName === schemaName);
-    const anyInSchema = ref.endpoints.some((e) => e.schemaName === schemaName);
-    if (!allInSchema && anyInSchema) droppedCrossSchemaRefs += 1;
-    return allInSchema;
+    const allInside = ref.endpoints.every((e) => selected.has(e.schemaName));
+    const anyInside = ref.endpoints.some((e) => selected.has(e.schemaName));
+    if (!allInside && anyInside) droppedCrossSchemaRefs += 1;
+    return allInside;
   });
 
   return {
@@ -33,10 +39,10 @@ export function filterDatabaseSchema(
       tables,
       enums,
       refs,
-      fields: pickByPrefix(db.fields, prefix),
-      tableConstraints: pickByPrefix(db.tableConstraints, prefix),
-      indexes: pickByPrefix(db.indexes, prefix),
-      checks: pickByPrefix(db.checks, prefix),
+      fields: pickBySchemas(db.fields, prefixes),
+      tableConstraints: pickBySchemas(db.tableConstraints, prefixes),
+      indexes: pickBySchemas(db.indexes, prefixes),
+      checks: pickBySchemas(db.checks, prefixes),
     },
     droppedCrossSchemaRefs,
   };

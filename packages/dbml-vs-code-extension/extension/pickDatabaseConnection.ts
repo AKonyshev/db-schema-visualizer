@@ -55,7 +55,9 @@ export async function pickDatabaseConnection(
   }
 
   const entered = await window.showInputBox({
-    prompt: l10n.t("PostgreSQL connection string"),
+    prompt: l10n.t(
+      "PostgreSQL connection string (the database in it is only the entry point)",
+    ),
     placeHolder: "postgres://user:password@host:5432/database",
     password: true,
     ignoreFocusOut: true,

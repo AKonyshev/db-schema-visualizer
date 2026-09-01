@@ -185,6 +185,21 @@
           "command": "dbmlStudio.deleteConnection",
           "when": "view == dbmlStudio.panel && viewItem == dbmlConnection",
           "group": "inline"
+        },
+        {
+          "command": "dbmlStudio.importFromConnection",
+          "when": "view == dbmlStudio.panel && viewItem == dbmlDatabase",
+          "group": "inline"
+        },
+        {
+          "command": "dbmlStudio.compareWithConnection",
+          "when": "view == dbmlStudio.panel && viewItem == dbmlDatabase",
+          "group": "inline"
+        },
+        {
+          "command": "dbmlStudio.importFromConnection",
+          "when": "view == dbmlStudio.panel && viewItem == dbmlSchema",
+          "group": "inline"
         }
       ]
     },

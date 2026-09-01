@@ -9,6 +9,7 @@ import {
 } from "./connectionStore";
 import { importFromDatabase } from "./importFromDatabase";
 import type { PanelNode } from "./panelNodes";
+import type { ImportPreselect } from "./pickImportTargets";
 
 export async function addConnection(
   context: ExtensionContext,
@@ -22,7 +23,9 @@ export async function addConnection(
     return;
   }
   const connectionString = await window.showInputBox({
-    prompt: l10n.t("PostgreSQL connection string"),
+    prompt: l10n.t(
+      "PostgreSQL connection string (the database in it is only the entry point)",
+    ),
     placeHolder: "postgres://user:password@host:5432/database",
     password: true,
     ignoreFocusOut: true,
@@ -57,36 +60,58 @@ export async function deleteConnectionCommand(
   provider.refresh();
 }
 
+// A node knows the whole path down to itself, so one command serves all three
+// depths: the wizard skips whatever the node has already answered.
+async function preselectFor(
+  context: ExtensionContext,
+  node?: PanelNode,
+): Promise<ImportPreselect | undefined> {
+  if (
+    node === undefined ||
+    (node.kind !== "connection" &&
+      node.kind !== "database" &&
+      node.kind !== "schema")
+  ) {
+    return undefined;
+  }
+
+  const connectionName =
+    node.kind === "connection" ? node.name : node.connectionName;
+  const connectionString = await getConnection(context.secrets, connectionName);
+  if (connectionString == null) {
+    void window.showErrorMessage(
+      l10n.t('Connection "{0}" not found.', connectionName),
+    );
+    return undefined;
+  }
+
+  return {
+    connectionString,
+    databaseName: node.kind === "connection" ? undefined : node.databaseName,
+    schemaName: node.kind === "schema" ? node.schemaName : undefined,
+  };
+}
+
 export async function importFromConnection(
   context: ExtensionContext,
   node?: PanelNode,
 ): Promise<void> {
-  if (node === undefined || node.kind !== "connection") {
+  const preselect = await preselectFor(context, node);
+  if (preselect === undefined) {
     return;
   }
-  const connectionString = await getConnection(context.secrets, node.name);
-  if (connectionString == null) {
-    void window.showErrorMessage(
-      l10n.t('Connection "{0}" not found.', node.name),
-    );
-    return;
-  }
-  await importFromDatabase(context, connectionString);
+  await importFromDatabase(context, preselect);
 }
 
 export async function compareWithConnection(
   context: ExtensionContext,
   node?: PanelNode,
 ): Promise<void> {
-  if (node === undefined || node.kind !== "connection") {
+  const preselect = await preselectFor(context, node);
+  if (preselect === undefined) {
     return;
   }
-  const connectionString = await getConnection(context.secrets, node.name);
-  if (connectionString == null) {
-    void window.showErrorMessage(
-      l10n.t('Connection "{0}" not found.', node.name),
-    );
-    return;
-  }
-  await compareWithDatabase(context, connectionString);
+  // A schema node's schema is not what is being compared; only its database
+  // matters, and `compareWithDatabase` ignores the rest.
+  await compareWithDatabase(context, preselect);
 }

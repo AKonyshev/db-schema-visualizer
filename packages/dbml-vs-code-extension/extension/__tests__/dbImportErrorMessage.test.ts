@@ -43,6 +43,16 @@ describe("dbImportErrorMessage", () => {
     );
   });
 
+  test("maps ACCESS_DENIED to the permission UI string", () => {
+    const error = new DbImportError(
+      DbImportErrorCode.ACCESS_DENIED,
+      "Permission denied for this database",
+    );
+    expect(dbImportErrorMessage(error, "fallback")).toBe(
+      "Access to this database is denied.",
+    );
+  });
+
   test("uses the caller fallback for UNKNOWN and never echoes error.message", () => {
     const error = new DbImportError(
       DbImportErrorCode.UNKNOWN,

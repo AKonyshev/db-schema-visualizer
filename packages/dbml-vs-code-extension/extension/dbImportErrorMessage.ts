@@ -17,6 +17,8 @@ const uiMessage = (code: DbImportErrorCode): string | null => {
       return l10n.t("Could not reach the database host.");
     case DbImportErrorCode.DATABASE_NOT_FOUND:
       return l10n.t("The specified database does not exist.");
+    case DbImportErrorCode.ACCESS_DENIED:
+      return l10n.t("Access to this database is denied.");
     case DbImportErrorCode.UNKNOWN:
       return null;
   }

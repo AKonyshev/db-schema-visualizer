@@ -11,7 +11,9 @@ import {
   DbImportError,
   DbImportErrorCode,
   fetchPostgresSchema,
+  listDatabases,
   listSchemaNames,
+  withDatabase,
 } from "db-to-dbml";
 import {
   DbmlParseError,
@@ -23,10 +25,16 @@ import {
 
 import { dbImportErrorMessage } from "./dbImportErrorMessage";
 import { pickDatabaseConnection } from "./pickDatabaseConnection";
+import type { ImportPreselect } from "./pickImportTargets";
+
+const asDbImportError = (error: unknown): DbImportError =>
+  error instanceof DbImportError
+    ? error
+    : new DbImportError(DbImportErrorCode.UNKNOWN, "Unknown error");
 
 export async function compareWithDatabase(
   context: ExtensionContext,
-  preselected?: string,
+  preselect?: ImportPreselect,
 ): Promise<void> {
   const editor = window.activeTextEditor;
   if (editor == null || editor.document.languageId !== "dbml") {
@@ -38,8 +46,8 @@ export async function compareWithDatabase(
   const dbmlText = editor.document.getText();
 
   let connectionString: string;
-  if (preselected != null && preselected !== "") {
-    connectionString = preselected;
+  if (preselect !== undefined) {
+    connectionString = preselect.connectionString;
   } else {
     const picked = await pickDatabaseConnection(context);
     if (picked === undefined) {
@@ -48,6 +56,43 @@ export async function compareWithDatabase(
     connectionString = picked.connectionString;
   }
 
+  // A connection names a server; which of its databases to compare against is a
+  // question of its own — unless the node the command came from answered it.
+  let databaseName = preselect?.databaseName;
+  if (databaseName === undefined) {
+    let databases: string[];
+    try {
+      databases = await listDatabases(connectionString);
+    } catch (error) {
+      console.error("[dbml] listing databases failed", error);
+      void window.showErrorMessage(
+        dbImportErrorMessage(
+          asDbImportError(error),
+          l10n.t("Failed to read the database schema."),
+        ),
+      );
+      return;
+    }
+
+    if (databases.length === 0) {
+      void window.showWarningMessage(
+        l10n.t("No databases found on this server."),
+      );
+      return;
+    }
+    if (databases.length === 1) {
+      databaseName = databases[0];
+    } else {
+      databaseName = await window.showQuickPick(databases, {
+        placeHolder: l10n.t("Select the database to compare against"),
+      });
+      if (databaseName === undefined) {
+        return;
+      }
+    }
+  }
+  const database = databaseName;
+
   let db: DatabaseSchema;
   try {
     db = await window.withProgress(
@@ -55,17 +100,14 @@ export async function compareWithDatabase(
         location: ProgressLocation.Notification,
         title: l10n.t("Reading database schema…"),
       },
-      async () => fetchPostgresSchema(connectionString),
+      async () =>
+        await fetchPostgresSchema(withDatabase(connectionString, database)),
     );
   } catch (error) {
     console.error("[dbml] reading the database schema failed", error);
-    const dbError =
-      error instanceof DbImportError
-        ? error
-        : new DbImportError(DbImportErrorCode.UNKNOWN, "Unknown error");
     void window.showErrorMessage(
       dbImportErrorMessage(
-        dbError,
+        asDbImportError(error),
         l10n.t("Failed to read the database schema."),
       ),
     );
@@ -92,8 +134,10 @@ export async function compareWithDatabase(
 
   try {
     const model = parseDbmlToModel(dbmlText);
-    const database = databaseSchemaToModel(db, schemaName);
-    const diff = diffSchemas(model, database);
+    // Not `database`: that name is taken above by the database this compares
+    // against, and this is the model read out of it.
+    const databaseModel = databaseSchemaToModel(db, schemaName);
+    const diff = diffSchemas(model, databaseModel);
     const markdown = renderDiffMarkdown(diff, l10n.t);
 
     const doc = await workspace.openTextDocument({

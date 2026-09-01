@@ -84,6 +84,21 @@ describe("toDbImportError", () => {
     });
   });
 
+  test("maps insufficient privilege 42501", () => {
+    expect(toDbImportError({ code: "42501" }).code).toBe(
+      DbImportErrorCode.ACCESS_DENIED,
+    );
+  });
+
+  test("maps a permission-denied message when the driver dropped the code", () => {
+    const e = toDbImportError(
+      new Error('permission denied for database "billing"'),
+    );
+    expect(e.code).toBe(DbImportErrorCode.ACCESS_DENIED);
+    // The database name came from the server's message; it must not travel on.
+    expect(e.message).not.toContain("billing");
+  });
+
   test("passing a DbImportError through is unchanged", () => {
     const original = new DbImportError(
       DbImportErrorCode.INVALID_CONNECTION_STRING,

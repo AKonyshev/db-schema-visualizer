@@ -3,8 +3,14 @@ import * as path from "path";
 
 import {
   ACTION_NODES,
+  CONNECTION_UNAVAILABLE,
+  DATABASES_UNREADABLE,
   GROUP_NODES,
+  SCHEMAS_UNREADABLE,
   buildConnectionNodes,
+  buildDatabaseNodes,
+  buildSchemaNodes,
+  errorNode,
   type PanelNode,
 } from "../panelNodes";
 
@@ -19,6 +25,46 @@ describe("buildConnectionNodes", () => {
   test("returns a single empty node when there are no connections", () => {
     expect(buildConnectionNodes([])).toEqual([
       { kind: "empty", label: "No saved connections" },
+    ]);
+  });
+});
+
+describe("buildDatabaseNodes", () => {
+  test("returns one database node per name, carrying its connection", () => {
+    expect(buildDatabaseNodes("prod", ["billing", "orders"])).toEqual([
+      { kind: "database", connectionName: "prod", databaseName: "billing" },
+      { kind: "database", connectionName: "prod", databaseName: "orders" },
+    ]);
+  });
+
+  test("returns a single empty node when the server has none", () => {
+    expect(buildDatabaseNodes("prod", [])).toEqual([
+      { kind: "empty", label: "No databases" },
+    ]);
+  });
+});
+
+describe("buildSchemaNodes", () => {
+  test("returns one schema node per name, carrying its database", () => {
+    expect(buildSchemaNodes("prod", "orders", ["audit", "public"])).toEqual([
+      {
+        kind: "schema",
+        connectionName: "prod",
+        databaseName: "orders",
+        schemaName: "audit",
+      },
+      {
+        kind: "schema",
+        connectionName: "prod",
+        databaseName: "orders",
+        schemaName: "public",
+      },
+    ]);
+  });
+
+  test("returns a single empty node when the database has none", () => {
+    expect(buildSchemaNodes("prod", "orders", [])).toEqual([
+      { kind: "empty", label: "No user schemas" },
     ]);
   });
 });
@@ -50,9 +96,18 @@ describe("panel labels / translation bundles", () => {
       ...GROUP_NODES,
       ...ACTION_NODES,
       ...buildConnectionNodes([]),
+      ...buildDatabaseNodes("c", []),
+      ...buildSchemaNodes("c", "d", []),
+      errorNode(CONNECTION_UNAVAILABLE),
+      errorNode(DATABASES_UNREADABLE),
+      errorNode(SCHEMAS_UNREADABLE),
     ];
     return nodes.flatMap((node) =>
-      node.kind === "connection" ? [] : [node.label],
+      node.kind === "connection" ||
+      node.kind === "database" ||
+      node.kind === "schema"
+        ? []
+        : [node.label],
     );
   };
 
