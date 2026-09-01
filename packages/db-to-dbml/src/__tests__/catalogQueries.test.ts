@@ -52,14 +52,28 @@ describe("catalog queries", () => {
     expect(sql).toContain("information_schema");
   });
 
-  test("connects to the database named in the string", async () => {
+  test("connects to the database named in the string, under a time limit", async () => {
     query.mockResolvedValue({ rows: [] });
 
     await listSchemas("postgres://u:p@h/orders");
 
+    // The timeouts are the point: a tree expansion has nothing to cancel with,
+    // so an unbounded connect to a host that drops packets would hang it.
     expect(Client).toHaveBeenCalledWith({
       connectionString: "postgres://u:p@h/orders",
+      connectionTimeoutMillis: expect.any(Number),
+      query_timeout: expect.any(Number),
+      statement_timeout: expect.any(Number),
     });
+
+    const config = jest.mocked(Client).mock.calls[0][0] as {
+      connectionTimeoutMillis: number;
+      query_timeout: number;
+      statement_timeout: number;
+    };
+    expect(config.connectionTimeoutMillis).toBeGreaterThan(0);
+    expect(config.query_timeout).toBeGreaterThan(0);
+    expect(config.statement_timeout).toBeGreaterThan(0);
   });
 
   test("maps a driver failure to a DbImportError and still closes the client", async () => {
