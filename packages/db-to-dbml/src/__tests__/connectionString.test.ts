@@ -61,4 +61,24 @@ describe("withDatabase", () => {
       DbImportError,
     );
   });
+
+  test("reports a string the URL parser cannot read without quoting it", () => {
+    // A bare `#` in the password: `new URL` throws a TypeError carrying the
+    // whole string in `error.input`, and every caller of withDatabase logs what
+    // it catches. Nothing about the password may survive the translation.
+    const secret = "postgres://u:p#assw0rd@h:5432/entry";
+
+    try {
+      withDatabase(secret, "orders");
+      throw new Error("expected a DbImportError");
+    } catch (error) {
+      expect(error).toBeInstanceOf(DbImportError);
+      expect((error as DbImportError).code).toBe(
+        DbImportErrorCode.INVALID_CONNECTION_STRING,
+      );
+      expect(JSON.stringify(error)).not.toContain("assw0rd");
+      expect((error as DbImportError).message).not.toContain("assw0rd");
+      expect(error).not.toHaveProperty("input");
+    }
+  });
 });

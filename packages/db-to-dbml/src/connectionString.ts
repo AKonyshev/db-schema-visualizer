@@ -22,7 +22,25 @@ export function withDatabase(
   connectionString: string,
   databaseName: string,
 ): string {
-  const url = new URL(assertPostgresConnectionString(connectionString));
+  const trimmed = assertPostgresConnectionString(connectionString);
+
+  // `new URL` refuses what its own parser cannot read — a password holding a
+  // bare `#` or `?`, say — and the TypeError it throws carries the entire
+  // connection string, password and all, in `error.input`. Every caller of this
+  // function logs what it catches, so that string would land in the Extension
+  // Host log; `pg-connection-string` blanks the same field for the same reason.
+  // Anything refused here is refused by pg's own parser too, so the string
+  // really is invalid: say so, without repeating it back.
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    throw new DbImportError(
+      DbImportErrorCode.INVALID_CONNECTION_STRING,
+      "Connection string is not a readable PostgreSQL URL",
+    );
+  }
+
   url.pathname = `/${encodeURIComponent(databaseName)}`;
   return url.toString();
 }
