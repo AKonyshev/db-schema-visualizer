@@ -160,12 +160,26 @@ export class ConnectionsTreeProvider
     return nodes;
   }
 
+  // The secret store can fail as well as come up empty: a locked or broken
+  // keychain rejects rather than answering. Either way the connection is what
+  // is unavailable, and neither may reach the caller as a rejection.
+  private async connectionString(
+    connectionName: string,
+  ): Promise<string | undefined> {
+    try {
+      return (await getConnection(this.secrets, connectionName)) ?? undefined;
+    } catch (error) {
+      console.error("[dbml] reading the connection failed", error);
+      return undefined;
+    }
+  }
+
   // Nothing here may throw. VS Code answers a rejected getChildren with an
   // empty node and no explanation, so a failure has to become a child that says
   // what happened, with the cause in the Extension Host log.
   private async databaseNodes(connectionName: string): Promise<PanelNode[]> {
-    const connectionString = await getConnection(this.secrets, connectionName);
-    if (connectionString == null) {
+    const connectionString = await this.connectionString(connectionName);
+    if (connectionString === undefined) {
       return [errorNode(CONNECTION_UNAVAILABLE)];
     }
 
@@ -184,8 +198,8 @@ export class ConnectionsTreeProvider
     connectionName: string,
     databaseName: string,
   ): Promise<PanelNode[]> {
-    const connectionString = await getConnection(this.secrets, connectionName);
-    if (connectionString == null) {
+    const connectionString = await this.connectionString(connectionName);
+    if (connectionString === undefined) {
       return [errorNode(CONNECTION_UNAVAILABLE)];
     }
 

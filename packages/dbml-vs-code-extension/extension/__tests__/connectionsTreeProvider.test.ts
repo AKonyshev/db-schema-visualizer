@@ -166,6 +166,46 @@ describe("ConnectionsTreeProvider", () => {
     ]);
   });
 
+  test("says so when the secret store itself fails", async () => {
+    // A locked or broken keychain rejects rather than answering empty. VS Code
+    // renders a rejected getChildren as a silent empty node, so the failure has
+    // to come back as a child that says what happened.
+    get.mockReset().mockRejectedValue(new Error("keychain is locked"));
+    const provider = new ConnectionsTreeProvider(secrets);
+
+    expect(
+      await provider.getChildren({ kind: "connection", name: "prod" }),
+    ).toEqual([
+      { kind: "error", label: "This connection is no longer available" },
+    ]);
+    expect(
+      await provider.getChildren({
+        kind: "database",
+        connectionName: "prod",
+        databaseName: "orders",
+      }),
+    ).toEqual([
+      { kind: "error", label: "This connection is no longer available" },
+    ]);
+  });
+
+  test("does not remember a secret store that failed", async () => {
+    get
+      .mockReset()
+      .mockRejectedValueOnce(new Error("keychain is locked"))
+      .mockResolvedValue(JSON.stringify({ prod: "postgres://u:p@h/entry" }));
+    jest.mocked(listDatabases).mockResolvedValue(["orders"]);
+    const provider = new ConnectionsTreeProvider(secrets);
+    const node = { kind: "connection", name: "prod" } as const;
+
+    await provider.getChildren(node);
+
+    // Unlocking the keychain and expanding again has to be enough.
+    expect(await provider.getChildren(node)).toEqual([
+      { kind: "database", connectionName: "prod", databaseName: "orders" },
+    ]);
+  });
+
   test("keeps each database's schemas apart in the cache", async () => {
     jest
       .mocked(listSchemas)
