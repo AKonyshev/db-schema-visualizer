@@ -2,6 +2,7 @@
   "Access to this database is denied.": "Доступ к этой базе данных запрещён.",
   "Actions": "Действия",
   "Authentication failed. Check the username and password.": "Ошибка аутентификации. Проверьте имя пользователя и пароль.",
+  "Cancelled after importing {0} of {1} databases.": "Отменено после импорта {0} из {1} баз данных.",
   "Column differences ({0} tables)": "Различия в колонках (таблиц: {0})",
   "Compare with database": "Сравнить с базой данных",
   "Connection \"{0}\" not found.": "Подключение «{0}» не найдено.",

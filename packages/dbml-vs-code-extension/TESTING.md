@@ -86,7 +86,7 @@ One state, two ways in — the header icon and `Alt+H` — and **neither writes 
 5. Several databases chosen: choose a folder; confirm one `<database>.dbml` per database is written, that no editor opens by itself, and that the closing notice counts the files. Re-run into the same folder and confirm the single "these files already exist" confirmation, and that declining writes nothing.
 6. Two schemas of one database chosen with a foreign key between them: confirm the reference is in the file (`Ref` naming both `schema.table` ends) rather than counted as omitted.
 7. If cross-schema foreign keys leave the chosen set, confirm the "N cross-schema references were omitted" notice, summed across every file.
-8. Cancel the progress notification during a multi-database import: confirm the databases already finished keep their files, and the run stops.
+8. Cancel the progress notification during a multi-database import: confirm the databases already finished keep their files, the run stops, and the closing notice says "Cancelled after importing N of M databases" rather than reporting a complete run.
 9. Re-run the command; confirm the saved connection appears in the list and works.
 10. Error cases: wrong password, unreachable host, and a non-`postgres://` string each show a clear message with no password leaked. On a server holding a database your user may not connect to, choosing it alongside a readable one imports the readable one and reports "Imported 1 of 2 databases. <name>: Access to this database is denied."
 

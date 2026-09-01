@@ -187,6 +187,39 @@ describe("importFromDatabase", () => {
     await importFromDatabase(fakeContext(), { connectionString: CONNECTION });
 
     expect(workspace.fs.writeFile).toHaveBeenCalledTimes(1);
+    // "Imported 1 DBML file(s)" would read like the whole job was done.
+    expect(window.showInformationMessage).toHaveBeenCalledWith(
+      "Cancelled after importing 1 of 2 databases.",
+    );
+  });
+
+  test("fills the progress bar to the end of the last database", async () => {
+    jest.mocked(pickImportTargets).mockResolvedValue(twoDatabases);
+    jest
+      .mocked(resolveImportDestination)
+      .mockResolvedValue(twoDestinations() as never);
+    const report = jest.fn();
+    jest
+      .mocked(window.withProgress)
+      .mockImplementationOnce(
+        (async (
+          _options: unknown,
+          task: (progress: unknown, token: unknown) => Promise<unknown>,
+        ) =>
+          await task(
+            { report },
+            {
+              isCancellationRequested: false,
+              onCancellationRequested: jest.fn(),
+            },
+          )) as never,
+      );
+
+    await importFromDatabase(fakeContext(), { connectionString: CONNECTION });
+
+    const steps = report.mock.calls as Array<[{ increment?: number }]>;
+    const total = steps.reduce((sum, [step]) => sum + (step.increment ?? 0), 0);
+    expect(total).toBeCloseTo(100);
   });
 
   test("sums the omitted cross-schema references across files", async () => {

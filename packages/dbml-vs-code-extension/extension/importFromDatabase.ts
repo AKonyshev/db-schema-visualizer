@@ -73,20 +73,63 @@ async function maybeSaveConnection(
   }
 }
 
+async function importOne(
+  connectionString: string,
+  target: ImportTarget,
+  uri: Uri,
+): Promise<ImportOutcome> {
+  let dbml: string;
+  let droppedCrossSchemaRefs: number;
+  try {
+    const db = await fetchPostgresSchema(
+      withDatabase(connectionString, target.databaseName),
+    );
+    ({ dbml, droppedCrossSchemaRefs } = schemaToDbml(db, target.schemaNames));
+  } catch (error) {
+    console.error(
+      "[dbml] importing a database failed",
+      target.databaseName,
+      error,
+    );
+    return {
+      status: "read-failed",
+      databaseName: target.databaseName,
+      error: asDbImportError(error),
+    };
+  }
+
+  // Written as soon as it is read: nothing accumulates in memory, and a run
+  // stopped halfway leaves whole files rather than none.
+  try {
+    await workspace.fs.writeFile(uri, Buffer.from(dbml, "utf-8"));
+  } catch (error) {
+    console.error("[dbml] failed to save the imported DBML file", error);
+    return { status: "write-failed", databaseName: target.databaseName };
+  }
+
+  return {
+    status: "ok",
+    databaseName: target.databaseName,
+    uri,
+    droppedCrossSchemaRefs,
+  };
+}
+
 async function importEach(
   connectionString: string,
   targets: ImportTarget[],
   destinations: Map<string, Uri>,
   progress: Progress<{ message?: string; increment?: number }>,
   token: CancellationToken,
-): Promise<ImportOutcome[]> {
+): Promise<{ outcomes: ImportOutcome[]; cancelled: boolean }> {
   const outcomes: ImportOutcome[] = [];
+  const share = 100 / targets.length;
 
   for (const [index, target] of targets.entries()) {
     // A read inside @dbml/connector cannot be interrupted, so cancellation is
     // honoured between databases — and whatever was written stays written.
     if (token.isCancellationRequested) {
-      break;
+      return { outcomes, cancelled: true };
     }
 
     const uri = destinations.get(target.databaseName);
@@ -101,52 +144,16 @@ async function importEach(
         index + 1,
         targets.length,
       ),
-      increment: index === 0 ? 0 : 100 / targets.length,
     });
 
-    let dbml: string;
-    let droppedCrossSchemaRefs: number;
-    try {
-      const db = await fetchPostgresSchema(
-        withDatabase(connectionString, target.databaseName),
-      );
-      ({ dbml, droppedCrossSchemaRefs } = schemaToDbml(db, target.schemaNames));
-    } catch (error) {
-      console.error(
-        "[dbml] importing a database failed",
-        target.databaseName,
-        error,
-      );
-      outcomes.push({
-        status: "read-failed",
-        databaseName: target.databaseName,
-        error: asDbImportError(error),
-      });
-      continue;
-    }
+    outcomes.push(await importOne(connectionString, target, uri));
 
-    // Written as soon as it is read: nothing accumulates in memory, and a run
-    // stopped halfway leaves whole files rather than none.
-    try {
-      await workspace.fs.writeFile(uri, Buffer.from(dbml, "utf-8"));
-    } catch (error) {
-      console.error("[dbml] failed to save the imported DBML file", error);
-      outcomes.push({
-        status: "write-failed",
-        databaseName: target.databaseName,
-      });
-      continue;
-    }
-
-    outcomes.push({
-      status: "ok",
-      databaseName: target.databaseName,
-      uri,
-      droppedCrossSchemaRefs,
-    });
+    // Reported once a database is done rather than when the next one starts, so
+    // the bar reaches the end of the last one instead of stopping a share short.
+    progress.report({ increment: share });
   }
 
-  return outcomes;
+  return { outcomes, cancelled: false };
 }
 
 const describeFailure = (outcome: ImportOutcome): string =>
@@ -173,6 +180,7 @@ async function openImported(uri: Uri): Promise<void> {
 async function reportOutcomes(
   outcomes: ImportOutcome[],
   planned: number,
+  cancelled: boolean,
 ): Promise<void> {
   const written = outcomes.filter(
     (outcome): outcome is Extract<ImportOutcome, { status: "ok" }> =>
@@ -231,8 +239,16 @@ async function reportOutcomes(
     return;
   }
 
+  // A run stopped halfway wrote real files, but "Imported 2 DBML file(s)" reads
+  // like the whole job — say how much of it was left.
   void window.showInformationMessage(
-    l10n.t("Imported {0} DBML file(s).", written.length),
+    cancelled
+      ? l10n.t(
+          "Cancelled after importing {0} of {1} databases.",
+          written.length,
+          planned,
+        )
+      : l10n.t("Imported {0} DBML file(s).", written.length),
   );
 }
 
@@ -274,7 +290,7 @@ export async function importFromDatabase(
     return;
   }
 
-  const outcomes = await window.withProgress(
+  const { outcomes, cancelled } = await window.withProgress(
     {
       location: ProgressLocation.Notification,
       title: l10n.t("Importing database schema…"),
@@ -290,7 +306,7 @@ export async function importFromDatabase(
       ),
   );
 
-  await reportOutcomes(outcomes, targets.length);
+  await reportOutcomes(outcomes, targets.length, cancelled);
 
   if (isNew) {
     try {

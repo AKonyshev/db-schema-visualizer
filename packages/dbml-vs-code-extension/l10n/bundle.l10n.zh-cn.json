@@ -2,6 +2,7 @@
   "Access to this database is denied.": "拒绝访问此数据库。",
   "Actions": "操作",
   "Authentication failed. Check the username and password.": "身份验证失败。请检查用户名和密码。",
+  "Cancelled after importing {0} of {1} databases.": "已在导入 {1} 个数据库中的 {0} 个后取消。",
   "Column differences ({0} tables)": "列差异（{0} 个表）",
   "Compare with database": "与数据库比较",
   "Connection \"{0}\" not found.": "未找到连接“{0}”。",
