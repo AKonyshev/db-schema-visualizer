@@ -11,6 +11,7 @@ export const window = {
   showInformationMessage: jest.fn(),
   showTextDocument: jest.fn(),
   showSaveDialog: jest.fn(),
+  showOpenDialog: jest.fn(),
   registerCustomEditorProvider: jest.fn(() => ({ dispose: jest.fn() })),
   withProgress: jest.fn(
     async (_options: unknown, task: (progress: unknown) => Thenable<unknown>) =>
@@ -22,6 +23,7 @@ export const workspace = {
   workspaceFolders: undefined as { uri: unknown }[] | undefined,
   fs: {
     writeFile: jest.fn(),
+    stat: jest.fn(),
   },
   openTextDocument: jest.fn(),
   getConfiguration: jest.fn(() => ({
@@ -47,7 +49,13 @@ export const l10n = {
 };
 
 export const Uri = {
-  joinPath: jest.fn((...parts: unknown[]) => parts.join("/")),
+  joinPath: jest.fn((base: unknown, ...parts: string[]) => {
+    const path = [
+      String((base as { path?: string })?.path ?? base),
+      ...parts,
+    ].join("/");
+    return { path, fsPath: path, toString: () => path };
+  }),
   parse: jest.fn((value: string) => ({ toString: () => value })),
 };
 
