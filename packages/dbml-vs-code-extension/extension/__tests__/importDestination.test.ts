@@ -25,6 +25,48 @@ describe("importFileName", () => {
     // Two databases with one `public` each would otherwise collide.
     expect(importFileName(targets[0], false)).toBe("billing.dbml");
   });
+
+  test("keeps a name that walks up out of the file name", () => {
+    // PostgreSQL quotes any identifier, `../secrets` included, and joining that
+    // to the chosen folder resolves the `..` and writes a level above it.
+    expect(
+      importFileName(
+        { databaseName: "../../etc/passwd", schemaNames: ["public"] },
+        false,
+      ),
+    ).toBe("_.._etc_passwd.dbml");
+  });
+
+  test("sanitizes a schema name too", () => {
+    // The lone-schema name comes from the server just as the database name does.
+    expect(
+      importFileName({ databaseName: "orders", schemaNames: ["../x"] }, true),
+    ).toBe("_x.dbml");
+  });
+
+  test("keeps letters the user can read", () => {
+    // Only what a filesystem refuses is replaced. A name outside ASCII is a
+    // perfectly good file name, and mangling it to underscores would be worse
+    // than the problem being fixed.
+    expect(
+      importFileName(
+        { databaseName: "pedidos_españa", schemaNames: ["public"] },
+        false,
+      ),
+    ).toBe("pedidos_españa.dbml");
+  });
+
+  test("falls back when nothing usable is left", () => {
+    expect(
+      importFileName({ databaseName: "..", schemaNames: ["public"] }, false),
+    ).toBe("database.dbml");
+  });
+
+  test("refuses a name Windows reserves for a device", () => {
+    expect(
+      importFileName({ databaseName: "con", schemaNames: ["public"] }, false),
+    ).toBe("con_.dbml");
+  });
 });
 
 describe("resolveImportDestination", () => {
@@ -85,6 +127,64 @@ describe("resolveImportDestination", () => {
       "Overwrite",
     );
     expect(destination?.size).toBe(2);
+  });
+
+  test("writes every file inside the folder that was chosen", async () => {
+    jest
+      .mocked(window.showOpenDialog)
+      .mockResolvedValue([{ path: "/tmp/out" }] as never);
+    jest.mocked(workspace.fs.stat).mockRejectedValue(new Error("not found"));
+
+    const destination = await resolveImportDestination([
+      { databaseName: "../../etc/passwd", schemaNames: ["public"] },
+      targets[1],
+    ]);
+
+    expect(destination?.get("../../etc/passwd")?.path).toBe(
+      "/tmp/out/_.._etc_passwd.dbml",
+    );
+    expect(destination?.get("orders")?.path).toBe("/tmp/out/orders.dbml");
+  });
+
+  test("gives two databases that sanitize alike separate files", async () => {
+    jest
+      .mocked(window.showOpenDialog)
+      .mockResolvedValue([{ path: "/tmp/out" }] as never);
+    jest.mocked(workspace.fs.stat).mockRejectedValue(new Error("not found"));
+
+    const destination = await resolveImportDestination([
+      { databaseName: "a/b", schemaNames: ["public"] },
+      { databaseName: "a_b", schemaNames: ["public"] },
+      // Two names a case-insensitive filesystem cannot tell apart.
+      { databaseName: "Orders", schemaNames: ["public"] },
+      { databaseName: "orders", schemaNames: ["public"] },
+    ]);
+
+    expect(destination?.get("a/b")?.path).toBe("/tmp/out/a_b.dbml");
+    expect(destination?.get("a_b")?.path).toBe("/tmp/out/a_b-2.dbml");
+    expect(destination?.get("Orders")?.path).toBe("/tmp/out/Orders.dbml");
+    expect(destination?.get("orders")?.path).toBe("/tmp/out/orders-2.dbml");
+  });
+
+  test("names the file it warns about, not the database", async () => {
+    jest
+      .mocked(window.showOpenDialog)
+      .mockResolvedValue([{ path: "/tmp/out" }] as never);
+    jest.mocked(workspace.fs.stat).mockResolvedValue({} as never);
+    jest
+      .mocked(window.showWarningMessage)
+      .mockResolvedValue("Overwrite" as never);
+
+    await resolveImportDestination([
+      { databaseName: "a/b", schemaNames: ["public"] },
+      { databaseName: "a_b", schemaNames: ["public"] },
+    ]);
+
+    expect(window.showWarningMessage).toHaveBeenCalledWith(
+      "These files already exist and will be replaced: a_b.dbml, a_b-2.dbml",
+      { modal: true },
+      "Overwrite",
+    );
   });
 
   test("writes nothing when the replacement is declined", async () => {

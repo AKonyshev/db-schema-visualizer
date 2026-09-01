@@ -55,11 +55,27 @@ export const l10n = {
 };
 
 export const Uri = {
+  // The real API normalizes what it joins: `..` is resolved away rather than
+  // kept as a segment, which is what lets an unsanitized name escape the folder
+  // it was joined to. A mock that only concatenates hides exactly that.
   joinPath: jest.fn((base: unknown, ...parts: string[]) => {
-    const path = [
+    const raw = [
       String((base as { path?: string })?.path ?? base),
       ...parts,
     ].join("/");
+    const segments: string[] = [];
+    for (const segment of raw.split("/")) {
+      if (segment === "" || segment === ".") {
+        continue;
+      }
+      if (segment === "..") {
+        segments.pop();
+        continue;
+      }
+      segments.push(segment);
+    }
+    const joined = segments.join("/");
+    const path = raw.startsWith("/") ? `/${joined}` : joined;
     return { path, fsPath: path, toString: () => path };
   }),
   parse: jest.fn((value: string) => ({ toString: () => value })),
