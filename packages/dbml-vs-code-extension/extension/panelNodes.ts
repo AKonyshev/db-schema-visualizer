@@ -2,7 +2,15 @@ export type PanelNode =
   | { kind: "group"; id: "actions" | "connections"; label: string }
   | { kind: "action"; label: string; commandId: string; icon: string }
   | { kind: "connection"; name: string }
-  | { kind: "empty"; label: string };
+  | { kind: "database"; connectionName: string; databaseName: string }
+  | {
+      kind: "schema";
+      connectionName: string;
+      databaseName: string;
+      schemaName: string;
+    }
+  | { kind: "empty"; label: string }
+  | { kind: "error"; label: string };
 
 // The two top-level groups. They live here rather than inline in the tree
 // provider so that every static panel string sits in one model — which is what
@@ -39,3 +47,49 @@ export function buildConnectionNodes(names: string[]): PanelNode[] {
   }
   return names.map((name) => ({ kind: "connection", name }));
 }
+
+// A node carries the whole path down to itself: a command invoked on a schema
+// has to know which database of which connection it belongs to, and a tree item
+// is the only thing VS Code hands the command.
+export function buildDatabaseNodes(
+  connectionName: string,
+  databaseNames: string[],
+): PanelNode[] {
+  if (databaseNames.length === 0) {
+    return [{ kind: "empty", label: "No databases" }];
+  }
+  return databaseNames.map((databaseName) => ({
+    kind: "database",
+    connectionName,
+    databaseName,
+  }));
+}
+
+export function buildSchemaNodes(
+  connectionName: string,
+  databaseName: string,
+  schemaNames: string[],
+): PanelNode[] {
+  if (schemaNames.length === 0) {
+    return [{ kind: "empty", label: "No user schemas" }];
+  }
+  return schemaNames.map((schemaName) => ({
+    kind: "schema",
+    connectionName,
+    databaseName,
+    schemaName,
+  }));
+}
+
+// Expanding a node can fail — a server that has gone away, a database the user
+// may not read. A tree provider must not throw while producing children: VS Code
+// renders an empty node and says nothing. These are the labels it shows instead,
+// constants so that the translation test can find them.
+export const CONNECTION_UNAVAILABLE = "This connection is no longer available";
+export const DATABASES_UNREADABLE = "Could not read the list of databases";
+export const SCHEMAS_UNREADABLE = "Could not read the list of schemas";
+
+export const errorNode = (label: string): PanelNode => ({
+  kind: "error",
+  label,
+});

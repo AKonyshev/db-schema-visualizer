@@ -47,10 +47,38 @@ export class ConnectionsTreeProvider
       case "connection": {
         const item = new vscode.TreeItem(
           node.name,
-          vscode.TreeItemCollapsibleState.None,
+          vscode.TreeItemCollapsibleState.Collapsed,
         );
         item.contextValue = "dbmlConnection";
+        // A connection is a server now, and its children are its databases.
+        item.iconPath = new vscode.ThemeIcon("server");
+        return item;
+      }
+      case "database": {
+        const item = new vscode.TreeItem(
+          node.databaseName,
+          vscode.TreeItemCollapsibleState.Collapsed,
+        );
+        item.contextValue = "dbmlDatabase";
         item.iconPath = new vscode.ThemeIcon("database");
+        return item;
+      }
+      case "schema": {
+        const item = new vscode.TreeItem(
+          node.schemaName,
+          vscode.TreeItemCollapsibleState.None,
+        );
+        item.contextValue = "dbmlSchema";
+        item.iconPath = new vscode.ThemeIcon("symbol-namespace");
+        return item;
+      }
+      case "error": {
+        const item = new vscode.TreeItem(
+          vscode.l10n.t(node.label),
+          vscode.TreeItemCollapsibleState.None,
+        );
+        item.contextValue = "dbmlError";
+        item.iconPath = new vscode.ThemeIcon("error");
         return item;
       }
       case "empty": {
