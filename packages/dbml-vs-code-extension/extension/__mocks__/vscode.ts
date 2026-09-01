@@ -116,3 +116,30 @@ export class Diagnostic {
 }
 
 export class ExtensionContext {}
+
+export const TreeItemCollapsibleState = {
+  None: 0,
+  Collapsed: 1,
+  Expanded: 2,
+} as const;
+
+export class TreeItem {
+  public contextValue?: string;
+  public iconPath?: unknown;
+  public command?: unknown;
+
+  constructor(
+    readonly label: string,
+    readonly collapsibleState?: number,
+  ) {}
+}
+
+export class ThemeIcon {
+  constructor(readonly id: string) {}
+}
+
+export class EventEmitter<T> {
+  public readonly event = jest.fn();
+
+  public fire(_value?: T): void {}
+}

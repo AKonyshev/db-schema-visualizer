@@ -1,10 +1,17 @@
 import * as vscode from "vscode";
+import { listDatabases, listSchemas, withDatabase } from "db-to-dbml";
 
-import { listConnections } from "./connectionStore";
+import { getConnection, listConnections } from "./connectionStore";
 import {
   ACTION_NODES,
+  CONNECTION_UNAVAILABLE,
+  DATABASES_UNREADABLE,
   GROUP_NODES,
+  SCHEMAS_UNREADABLE,
   buildConnectionNodes,
+  buildDatabaseNodes,
+  buildSchemaNodes,
+  errorNode,
   type PanelNode,
 } from "./panelNodes";
 
@@ -102,6 +109,53 @@ export class ConnectionsTreeProvider
     if (node.kind === "group" && node.id === "connections") {
       return buildConnectionNodes(await listConnections(this.secrets));
     }
+    if (node.kind === "connection") {
+      return await this.databaseNodes(node.name);
+    }
+    if (node.kind === "database") {
+      return await this.schemaNodes(node.connectionName, node.databaseName);
+    }
     return [];
+  }
+
+  // Nothing here may throw. VS Code answers a rejected getChildren with an
+  // empty node and no explanation, so a failure has to become a child that says
+  // what happened, with the cause in the Extension Host log.
+  private async databaseNodes(connectionName: string): Promise<PanelNode[]> {
+    const connectionString = await getConnection(this.secrets, connectionName);
+    if (connectionString == null) {
+      return [errorNode(CONNECTION_UNAVAILABLE)];
+    }
+
+    try {
+      return buildDatabaseNodes(
+        connectionName,
+        await listDatabases(connectionString),
+      );
+    } catch (error) {
+      console.error("[dbml] listing databases failed", error);
+      return [errorNode(DATABASES_UNREADABLE)];
+    }
+  }
+
+  private async schemaNodes(
+    connectionName: string,
+    databaseName: string,
+  ): Promise<PanelNode[]> {
+    const connectionString = await getConnection(this.secrets, connectionName);
+    if (connectionString == null) {
+      return [errorNode(CONNECTION_UNAVAILABLE)];
+    }
+
+    try {
+      return buildSchemaNodes(
+        connectionName,
+        databaseName,
+        await listSchemas(withDatabase(connectionString, databaseName)),
+      );
+    } catch (error) {
+      console.error("[dbml] listing schemas failed", error);
+      return [errorNode(SCHEMAS_UNREADABLE)];
+    }
   }
 }
