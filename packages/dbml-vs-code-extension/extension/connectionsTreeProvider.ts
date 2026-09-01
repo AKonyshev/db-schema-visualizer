@@ -21,9 +21,16 @@ export class ConnectionsTreeProvider
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
   public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
+  // VS Code re-asks for the children of every expanded node on each refresh,
+  // and every answer below that is not already here costs a connection to the
+  // server. Promises rather than values, so two expansions racing each other
+  // share one round trip. ⟳ is what empties it.
+  private readonly children = new Map<string, Promise<PanelNode[]>>();
+
   constructor(private readonly secrets: vscode.SecretStorage) {}
 
   public refresh(): void {
+    this.children.clear();
     this._onDidChangeTreeData.fire();
   }
 
@@ -110,12 +117,47 @@ export class ConnectionsTreeProvider
       return buildConnectionNodes(await listConnections(this.secrets));
     }
     if (node.kind === "connection") {
-      return await this.databaseNodes(node.name);
+      return await this.cached(
+        JSON.stringify(["databases", node.name]),
+        async () => await this.databaseNodes(node.name),
+      );
     }
     if (node.kind === "database") {
-      return await this.schemaNodes(node.connectionName, node.databaseName);
+      return await this.cached(
+        JSON.stringify(["schemas", node.connectionName, node.databaseName]),
+        async () =>
+          await this.schemaNodes(node.connectionName, node.databaseName),
+      );
     }
     return [];
+  }
+
+  private async cached(
+    key: string,
+    load: () => Promise<PanelNode[]>,
+  ): Promise<PanelNode[]> {
+    const pending = this.children.get(key);
+    if (pending !== undefined) {
+      return await pending;
+    }
+
+    // A rejection must never be what the cache holds. Every later expansion
+    // would re-await the same rejected promise, and VS Code answers a rejected
+    // getChildren with a silent empty node — leaving ⟳ as the only way back.
+    const started = load().catch((error: unknown) => {
+      this.children.delete(key);
+      throw error;
+    });
+    this.children.set(key, started);
+
+    const nodes = await started;
+    // A failure is not worth remembering. Collapsing and expanding again is how
+    // anyone retries, and ⟳ should not be the only way back from a server that
+    // has since come up.
+    if (nodes.some((child) => child.kind === "error")) {
+      this.children.delete(key);
+    }
+    return nodes;
   }
 
   // Nothing here may throw. VS Code answers a rejected getChildren with an

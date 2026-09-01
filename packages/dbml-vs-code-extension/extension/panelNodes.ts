@@ -85,6 +85,13 @@ export function buildSchemaNodes(
 // may not read. A tree provider must not throw while producing children: VS Code
 // renders an empty node and says nothing. These are the labels it shows instead,
 // constants so that the translation test can find them.
+//
+// Every label in this module reaches the UI as `l10n.t(node.label)` — a variable,
+// not a literal. That resolves fine at runtime, because `l10n.t` is a lookup in
+// the loaded bundle, and the test below keeps the bundles honest. But
+// `@vscode/l10n-dev` extracts literals only: if the bundles under `l10n/` ever
+// stop being written by hand, these strings are the ones that will silently go
+// missing.
 export const CONNECTION_UNAVAILABLE = "This connection is no longer available";
 export const DATABASES_UNREADABLE = "Could not read the list of databases";
 export const SCHEMAS_UNREADABLE = "Could not read the list of schemas";

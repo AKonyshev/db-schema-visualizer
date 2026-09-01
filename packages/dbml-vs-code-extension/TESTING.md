@@ -105,9 +105,10 @@ One state, two ways in — the header icon and `Alt+H` — and **neither writes 
 3. Click **＋** in the panel title, enter a name + `postgres://` string — the connection appears under Connections (name only; no password shown).
 4. Expand a connection — its databases load on demand; expand a database — its schemas load. Neither `pg_catalog`/`information_schema` nor `template0`/`template1` are listed.
 5. On a connection, use the inline **Import** / **Compare** icons — the flow runs against that server without asking which connection. On a database node, both skip the database question; on a schema node, **Import** asks nothing at all and writes that one schema.
-6. Point a connection at a server that is down, or delete a connection while its node is expanded, then expand it: the child says "Could not read the list of databases" / "This connection is no longer available" instead of the node silently coming up empty.
-7. Use the inline **Delete** icon — confirm the modal; the connection disappears. Click **⟳** to refresh.
-8. With a non-English display language, the group names and the three action labels are translated, and so is "No saved connections" when there are none. A saved connection's own name is user data and must stay exactly as typed, untranslated.
+6. Point a connection at a server that is down, or delete a connection while its node is expanded, then expand it: the child says "Could not read the list of databases" / "This connection is no longer available" instead of the node silently coming up empty. Bring the server back and collapse/expand the same node — it retries and succeeds, without needing ⟳.
+7. Expand a connection, collapse it, expand it again — the databases come back instantly and the server is not asked a second time. **⟳** is what re-reads it.
+8. Use the inline **Delete** icon — confirm the modal; the connection disappears. Click **⟳** to refresh.
+9. With a non-English display language, the group names and the three action labels are translated, and so is "No saved connections" when there are none. A saved connection's own name is user data and must stay exactly as typed, untranslated.
 
 ## The site
 

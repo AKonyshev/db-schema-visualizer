@@ -104,6 +104,104 @@ describe("ConnectionsTreeProvider", () => {
     ]);
   });
 
+  test("asks the server once for a node that is expanded twice", async () => {
+    jest.mocked(listDatabases).mockResolvedValue(["orders"]);
+    const provider = new ConnectionsTreeProvider(secrets);
+    const node = { kind: "connection", name: "prod" } as const;
+
+    await provider.getChildren(node);
+    await provider.getChildren(node);
+
+    // VS Code re-asks on every refresh, and each answer costs a connection.
+    expect(listDatabases).toHaveBeenCalledTimes(1);
+  });
+
+  test("asks again after a refresh", async () => {
+    jest.mocked(listDatabases).mockResolvedValue(["orders"]);
+    const provider = new ConnectionsTreeProvider(secrets);
+    const node = { kind: "connection", name: "prod" } as const;
+
+    await provider.getChildren(node);
+    provider.refresh();
+    await provider.getChildren(node);
+
+    expect(listDatabases).toHaveBeenCalledTimes(2);
+  });
+
+  test("does not remember a failure", async () => {
+    jest
+      .mocked(listDatabases)
+      .mockRejectedValueOnce(new Error("unreachable"))
+      .mockResolvedValueOnce(["orders"]);
+    const provider = new ConnectionsTreeProvider(secrets);
+    const node = { kind: "connection", name: "prod" } as const;
+
+    expect(await provider.getChildren(node)).toEqual([
+      { kind: "error", label: "Could not read the list of databases" },
+    ]);
+    // Collapsing and expanding again is how anyone retries a server that was
+    // down; ⟳ must not be the only way back.
+    expect(await provider.getChildren(node)).toEqual([
+      { kind: "database", connectionName: "prod", databaseName: "orders" },
+    ]);
+  });
+
+  test("never leaves a rejection sitting in the cache", async () => {
+    const provider = new ConnectionsTreeProvider(secrets);
+    // Reaching past the error-node contract: whatever slips through it, a
+    // rejected promise must not become the permanent answer for that node.
+    const databaseNodes = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("slipped through"))
+      .mockResolvedValueOnce([
+        { kind: "database", connectionName: "prod", databaseName: "orders" },
+      ]);
+    (provider as unknown as { databaseNodes: unknown }).databaseNodes =
+      databaseNodes;
+    const node = { kind: "connection", name: "prod" } as const;
+
+    await expect(provider.getChildren(node)).rejects.toThrow("slipped through");
+    expect(await provider.getChildren(node)).toEqual([
+      { kind: "database", connectionName: "prod", databaseName: "orders" },
+    ]);
+  });
+
+  test("keeps each database's schemas apart in the cache", async () => {
+    jest
+      .mocked(listSchemas)
+      .mockResolvedValueOnce(["public"])
+      .mockResolvedValueOnce(["audit"]);
+    const provider = new ConnectionsTreeProvider(secrets);
+
+    const billing = await provider.getChildren({
+      kind: "database",
+      connectionName: "prod",
+      databaseName: "billing",
+    });
+    const orders = await provider.getChildren({
+      kind: "database",
+      connectionName: "prod",
+      databaseName: "orders",
+    });
+
+    expect(billing).toEqual([
+      {
+        kind: "schema",
+        connectionName: "prod",
+        databaseName: "billing",
+        schemaName: "public",
+      },
+    ]);
+    expect(orders).toEqual([
+      {
+        kind: "schema",
+        connectionName: "prod",
+        databaseName: "orders",
+        schemaName: "audit",
+      },
+    ]);
+  });
+
   test("marks the node kinds so the context menus can tell them apart", () => {
     const provider = new ConnectionsTreeProvider(secrets);
 
