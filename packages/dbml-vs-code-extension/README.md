@@ -10,7 +10,7 @@ _A fictional library schema — the model is in [`examples/library.dbml`](https:
 
 ## What this fork adds
 
-- **Import from PostgreSQL** — command palette → **DBML: Import from database**. Connections are saved in the DBML side bar and their credentials go to the VS Code secret store.
+- **Import from PostgreSQL** — command palette → **DBML: Import from database**. A saved connection stands for a whole server: the side bar opens it into its databases and their schemas, and one import can take several databases at once, writing one `.dbml` file per database with every schema you picked inside it. Connections live in the DBML side bar and their credentials go to the VS Code secret store.
 - **Compare with a live database** — open a `.dbml` file, then **DBML: Compare with database**, and see where the file and the database have drifted apart.
 - **A layout that lives in the file** — drag tables about and the positions are written into a `MetaInfo` block in the DBML itself, one arrangement per detail level, so the diagram opens as you left it on any machine.
 - **Export** the diagram as PNG, SVG, AsciiDoc, or Markdown.

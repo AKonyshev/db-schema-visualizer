@@ -23,7 +23,9 @@ export async function addConnection(
     return;
   }
   const connectionString = await window.showInputBox({
-    prompt: l10n.t("PostgreSQL connection string"),
+    prompt: l10n.t(
+      "PostgreSQL connection string (the database in it is only the entry point)",
+    ),
     placeHolder: "postgres://user:password@host:5432/database",
     password: true,
     ignoreFocusOut: true,
@@ -109,7 +111,7 @@ export async function compareWithConnection(
   if (preselect === undefined) {
     return;
   }
-  // `compareWithDatabase` still takes a bare connection string at this point;
-  // the database step arrives with it in the next commit.
-  await compareWithDatabase(context, preselect.connectionString);
+  // A schema node's schema is not what is being compared; only its database
+  // matters, and `compareWithDatabase` ignores the rest.
+  await compareWithDatabase(context, preselect);
 }

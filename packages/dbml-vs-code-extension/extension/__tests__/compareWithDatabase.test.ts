@@ -5,6 +5,7 @@ jest.mock("db-to-dbml", () => {
   return {
     ...actual,
     fetchPostgresSchema: jest.fn(),
+    listDatabases: jest.fn(),
     listSchemaNames: jest.fn(),
   };
 });
@@ -27,6 +28,7 @@ import {
   DbImportError,
   DbImportErrorCode,
   fetchPostgresSchema,
+  listDatabases,
   listSchemaNames,
 } from "db-to-dbml";
 import {
@@ -75,6 +77,9 @@ describe("compareWithDatabase", () => {
   beforeEach(() => {
     windowMock.activeTextEditor = undefined;
     jest.mocked(fetchPostgresSchema).mockReset();
+    // The server behind the tests holds one database, so the new database step
+    // resolves itself and the cases below stay about what they were about.
+    jest.mocked(listDatabases).mockReset().mockResolvedValue(["db"]);
     jest.mocked(listSchemaNames).mockReset();
     jest.mocked(parseDbmlToModel).mockReset();
     jest.mocked(databaseSchemaToModel).mockReset();
@@ -94,7 +99,9 @@ describe("compareWithDatabase", () => {
         new DbImportError(DbImportErrorCode.UNREACHABLE, "down"),
       );
 
-    await compareWithDatabase(fakeContext(), "postgres://u:p@h/db");
+    await compareWithDatabase(fakeContext(), {
+      connectionString: "postgres://u:p@h/db",
+    });
 
     expect(window.showErrorMessage).toHaveBeenCalledWith(
       "Could not reach the database host.",
@@ -111,10 +118,44 @@ describe("compareWithDatabase", () => {
       throw new Error("diff blew up");
     });
 
-    await compareWithDatabase(fakeContext(), "postgres://u:p@h/db");
+    await compareWithDatabase(fakeContext(), {
+      connectionString: "postgres://u:p@h/db",
+    });
 
     expect(window.showErrorMessage).toHaveBeenCalledWith(
       "Failed to compare the DBML file with the database.",
+    );
+  });
+
+  test("asks which database to compare against when the server has several", async () => {
+    openDbmlEditor();
+    jest.mocked(listDatabases).mockResolvedValue(["billing", "orders"]);
+    jest.mocked(window.showQuickPick).mockResolvedValueOnce("orders" as never);
+    jest.mocked(fetchPostgresSchema).mockResolvedValue({} as never);
+    jest.mocked(listSchemaNames).mockReturnValue(["public"]);
+
+    await compareWithDatabase(fakeContext(), {
+      connectionString: "postgres://u:p@h:5432/entry",
+    });
+
+    expect(fetchPostgresSchema).toHaveBeenCalledWith(
+      "postgres://u:p@h:5432/orders",
+    );
+  });
+
+  test("asks nothing when the node already named the database", async () => {
+    openDbmlEditor();
+    jest.mocked(fetchPostgresSchema).mockResolvedValue({} as never);
+    jest.mocked(listSchemaNames).mockReturnValue(["public"]);
+
+    await compareWithDatabase(fakeContext(), {
+      connectionString: "postgres://u:p@h:5432/entry",
+      databaseName: "billing",
+    });
+
+    expect(listDatabases).not.toHaveBeenCalled();
+    expect(fetchPostgresSchema).toHaveBeenCalledWith(
+      "postgres://u:p@h:5432/billing",
     );
   });
 });

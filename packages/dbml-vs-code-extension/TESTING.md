@@ -80,17 +80,20 @@ One state, two ways in — the header icon and `Alt+H` — and **neither writes 
 ## Import from database (PostgreSQL)
 
 1. Command palette → **DBML: Import from database**.
-2. Choose **New connection**, enter a `postgres://` connection string.
-3. When multiple schemas exist, pick one from the list.
-4. Choose a save location; confirm the `.dbml` file is written and the diagram opens.
-5. If cross-schema foreign keys exist, confirm the "N cross-schema references were omitted" notice.
-6. Re-run the command; confirm the saved connection appears in the list and works.
-7. Error cases: wrong password, unreachable host, and a non-`postgres://` string each show a clear message with no password leaked.
+2. Choose **New connection**, enter a `postgres://` connection string. The database it names is only the entry point — the import can reach the server's other databases.
+3. When the server holds several databases, pick one or more; the schema list that follows is grouped by database, with everything ticked. Untick some and continue.
+4. One database chosen: choose a save location; confirm the `.dbml` file is written and the diagram opens.
+5. Several databases chosen: choose a folder; confirm one `<database>.dbml` per database is written, that no editor opens by itself, and that the closing notice counts the files. Re-run into the same folder and confirm the single "these files already exist" confirmation, and that declining writes nothing.
+6. Two schemas of one database chosen with a foreign key between them: confirm the reference is in the file (`Ref` naming both `schema.table` ends) rather than counted as omitted.
+7. If cross-schema foreign keys leave the chosen set, confirm the "N cross-schema references were omitted" notice, summed across every file.
+8. Cancel the progress notification during a multi-database import: confirm the databases already finished keep their files, and the run stops.
+9. Re-run the command; confirm the saved connection appears in the list and works.
+10. Error cases: wrong password, unreachable host, and a non-`postgres://` string each show a clear message with no password leaked. On a server holding a database your user may not connect to, choosing it alongside a readable one imports the readable one and reports "Imported 1 of 2 databases. <name>: Access to this database is denied."
 
 ## Compare with database (PostgreSQL)
 
 1. Open a `.dbml` file; command palette → **DBML: Compare with database**.
-2. Choose a connection; when multiple schemas exist, pick one.
+2. Choose a connection; when the server holds several databases, pick one; when that database has several schemas, pick one.
 3. Confirm a Markdown report opens beside the editor with tables/columns/enums/FK/index differences (or "Schemas are identical").
 4. On a `.dbml` file with a syntax error, confirm a clear "DBML parse error at line N:M" message and no crash.
 5. Wrong password / unreachable host each show a clear message with no password leaked.
@@ -100,9 +103,11 @@ One state, two ways in — the header icon and `Alt+H` — and **neither writes 
 1. Click the DBML icon in the Activity Bar — the panel opens with **Actions** and **Connections** groups.
 2. Under Actions, click **Show diagram** / **Import from database** / **Compare with database** — each runs the same command as the palette.
 3. Click **＋** in the panel title, enter a name + `postgres://` string — the connection appears under Connections (name only; no password shown).
-4. On a connection, use the inline **Import** / **Compare** icons — the flow runs against that connection without asking to pick one.
-5. Use the inline **Delete** icon — confirm the modal; the connection disappears. Click **⟳** to refresh.
-6. With a non-English display language, the group names and the three action labels are translated, and so is "No saved connections" when there are none. A saved connection's own name is user data and must stay exactly as typed, untranslated.
+4. Expand a connection — its databases load on demand; expand a database — its schemas load. Neither `pg_catalog`/`information_schema` nor `template0`/`template1` are listed.
+5. On a connection, use the inline **Import** / **Compare** icons — the flow runs against that server without asking which connection. On a database node, both skip the database question; on a schema node, **Import** asks nothing at all and writes that one schema.
+6. Point a connection at a server that is down, or delete a connection while its node is expanded, then expand it: the child says "Could not read the list of databases" / "This connection is no longer available" instead of the node silently coming up empty.
+7. Use the inline **Delete** icon — confirm the modal; the connection disappears. Click **⟳** to refresh.
+8. With a non-English display language, the group names and the three action labels are translated, and so is "No saved connections" when there are none. A saved connection's own name is user data and must stay exactly as typed, untranslated.
 
 ## The site
 
