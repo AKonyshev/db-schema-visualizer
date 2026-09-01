@@ -71,7 +71,7 @@ export async function importFromConnection(
     );
     return;
   }
-  await importFromDatabase(context, connectionString);
+  await importFromDatabase(context, { connectionString });
 }
 
 export async function compareWithConnection(

@@ -14,8 +14,14 @@ export const window = {
   showOpenDialog: jest.fn(),
   registerCustomEditorProvider: jest.fn(() => ({ dispose: jest.fn() })),
   withProgress: jest.fn(
-    async (_options: unknown, task: (progress: unknown) => Thenable<unknown>) =>
-      task({}),
+    async (
+      _options: unknown,
+      task: (progress: unknown, token: unknown) => Thenable<unknown>,
+    ) =>
+      await task(
+        { report: jest.fn() },
+        { isCancellationRequested: false, onCancellationRequested: jest.fn() },
+      ),
   ),
 };
 
