@@ -51,6 +51,11 @@ export const Uri = {
   parse: jest.fn((value: string) => ({ toString: () => value })),
 };
 
+export const QuickPickItemKind = {
+  Separator: -1,
+  Default: 0,
+} as const;
+
 export const ProgressLocation = {
   Notification: 15,
 };
