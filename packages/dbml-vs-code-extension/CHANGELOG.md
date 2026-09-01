@@ -6,9 +6,17 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-01
+
 ### Added
 
-- **Choose what to import from a server.** A saved connection used to mean one database and one schema — whatever the connection string named, minus every reference that left the schema you picked. It now means the server: the DBML panel opens a connection into its databases and each database into its schemas, and **DBML: Import from database** asks which databases and which schemas to take. Each database becomes one `.dbml` file holding every schema chosen from it, so a reference between two of them survives the export instead of being counted and dropped. Comparison gained the same choice of database, one schema at a time as before. A database the server lists but refuses now says so — it used to report the same "failed to import" as everything else.
+- **Choose what to import from a server.** A saved connection used to mean one database and one schema — whatever the connection string named, minus every reference that left the schema you picked. It now means the server. The DBML panel opens a connection into its databases and each database into its schemas, and **DBML: Import from database** asks which databases to take and then offers their schemas in one list grouped by database. Each database becomes one `.dbml` file holding every schema chosen from it, so a reference between two of them survives the export instead of being counted and dropped — a model split across `public` and `audit` comes out whole for the first time.
+- **A long import can be watched and stopped.** Databases are read one at a time and each file is written as soon as its own database is read, so cancelling leaves finished files rather than nothing, and the notification says how much was left. A database that fails no longer abandons the ones that worked: the run ends saying which succeeded and what went wrong with the rest.
+- **Comparison can pick its database too.** **DBML: Compare with database** asks which database of the server to read; the comparison itself is still one schema against one file.
+
+### Fixed
+
+- **A database you are not allowed to read said the wrong thing.** PostgreSQL lists databases in its catalogue whether or not your user may connect to them, and being refused by one reported the same "failed to import the schema" as a wrong password or an unreachable host. It now says access to that database was denied.
 
 ## [1.0.2] - 2026-09-01
 
