@@ -37,7 +37,7 @@ const FieldDetailWrapper = ({ children }: FieldDetailWrapperProps) => {
 
       {isDetailVisible ? (
         <Line
-          fill={themeColors.noteBg}
+          fill={themeColors.note.bg}
           closed
           points={computeCaretPoints(popoverX, COLUMN_HEIGHT)}
         />

@@ -3,6 +3,20 @@ import type { ThemeColors } from "@/types/theme";
 import { darkPalette, lightPalette, type Palette } from "@/styles/palette";
 
 /**
+ * The bubble is a dark surface in *both* themes: a note in the light theme is
+ * inverted on purpose, so that one bubble reads over a white canvas and a white
+ * table alike. That is why a single set of foregrounds serves both themes, and
+ * why none of them may come from the palette — the palette is chosen against
+ * the page, and on the bubble it lands two-and-a-half to one.
+ */
+const noteForeground = {
+  fg: "#f1f5f9",
+  muted: "#cbd5e1",
+  danger: "#fca5a5",
+  success: "#86efac",
+};
+
+/**
  * The canvas half of the palette.
  *
  * Konva takes hex strings, not classes, so the diagram cannot read the custom
@@ -12,8 +26,9 @@ import { darkPalette, lightPalette, type Palette } from "@/styles/palette";
  * side by side.
  *
  * A few colours stay outside the palette because they are not roles anything
- * else has: the shadow under a table, and the background of a note bubble that
- * has to stay legible over both a table and the canvas behind it.
+ * else has: the shadow under a table, and the note bubble, which is its own
+ * small surface — it has to stay legible over both a table and the canvas
+ * behind it, so everything drawn on it is chosen against it.
  */
 const themeFrom = (
   palette: Palette,
@@ -40,12 +55,10 @@ const themeFrom = (
     bg: palette.surfaceSunken,
     fg: palette.text,
   },
-  red: palette.danger,
-  green: palette.success,
-  enumItem: palette.textMuted,
-  // The label drawn on a field's type chip, which is painted in the accent.
-  white: palette.accentContrast,
-  noteBg: extras.noteBg,
+  note: {
+    bg: extras.noteBg,
+    ...noteForeground,
+  },
   bg: palette.surface,
 });
 
@@ -56,5 +69,8 @@ export const defaultThemeConfig: ThemeColors = themeFrom(lightPalette, {
 
 export const darkThemeConfig: ThemeColors = themeFrom(darkPalette, {
   shadow: "rgba(0, 0, 0, 0.45)",
-  noteBg: "rgba(23, 26, 33, 0.94)",
+  // Lighter than a table, not darker: in the dark theme the bubble used to be
+  // `surfaceRaised` to the pixel, so it vanished into whatever table it landed
+  // on. Here it reads as something lifted off the diagram.
+  noteBg: "rgba(42, 48, 60, 0.96)",
 });

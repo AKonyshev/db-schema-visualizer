@@ -24,7 +24,7 @@ const FieldDetails = ({ note, enumName = "" }: FieldDetailsProps) => {
     <FieldDetailWrapper>
       <Group>
         <Rect
-          fill={themeColors.noteBg}
+          fill={themeColors.note.bg}
           width={contentDimension.w + PADDINGS.md * 2}
           height={contentDimension.h}
           cornerRadius={5}
@@ -34,7 +34,7 @@ const FieldDetails = ({ note, enumName = "" }: FieldDetailsProps) => {
           <KonvaText
             y={PADDINGS.md}
             width={contentDimension.w}
-            fill={themeColors.white}
+            fill={themeColors.note.fg}
             text={note}
           />
 

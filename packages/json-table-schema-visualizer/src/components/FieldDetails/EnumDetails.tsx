@@ -27,11 +27,11 @@ const EnumDetails = ({ enumName, y }: EnumDetailsProps) => {
 
   return (
     <Group y={y}>
-      <KonvaText fontStyle="bold" fill={themeColors.red} text="Enum" />
+      <KonvaText fontStyle="bold" fill={themeColors.note.danger} text="Enum" />
 
       <KonvaText
         x={enumNameX}
-        fill={themeColors.green}
+        fill={themeColors.note.success}
         text={enumObject.name}
       />
 
@@ -40,7 +40,7 @@ const EnumDetails = ({ enumName, y }: EnumDetailsProps) => {
           key={item.name}
           y={(index + 1) * enumTextSize.height}
           text={createEnumItemText(item.name)}
-          fill={themeColors.enumItem}
+          fill={themeColors.note.muted}
         />
       ))}
     </Group>
