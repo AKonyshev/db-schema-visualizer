@@ -15,6 +15,12 @@ import "monaco-editor/editor/contrib/wordOperations/browser/wordOperations";
 import "monaco-editor/editor/contrib/linesOperations/browser/linesOperations";
 import "monaco-editor/editor/contrib/cursorUndo/browser/cursorUndo";
 import "monaco-editor/editor/contrib/contextmenu/browser/contextmenu";
+// The icon font every one of those widgets draws its buttons with. It is not a
+// contribution and no contribution pulls it in: only the full `editor.main`
+// entry does, and that is the entry this file exists to avoid. Without it the
+// find widget's markup is complete and its buttons are blank — the glyphs are
+// asked for in a font the page never declared.
+import "monaco-editor/features/codicon/register";
 // `monaco-editor/editor/editor.worker`, not `.../esm/vs/...`: the package's
 // `exports` map already prefixes `./esm/vs/`, so spelling it out resolves to a
 // path that does not exist.
