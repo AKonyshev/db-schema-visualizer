@@ -6,6 +6,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-04
+
+### Fixed
+
+- **A column's note was unreadable in the dark theme.** Hovering a column that carries a note, or whose type is an enum, opens a bubble beside it. The bubble had no text colour of its own and borrowed one meant for the page behind it: in the dark theme that came out near-black on a near-black bubble, at a contrast of 1.13 to 1 — the text was drawn, and nothing was there to see. The bubble was also exactly the colour of a table, so it had no edge against whatever it covered. In the light theme the note itself read, but the enum listed under it did not: those colours are chosen for a white page, and this bubble is dark in both themes. Every colour the bubble draws with is now chosen against the bubble, and a test holds them there.
+
 ## [1.1.0] - 2026-09-01
 
 ### Added
