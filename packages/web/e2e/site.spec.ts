@@ -484,3 +484,47 @@ test("hiding a table's relations changes the view and not the file", async ({
   await expect.poll(async () => await drawnRelations(page)).toBeGreaterThan(0);
   expect(await schemaText(page)).toBe(before);
 });
+
+test("the editor's find widget draws its icons", async ({ page }) => {
+  await page.goto("/");
+
+  const editor = page.locator(".monaco-editor");
+  await expect(editor).toBeVisible();
+
+  await editor.click();
+
+  // The modifier is read off the page rather than off the host. Monaco picks
+  // Cmd or Ctrl from the browser's own user agent, and the browser this test
+  // drives reports Windows whatever machine it is running on — so
+  // `ControlOrMeta` would press Cmd on a Mac against an editor listening for
+  // Ctrl, and the widget would never open.
+  const isMac = await page.evaluate(() =>
+    navigator.userAgent.includes("Macintosh"),
+  );
+  await page.keyboard.press(isMac ? "Meta+f" : "Control+f");
+
+  const findWidget = page.locator(".monaco-editor .find-widget");
+  await expect(findWidget).toBeVisible();
+
+  // Monaco draws every button in this widget as a glyph from a font it ships.
+  // The markup for those buttons is there whether or not the font is — a
+  // missing `@font-face` leaves them blank rather than absent — so neither the
+  // element nor its class says anything. These two questions do: is the icon
+  // asking to be drawn in that font, and did the font arrive.
+  const icon = findWidget.locator(".codicon").first();
+  await expect(icon).toBeVisible();
+
+  expect(
+    await icon.evaluate((el) => getComputedStyle(el).fontFamily),
+  ).toContain("codicon");
+
+  expect(
+    await page.evaluate(async () => {
+      await document.fonts.load("16px codicon");
+
+      return [...document.fonts].some(
+        (face) => face.family.replace(/["']/g, "") === "codicon",
+      );
+    }),
+  ).toBe(true);
+});

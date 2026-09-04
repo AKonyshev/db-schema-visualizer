@@ -26,11 +26,22 @@ export interface ThemeColors {
     bg: string;
     shadow: string;
   };
-  red: string;
-  green: string;
-  enumItem: string;
-  white: string;
-  noteBg: string;
+  /**
+   * The note bubble is a surface of its own, so it carries its own foregrounds.
+   * Nothing outside the bubble may use these, and nothing inside it may reach
+   * for the palette: the bubble is dark in both themes, so a colour picked for
+   * the page is picked against the wrong background.
+   */
+  note: {
+    bg: string;
+    fg: string;
+    /** Enum values, listed under the note. */
+    muted: string;
+    /** The "Enum" label. */
+    danger: string;
+    /** The enum's name. */
+    success: string;
+  };
   bg: string;
 }
 
